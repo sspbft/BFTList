@@ -18,6 +18,6 @@ pip install --upgrade pip
 curl https://bootstrap.pypa.io/get-pip.py | python3
 ```
 
-Now you can simple run `FLASK_APP=api/server.py flask run` and the server can be found on [localhost:5000](http://localhost:5000)!
+Now you can simple run `python main.py` and the server can be found on [localhost:5000](http://localhost:5000)!
 
 The code base is linted using [pep8](https://pypi.org/project/pep8/), so make sure to lint the code using this tool before pushing any code.
