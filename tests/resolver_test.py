@@ -1,7 +1,7 @@
-from resolver.resolver import Resolver
+from resolve.resolver import Resolver
 
 # TODO implement more tests
-class TestResolver(object):
+class TestResolver():
     def test_resolver_can_be_initialized(self):
         resolver = Resolver()
         assert not resolver is None

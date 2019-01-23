@@ -1,10 +1,10 @@
 from threading import Thread
 from api.server import start_server
-from resolver.resolver import Resolver
+from resolve.resolver import Resolver
 from modules.view_establishment.module import ViewEstablishmentModule
 from modules.replication.module import ReplicationModule
 from modules.primary_monitoring.module import PrimaryMonitoringModule
-from resolver.enums import Module
+from resolve.enums import Module
 
 
 def start_api(resolver):

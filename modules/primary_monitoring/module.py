@@ -1,6 +1,6 @@
 import time
 from modules.algorithm_module import AlgorithmModule
-from resolver.enums import Function, Module
+from resolve.enums import Function, Module
 
 
 class PrimaryMonitoringModule:
