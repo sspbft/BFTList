@@ -1,6 +1,7 @@
 import time
 from modules.algorithm_module import AlgorithmModule
 
+
 class ReplicationModule(AlgorithmModule):
     def __init__(self, resolver):
         self.resolver = resolver

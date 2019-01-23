@@ -1,14 +1,15 @@
 from enums import Function, Module
 
+
 class Resolver:
     def __init__(self):
         self.modules = None
 
     def set_modules(self, modules):
         self.modules = modules
-        
+
     def execute(self, module, func):
-        if self.modules == None:
+        if self.modules is None:
             return -1
 
         if module == Module.VIEW_ESTABLISHMENT_MODULE:

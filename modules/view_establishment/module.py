@@ -1,6 +1,7 @@
 from modules.algorithm_module import AlgorithmModule
 import time
 
+
 class ViewEstablishmentModule(AlgorithmModule):
     def __init__(self, resolver):
         self.resolver = resolver
