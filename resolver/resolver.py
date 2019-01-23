@@ -1,4 +1,4 @@
-from enums import Function, Module
+from resolver.enums import Function, Module
 
 
 class Resolver:
