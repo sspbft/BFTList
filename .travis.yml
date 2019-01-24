@@ -2,6 +2,5 @@ language: python
 python:
   - "3.5"
 script:
-  # - pydocstyle ./**/*.py
-  - pep8
+  - flake8
   - PYTHONPATH=. pytest

@@ -1,3 +1,5 @@
+"""Main application for BFTList."""
+
 from threading import Thread
 from api.server import start_server
 from resolve.resolver import Resolver
@@ -8,12 +10,14 @@ from resolve.enums import Module
 
 
 def start_api(resolver):
+    """Starts BFTList API in a separate thread."""
     print("Starting API")
     thread = Thread(target=start_server, args=(resolver,))
     thread.start()
 
 
 def start_modules(resolver):
+    """Starts all modules in separate threads."""
     print("Starting modules")
 
     modules = {
@@ -30,6 +34,7 @@ def start_modules(resolver):
         t = Thread(target=m.run)
         t.start()
     resolver.set_modules(modules)
+
 
 if __name__ == "__main__":
     resolver = Resolver()
