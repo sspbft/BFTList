@@ -16,3 +16,6 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(hosts[0].port, 5000)
         self.assertEqual(hosts[1].id, 1)
         os.remove(path)
+
+if __name__ == '__main__':
+    unittest.main()
