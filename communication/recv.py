@@ -9,15 +9,16 @@ import struct
 class Receiver():
     """Models a self-stabilizing receiver channel."""
 
-    def __init__(self, port, ip, chunks_size=1024):
+    def __init__(self, ip, port, chunks_size=1024):
         """Initializes the receiver channel."""
         self.port = port
         self.ip = ip
+        self.host = socket.gethostname()
         self.chunks_size = chunks_size
         self.id = int(os.getenv("ID"))
 
         self.tokens = {}
-        self.token_size = 2 * struct.calcsize("i") + struct.calcsize("17s")
+        self.token_size = struct.calcsize("iii")
         self.loop = asyncio.get_event_loop()
 
         self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -50,6 +51,7 @@ class Receiver():
         while (len(res) < msg_size):
             res += await self.loop.sock_recv(conn, self.chunks_size)
             await asyncio.sleep(0)
+
         response = await self.check_msg(res)
         response_stream = io.BytesIO(response)
         stream = True
@@ -69,32 +71,25 @@ class Receiver():
         """Determine message type and create response message accordingly."""
         token = res[:self.token_size]
         payload = res[self.token_size:]
-        msg_type, msg_cntr, sender = struct.unpack("ii17s", token)
+        msg_type, msg_cntr, sender = struct.unpack("iii", token)
 
         if(sender not in self.tokens.keys()):
-            if __debug__:
-                print("Node {}Adding new token".format(str(self.id)))
+            print("Adding new token")
             self.tokens[sender] = 0
 
         if(self.tokens[sender] != msg_cntr):
             self.tokens[sender] = msg_cntr
-            token = struct.pack("ii17s", msg_type, self.tokens[sender],
-                                str(self.id).encode())
+            token = struct.pack("iii", msg_type, self.tokens[sender], self.id)
             if(msg_type == 0):
                 if payload:
-                    new_msg = await self.cb_obj.arrival(sender, payload)
-                    if new_msg:
-                        response = token + new_msg if new_msg else token
-                    else:
-                        response = token
+                    response = token
                 else:
                     response = token
             elif(msg_type == 1):
                 raise NotImplementedError
         else:
-            if __debug__:
-                print("Node {}: NO TOKEN ARRIVAL".format(str(self.id)))
-            token = struct.pack("ii17s", msg_type, self.tokens[sender],
-                                str(self.id).encode())
+            print("NO TOKEN ARRIVAL")
+            token = struct.pack("iii", msg_type, self.tokens[sender], self.id)
             response = token
+
         return response

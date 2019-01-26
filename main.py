@@ -44,13 +44,14 @@ def setup_communication():
     id = int(os.getenv("ID", 0))
     _self = list(filter(lambda n: n.id == id, nodes))[0]
 
-    # setup communication channel with all other nodes
+    # setup sender channel to other nodes
     for node in config.get_nodes():
-        if id == 0 and node.id == 1:
+        if id != node.id:
             sender = send.Sender(ip=node.ip, port=node.port)
             loop.create_task(sender.start())
 
-    receiver = recv.Receiver(_self.port, _self.ip)
+    # setup receiver channel from other nodes
+    receiver = recv.Receiver(_self.ip, _self.port)
     loop.create_task(receiver.tcp_listen())
 
     loop.run_forever()
