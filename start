@@ -1,0 +1,6 @@
+#!/bin/bash
+
+ID=$1
+
+sh ./kill
+ID=${ID} python3.5 main.py

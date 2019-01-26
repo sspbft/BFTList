@@ -1,5 +1,4 @@
 """Enums related to the resolver and inter-module communication."""
-
 from enum import Enum
 
 

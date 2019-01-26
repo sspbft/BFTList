@@ -1,5 +1,8 @@
 """Main application for BFTList."""
-
+import asyncio
+import os
+import conf.config as config
+from communication import send, recv
 from threading import Thread
 from api.server import start_server
 from resolve.resolver import Resolver
@@ -11,15 +14,12 @@ from resolve.enums import Module
 
 def start_api(resolver):
     """Starts BFTList API in a separate thread."""
-    print("Starting API")
     thread = Thread(target=start_server, args=(resolver,))
     thread.start()
 
 
 def start_modules(resolver):
     """Starts all modules in separate threads."""
-    print("Starting modules")
-
     modules = {
         Module.VIEW_ESTABLISHMENT_MODULE:
             ViewEstablishmentModule(resolver=resolver),
@@ -36,7 +36,29 @@ def start_modules(resolver):
     resolver.set_modules(modules)
 
 
+def setup_communication():
+    """Sets up the communication using asyncio event loop."""
+    loop = asyncio.get_event_loop()
+
+    nodes = config.get_nodes()
+    id = int(os.getenv("ID", 0))
+    _self = list(filter(lambda n: n.id == id, nodes))[0]
+
+    # setup communication channel with all other nodes
+    for node in config.get_nodes():
+        if id == 0 and node.id == 1:
+            sender = send.Sender(ip=node.ip, port=node.port)
+            loop.create_task(sender.start())
+
+    receiver = recv.Receiver(_self.port, _self.ip)
+    loop.create_task(receiver.tcp_listen())
+
+    loop.run_forever()
+    loop.close()
+
+
 if __name__ == "__main__":
     resolver = Resolver()
-    start_api(resolver=resolver)
-    start_modules(resolver=resolver)
+    # start_api(resolver=resolver)
+    # start_modules(resolver=resolver)
+    setup_communication()

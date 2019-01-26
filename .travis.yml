@@ -3,4 +3,4 @@ python:
   - "3.5"
 script:
   - flake8
-  - PYTHONPATH=. pytest
+  - bash test

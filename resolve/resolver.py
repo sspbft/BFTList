@@ -1,5 +1,4 @@
 """Contains code related to the module resolver."""
-
 from resolve.enums import Function, Module
 
 

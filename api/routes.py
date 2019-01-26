@@ -2,6 +2,7 @@
 
 from flask import Blueprint, jsonify, current_app as app
 from resolve.enums import Function, Module
+import os
 
 routes = Blueprint("routes", __name__)
 
@@ -9,7 +10,8 @@ routes = Blueprint("routes", __name__)
 @routes.route("/", methods=["GET"])
 def index():
     """Return the status of the current API service."""
-    return jsonify({"status": "running", "service": "BFTList API"})
+    _id = str(os.getenv("ID", 0))
+    return jsonify({"status": "running", "service": "BFTList API", "id": _id})
 
 
 @routes.route("/view", methods=["GET"])

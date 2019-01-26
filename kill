@@ -1,0 +1,5 @@
+kill $(ps aux | grep 'python main.py' | awk '{print $2}')
+kill -9 $(lsof -i:5000 -t)
+kill -9 $(lsof -i:5001 -t)
+kill -9 $(lsof -i:4000 -t)
+kill -9 $(lsof -i:4001 -t)

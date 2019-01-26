@@ -2,6 +2,7 @@
 
 from flask import Flask
 from api.routes import routes
+import os
 
 
 def create_app(resolver):
@@ -13,6 +14,7 @@ def create_app(resolver):
 
 
 def start_server(resolver):
-    """Foo  bar baz."""
+    """Foo bar baz."""
     app = create_app(resolver)
-    app.run()
+    port = int(os.getenv("API_PORT", 4000))
+    app.run(port=port)
