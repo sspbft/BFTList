@@ -1,5 +1,7 @@
 """Contains code related to the View Establishment module Algorithm 2."""
 
+from resolve.enums import Function, Module
+
 
 class PredicatesAndAction():
     """Models the View Establishment predicates and actions."""
@@ -7,17 +9,22 @@ class PredicatesAndAction():
     views = []  # views[*] = {"current": *, "next": *}
     vChange = False
     DF_VIEW = 0
-    TEE = 0
+    TEE = None
     RST_PAIR = {"current": TEE, "next": DF_VIEW}  # Default hardwired view Pair
     id = 0
-    noByz = 0
+    no_nodes = 0
+    no_byz = 0
+    view_module = None
+    resolver = None
 
-    def __init__(self, module, n=2, id=0, f=0):
+    def __init__(self, module, resolver, n=2, id=0, f=0):
         """Initializes the module."""
-        self.views = [None] * n
+        self.views = [{} for i in range(n)]
         self.id = id
-        self.module = module
-        self.noByz = f
+        self.view_module = module
+        self.no_byz = f
+        self.no_nodes = n
+        self.resolver = resolver
 
     # Macros
     def stale_v(self, node_k):
@@ -113,12 +120,21 @@ class PredicatesAndAction():
 
     # Interface functions
     def need_reset(self):
-        """True if the replication module needs a reset."""
-        raise NotImplementedError
+        """True if the replication module requires a reset."""
+        return (self.stale_v() and self.resolver.execute(
+                module=Module.REPLICATION_MODULE,
+                func=Function.REPLICA_FLUSH
+                ))
 
     def reset_all(self):
-        """True if all modules need a reset."""
-        raise NotImplementedError
+        """Reset all modules."""
+        self.views = [self.RST_PAIR for i in range(self.no_nodes)]
+        self.view_module.init_module()
+        self.resolver.execute(
+            module=Module.REPLICATION_MODULE,
+            func=Function.REP_REQUEST_RESET
+        )
+        return("Reset")
 
     def view_change(self):
         """A view change is required."""
@@ -127,11 +143,12 @@ class PredicatesAndAction():
     def get_view(self, node_j):
         """Returns the most recent reported view of node_j."""
         if (node_j == self.id or
-                (self.module.phs[self.id] == 0 and self.module.witnes_seen())):
+                (self.view_module.phs[self.id] == 0 and
+                    self.view_module.witnes_seen())):
             if self.allow_service():
                 return self.views[self.id].get("current")
             return self.TEE
-        return self.views[node_j].get[""]
+        return self.views[node_j].get("current")
 
     def allow_service(self):
         """Method description.
@@ -139,10 +156,10 @@ class PredicatesAndAction():
         Returns true if atleast 3f+1 nodes has the same view as
         current node and current node is not in a view change
         """
-        return (len(self.same_v_set(self.id) > 3 * self.noByz and
-                    self.module.phs[self.id] == 0 and
-                    self.views[self.id].get("current") ==
-                    self.views[self.id].get("next")))
+        return (len(self.same_v_set(self.id)) > 3 * self.no_byz and
+                self.view_module.phs[self.id] == 0 and
+                self.views[self.id].get("current") ==
+                self.views[self.id].get("next"))
 
     def automation(self, type, phase, case):
         """Perform the action corresponding to the current situation."""

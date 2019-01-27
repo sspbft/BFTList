@@ -32,6 +32,10 @@ class Resolver:
         module = self.modules[Module.VIEW_ESTABLISHMENT_MODULE]
         if func == Function.GET_VIEW:
             return module.get_view()
+        elif func == Function.ALLOW_SERVICE:
+            return module.allow_service()
+        else:
+            raise ValueError("Bad function parameter")
 
     def replication_exec(self, func):
         """Executes a function on the Replication module."""

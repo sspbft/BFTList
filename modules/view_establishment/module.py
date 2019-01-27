@@ -1,6 +1,7 @@
 """Contains code related to the View Establishment module Algorithm 1."""
 
 from modules.algorithm_module import AlgorithmModule
+from modules.view_establishment.predicates import PredicatesAndAction
 import time
 
 
@@ -11,6 +12,7 @@ class ViewEstablishmentModule(AlgorithmModule):
     witnesses = []
     witnessesSet = {}
     echo = []
+    pred_and_action = None
 
     def __init__(self, resolver, n=2):
         """Initializes the module."""
@@ -19,19 +21,13 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.phs = [0] * n
         self.witness = [False] * n
         self.echo = [None] * n
+        self.pred_and_action = PredicatesAndAction(self, self.resolver, n)
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
         while True:
             # print(__name__ + ": running")
             time.sleep(3)
-
-    def get_view(self):
-        """Sample method."""
-        print("ViewEstablishmentModule: call to get_view")
-        ret = self.view
-        self.view = ret + 1
-        return ret
 
     # Macros algorithm 1
     def echo_no_witn(self, node_k):
@@ -49,3 +45,24 @@ class ViewEstablishmentModule(AlgorithmModule):
     def next_phs(self):
         """Proceeds the phase from 0 to 1, or 1 to 0."""
         raise NotImplementedError
+
+    # Interface functions
+
+    def getPhs(node_k):
+        """Returns the phase of node k according to current node."""
+        raise NotImplementedError
+
+    def init_module(self):
+        """Use to reset the module."""
+        raise NotImplementedError
+
+    # TODO Change this to direct communication with Algorithm 2
+    # , remove default values
+    # Methods to communicate with Algorithm 2 (still View Establishment Module)
+    def get_view(self, node_k=0):
+        """Calls get_view of PredicatesAndAction."""
+        self.pred_and_action.get_view(node_k)
+
+    def allow_service(self):
+        """Calls allow_service of PredicatesAndAction."""
+        self.pred_and_action.allow_service()
