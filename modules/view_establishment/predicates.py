@@ -12,18 +12,23 @@ class PredicatesAndAction():
     TEE = None
     RST_PAIR = {"current": TEE, "next": DF_VIEW}  # Default hardwired view Pair
     id = 0
-    no_nodes = 0
-    no_byz = 0
+    number_of_nodes = 0
+    number_of_byzantine = 0
     view_module = None
     resolver = None
+
+    # Added variables
+    # In automation (*, 0, 0) the found view pair in predicates need to
+    # be store until the action (adopting the view pair) has been carried out.
+    view_pair_to_adopt = None
 
     def __init__(self, module, resolver, n=2, id=0, f=0):
         """Initializes the module."""
         self.views = [{} for i in range(n)]
         self.id = id
         self.view_module = module
-        self.no_byz = f
-        self.no_nodes = n
+        self.number_of_byzantine = f
+        self.number_of_nodes = n
         self.resolver = resolver
 
     # Macros
@@ -128,7 +133,7 @@ class PredicatesAndAction():
 
     def reset_all(self):
         """Reset all modules."""
-        self.views = [self.RST_PAIR for i in range(self.no_nodes)]
+        self.views = [self.RST_PAIR for i in range(self.number_of_nodes)]
         self.view_module.init_module()
         self.resolver.execute(
             module=Module.REPLICATION_MODULE,
@@ -143,7 +148,7 @@ class PredicatesAndAction():
     def get_view(self, node_j):
         """Returns the most recent reported view of node_j."""
         if (node_j == self.id or
-                (self.view_module.phs[self.id] == 0 and
+                (self.view_module.get_phs(self.id) == 0 and
                     self.view_module.witnes_seen())):
             if self.allow_service():
                 return self.views[self.id].get("current")
@@ -156,14 +161,175 @@ class PredicatesAndAction():
         Returns true if atleast 3f+1 nodes has the same view as
         current node and current node is not in a view change
         """
-        return (len(self.same_v_set(self.id)) > 3 * self.no_byz and
-                self.view_module.phs[self.id] == 0 and
+        return (len(self.same_v_set(self.id)) >
+                3 * self.number_of_byzantine and
+                self.view_module.get_phs(self.id) == 0 and
                 self.views[self.id].get("current") ==
                 self.views[self.id].get("next"))
 
     def automation(self, type, phase, case):
         """Perform the action corresponding to the current situation."""
-        raise NotImplementedError
+        # Phase 0, waiting for a next view
+        if (phase == 0):
+            return self.automation_phase_0(type, case)
+
+        # Phase 1, in a view change
+        elif(phase == 1):
+            return self.automation_phase_1(type, case)
+
+        # Not a valid phase
+        else:
+            raise Exception('Not a valid phase: {}'.format(phase))
+
+    def automation_phase_0(self, type, case):
+        """Perform the action corresponding to the current case of phase 0."""
+        # Predicates
+        if(type == "pred"):
+            # True if a view pair is adoptable but is not the view of
+            # processor i
+            if(case == 0):
+                for processor_id, view_pair in enumerate(self.views):
+                    if (self.transit_adopble(processor_id, 0, "Follow") and
+                        self.views[self.id].get("current") !=
+                            view_pair.get("current")):
+                        self.view_pair_to_adopt = view_pair
+                        return True
+                return False
+
+            # True if a view change was instructed by Primary Monitoring
+            elif(case == 1):
+                return (self.vChange and self.establishable(0, "Follow"))
+
+            # Monitoring/Waiting for more processors acknowledgement
+            elif(case == 2):
+                return (self.transit_adopble(self.id, 0, "Remain") or
+                        self.views[self.id] == self.RST_PAIR)
+
+            # True if there is no adoptable view (predicates for other cases
+            #  are false)
+            elif(case == 3):
+                return True
+
+            # Not a valid case
+            else:
+                raise Exception('Not a valid case: {}'.format(case))
+
+        # Actions
+        elif(type == "act"):
+
+            # Adopt the new view
+            if(case == 0):
+                if(self.view_pair_to_adopt):
+                    self.adopt(self.view_pair_to_adopt)
+                    self.view_pair_to_adopt = None
+                    self.view_module.next_phs()
+                    self.reset_v_change()
+                    return "Adopted new view"
+                else:
+                    raise Exception("Not a valid view pair to adopt")
+                # TODO What do return? and to we need a if statement
+                # for view_pair_to_adopt?
+
+            # Increment view (next view)
+            elif(case == 1):
+                self.next_view()
+                self.view_module.next_phs()
+                return "Incremented view"
+                # TODO What do return?
+
+            # No action and reset the v_change-variable
+            elif(case == 2):
+                self.reset_v_change()
+                return "No action"
+
+            # Full reset
+            elif(case == 3):
+                return self.reset_all()
+
+            # Not a valid case
+            else:
+                raise Exception('Not a valid case: {}'.format(case))
+
+        # Not a valid type (act or pred)
+        else:
+            raise Exception('Not a valid type: {}'.format(type))
+
+    def automation_phase_1(self, type, case):
+        """Perform the action corresponding to the current case of phase 1."""
+        # Predicates
+        if(type == "pred"):
+
+            # # True if a view pair is adoptable but is not the view of
+            # processor i
+            if(case == 0):
+                for processor_id, view_pair in enumerate(self.views):
+                    if (self.transit_adopble(processor_id, 1, "Follow") and
+                        self.views[self.id].get("next") !=
+                            view_pair.get("current")):
+                        self.view_pair_to_adopt = view_pair
+                        return True
+                return False
+
+            # True if the view intended to be install is establishable
+            elif(case == 1):
+                return self.establishable(1, "Follow")
+
+            # Monitoring/Waiting for more processors acknowledgement
+            elif(case == 2):
+                return self.transit_adopble(self.id, 1, "Remain")
+
+            # True if there is no adoptable view (predicates for other cases
+            # are false)
+            elif(case == 3):
+                return True
+
+            # Not a valid case
+            else:
+                raise Exception('Not a valid case: {}'.format(case))
+
+        # Actions
+        elif(type == "act"):
+
+            # Adopt the new transit view
+            if(case == 0):
+                if(self.view_pair_to_adopt):
+                    self.adopt(self.view_pair_to_adopt)
+                    self.view_pair_to_adopt = None
+                    self.reset_v_change()
+                    return "Adopted new view"
+                else:
+                    raise Exception("Not a valid view pair to adopt")
+                # TODO What do return? and to we need a if statement
+                # for view_pair_to_adopt?
+
+            # Apply changes to view: establish the new view
+            elif(case == 1):
+                if(self.views[self.id] == self.RST_PAIR):
+                    self.resolver.execute(
+                        module=Module.REPLICATION_MODULE,
+                        func=Function.REPLICA_FLUSH
+                    )
+                self.establish()
+                self.reset_v_change()
+                self.view_module.next_phs()
+                return "Established new view"
+
+            # Return no action
+            elif(case == 2):
+                self.reset_v_change()
+                return "No action"
+
+            # Reset all
+            elif(case == 3):
+                return self.reset_all()
+
+            # Not a valid case
+            else:
+                raise Exception('Not a valid case: {}'.format(case))
+
+        # Not a valid type (act or pred)
+        else:
+            raise Exception('Not a valid type: {}'.format(type))
 
     def auto_max_case(self, phase):
         """Returns the max case for the phase."""

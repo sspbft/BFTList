@@ -48,7 +48,7 @@ class ViewEstablishmentModule(AlgorithmModule):
 
     # Interface functions
 
-    def getPhs(node_k):
+    def get_phs(node_k):
         """Returns the phase of node k according to current node."""
         raise NotImplementedError
 
@@ -61,8 +61,8 @@ class ViewEstablishmentModule(AlgorithmModule):
     # Methods to communicate with Algorithm 2 (still View Establishment Module)
     def get_view(self, node_k=0):
         """Calls get_view of PredicatesAndAction."""
-        self.pred_and_action.get_view(node_k)
+        return self.pred_and_action.get_view(node_k)
 
     def allow_service(self):
         """Calls allow_service of PredicatesAndAction."""
-        self.pred_and_action.allow_service()
+        return self.pred_and_action.allow_service()
