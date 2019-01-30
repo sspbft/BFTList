@@ -9,6 +9,123 @@ from modules.enums import ViewEstablishmentEnums
 
 class TestPredicatesAndAction(unittest.TestCase):
     
+    # Macros
+    def test_stale_v(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+
+        # Stale and in phase 0
+        view_est_mod.get_phs = MagicMock(return_value = 0)
+        pred_module.legit_phs_zero = MagicMock(return_value = False)
+        pred_module.legit_phs_one = MagicMock(return_value = False)
+        self.assertTrue(pred_module.stale_v(0))
+        # Stale and in phase 1
+        view_est_mod.get_phs = MagicMock(return_value = 1)
+        self.assertTrue(pred_module.stale_v(0))
+        # Not stale
+        pred_module.legit_phs_one = MagicMock(return_value = True)
+        self.assertFalse(pred_module.stale_v(0))
+
+    def test_legit_phs_zero(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+        pred_module.type_check = MagicMock(return_value = True)
+        vpair_to_test = {"current": 1, "next": 1}
+
+        # Legit to be in phase 0
+        self.assertTrue(pred_module.legit_phs_zero(vpair_to_test))
+
+        # Reset vpair, also legit
+        vpair_to_test = {"current": pred_module.TEE, "next": pred_module.DF_VIEW}
+        self.assertTrue(pred_module.legit_phs_zero(vpair_to_test))
+
+        # In view change, not legit to be in phase 0
+        vpair_to_test = {"current": 1, "next": 2}
+        self.assertFalse(pred_module.legit_phs_zero(vpair_to_test))
+
+        # Type check fails
+        vpair_to_test = {"current": 1, "next": 1}
+        pred_module.type_check = MagicMock(return_value = False)
+        self.assertFalse(pred_module.legit_phs_zero(vpair_to_test))
+
+    def test_legit_phs_one(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+        pred_module.type_check = MagicMock(return_value = True)
+        vpair_to_test = {"current": 1, "next": 2}
+
+        # Legit to be in phase 1
+        self.assertTrue(pred_module.legit_phs_one(vpair_to_test))
+
+        # Not in a view change
+        vpair_to_test = {"current": 1, "next": 1}
+        self.assertFalse(pred_module.legit_phs_one(vpair_to_test))
+
+        # Type check fails
+        vpair_to_test = {"current": 1, "next": 2}
+        pred_module.type_check = MagicMock(return_value = False)
+        self.assertFalse(pred_module.legit_phs_one(vpair_to_test))
+
+
+    def test_type_check(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+
+        # Type check correct because current is valid, number of byzantine nodes = 2
+        vpair_to_test = {"current": 0, "next": 3}
+        self.assertTrue(pred_module.type_check(vpair_to_test))
+
+        # Type check correct because current is valid, number of byzantine nodes = 2
+        vpair_to_test = {"current": pred_module.TEE, "next": 3}
+        self.assertTrue(pred_module.type_check(vpair_to_test))
+
+        # Type check incorrect because next is not valid
+        vpair_to_test = {"current": pred_module.TEE, "next": pred_module.TEE}
+        self.assertFalse(pred_module.type_check(vpair_to_test))
+        
+        # current is valid but next is not
+        vpair_to_test = {"current": 0, "next": pred_module.TEE}
+        self.assertFalse(pred_module.type_check(vpair_to_test))
+
+    def test_establish(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+
+        # Should update to view 1 in "current"
+        pred_module.views = [{"current": 0, "next": 1}]
+        pred_module.establish()
+        self.assertEqual(pred_module.views, [{"current": 1, "next": 1}])
+
+    def test_next_view(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+
+        # Should update to view 1 in "next"
+        pred_module.views = [{"current": 0, "next": 0}]
+        pred_module.next_view()
+        self.assertEqual(pred_module.views,[{"current": 0, "next": 1}])
+
+        # number of byzantine nodes = 2 so "next" should flip to view 0
+        pred_module.views = [{"current": 1, "next": 1}]
+        pred_module.next_view()
+        self.assertEqual(pred_module.views,[{"current": 1, "next": 0}])
+
+
+    def test_reset_v_change(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+        pred_module.vChange = True
+        pred_module.reset_v_change()
+        self.assertFalse(pred_module.vChange)
+
+    # Interface functions
     def test_predicate_can_be_initialized(self):
         resolver = Resolver()
         view_est_mod = ViewEstablishmentModule(resolver)

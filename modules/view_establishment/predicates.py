@@ -25,7 +25,7 @@ class PredicatesAndAction():
 
     def __init__(self, module, resolver, n=2, id=0, f=0):
         """Initializes the module."""
-        self.views = [{} for i in range(n)]
+        self.views = [{"current": None, "next": None} for i in range(n)]
         self.id = id
         self.view_module = module
         self.number_of_byzantine = f
@@ -39,19 +39,32 @@ class PredicatesAndAction():
         Returns true of node k is stale,
         meaning node k is in a phase that is not legit.
         """
-        raise NotImplementedError
+        return (self.view_module.get_phs(node_k) == 0 and not
+                self.legit_phs_zero(self.views[node_k]) or
+                (self.view_module.get_phs(node_k) == 1 and not
+                    self.legit_phs_one(self.views[node_k]))
+                )
 
     def legit_phs_zero(self, vpair):
         """Returns true if it is legit to be in phase 0 with view pair vp."""
-        raise NotImplementedError
+        return ((vpair.get("current") == vpair.get("next") or
+                vpair == self.RST_PAIR) and
+                self.type_check(vpair)
+                )
 
     def legit_phs_one(self, vpair):
         """Returns true if it is legit to be in phase 1 with view pair vp."""
-        raise NotImplementedError
+        return (vpair.get("current") != vpair.get("next") and
+                self.type_check(vpair)
+                )
 
     def type_check(self, vpair):
         """Checks the views in the view pair vp for illegal views (numbers)."""
-        raise NotImplementedError
+        return (vpair.get("next") != self.TEE and
+                (vpair.get("current") == self.TEE or
+                0 <= vpair.get("current") <= (self.number_of_nodes - 1) or
+                0 <= vpair.get("next") <= (self.number_of_nodes - 1))
+                )
 
     def valid(self, msg, node_k):
         """Validates the msg from node k and checks if structure is stale."""
@@ -114,15 +127,19 @@ class PredicatesAndAction():
 
     def establish(self):
         """Update the current view in the view pair to the next view."""
-        raise NotImplementedError
+        self.views[self.id].update(
+            {'current': self.views[self.id].get("next")})
 
     def next_view(self):
         """Updates the next view in the view pair to upcoming view."""
-        raise NotImplementedError
+        self.views[self.id].update({'next':
+                                    (self.views[self.id].get("current") + 1)
+                                    % self.number_of_nodes
+                                    })
 
     def reset_v_change(self):
         """The node is no longer in a view change."""
-        raise NotImplementedError
+        self.vChange = False
 
     # Interface functions
     def need_reset(self):
