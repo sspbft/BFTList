@@ -7,11 +7,14 @@ from modules.enums import ViewEstablishmentEnums
 class PredicatesAndAction():
     """Models the View Establishment predicates and actions."""
 
+    CURRENT = "current"
+    NEXT = "next"
+
     views = []  # views[*] = {"current": *, "next": *}
     vChange = False
     DF_VIEW = 0
     TEE = None
-    RST_PAIR = {"current": TEE, "next": DF_VIEW}  # Default hardwired view Pair
+    RST_PAIR = {CURRENT: TEE, NEXT: DF_VIEW}  # Default hardwired view Pair
     id = 0
     number_of_nodes = 0
     number_of_byzantine = 0
@@ -25,7 +28,7 @@ class PredicatesAndAction():
 
     def __init__(self, module, resolver, n=2, id=0, f=0):
         """Initializes the module."""
-        self.views = [{"current": None, "next": None} for i in range(n)]
+        self.views = [{self.CURRENT: None, self.NEXT: None} for i in range(n)]
         self.id = id
         self.view_module = module
         self.number_of_byzantine = f
@@ -47,23 +50,23 @@ class PredicatesAndAction():
 
     def legit_phs_zero(self, vpair):
         """Returns true if it is legit to be in phase 0 with view pair vp."""
-        return ((vpair.get("current") == vpair.get("next") or
+        return ((vpair.get(self.CURRENT) == vpair.get(self.NEXT) or
                 vpair == self.RST_PAIR) and
                 self.type_check(vpair)
                 )
 
     def legit_phs_one(self, vpair):
         """Returns true if it is legit to be in phase 1 with view pair vp."""
-        return (vpair.get("current") != vpair.get("next") and
+        return (vpair.get(self.CURRENT) != vpair.get(self.NEXT) and
                 self.type_check(vpair)
                 )
 
     def type_check(self, vpair):
         """Checks the views in the view pair vp for illegal views (numbers)."""
-        return (vpair.get("next") != self.TEE and
-                (vpair.get("current") == self.TEE or
-                0 <= vpair.get("current") <= (self.number_of_nodes - 1) or
-                0 <= vpair.get("next") <= (self.number_of_nodes - 1))
+        return (vpair.get(self.NEXT) != self.TEE and
+                (vpair.get(self.CURRENT) == self.TEE or
+                0 <= vpair.get(self.CURRENT) <= (self.number_of_nodes - 1) or
+                0 <= vpair.get(self.NEXT) <= (self.number_of_nodes - 1))
                 )
 
     def valid(self, msg, node_k):
@@ -128,12 +131,12 @@ class PredicatesAndAction():
     def establish(self):
         """Update the current view in the view pair to the next view."""
         self.views[self.id].update(
-            {'current': self.views[self.id].get("next")})
+            {'current': self.views[self.id].get(self.NEXT)})
 
     def next_view(self):
         """Updates the next view in the view pair to upcoming view."""
         self.views[self.id].update({'next':
-                                    (self.views[self.id].get("current") + 1)
+                                    (self.views[self.id].get(self.CURRENT) + 1)
                                     % self.number_of_nodes
                                     })
 
@@ -169,9 +172,9 @@ class PredicatesAndAction():
                 self.view_module.get_phs(self.id) == 0 and
                 self.view_module.witnes_seen()):
             if self.allow_service():
-                return self.views[self.id].get("current")
+                return self.views[self.id].get(self.CURRENT)
             return self.TEE
-        return self.views[node_j].get("current")
+        return self.views[node_j].get(self.CURRENT)
 
     def allow_service(self):
         """Method description.
@@ -182,8 +185,8 @@ class PredicatesAndAction():
         return (len(self.same_v_set(self.id)) >
                 3 * self.number_of_byzantine and
                 self.view_module.get_phs(self.id) == 0 and
-                self.views[self.id].get("current") ==
-                self.views[self.id].get("next"))
+                self.views[self.id].get(self.CURRENT) ==
+                self.views[self.id].get(self.NEXT))
 
     def automation(self, type, phase, case):
         """Perform the action corresponding to the current situation."""
@@ -202,14 +205,14 @@ class PredicatesAndAction():
     def automation_phase_0(self, type, case):
         """Perform the action corresponding to the current case of phase 0."""
         # Predicates
-        if(type == "pred"):
+        if(type == ViewEstablishmentEnums.PREDICATE):
             # True if a view pair is adoptable but is not the view of
             # processor i
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
                     if (self.transit_adopble(processor_id, 0, "Follow") and
-                        self.views[self.id].get("current") !=
-                            view_pair.get("current")):
+                        self.views[self.id].get(self.CURRENT) !=
+                            view_pair.get(self.CURRENT)):
                         self.view_pair_to_adopt = view_pair
                         return True
                 return False
@@ -233,7 +236,7 @@ class PredicatesAndAction():
                 raise ValueError('Not a valid case: {}'.format(case))
 
         # Actions
-        elif(type == "act"):
+        elif(type == ViewEstablishmentEnums.ACTION):
 
             # Adopt the new view
             if(case == 0):
@@ -273,15 +276,15 @@ class PredicatesAndAction():
     def automation_phase_1(self, type, case):
         """Perform the action corresponding to the current case of phase 1."""
         # Predicates
-        if(type == "pred"):
+        if(type == ViewEstablishmentEnums.PREDICATE):
 
             # # True if a view pair is adoptable but is not the view of
             # processor i
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
                     if (self.transit_adopble(processor_id, 1, "Follow") and
-                        self.views[self.id].get("next") !=
-                            view_pair.get("current")):
+                        self.views[self.id].get(self.NEXT) !=
+                            view_pair.get(self.CURRENT)):
                         self.view_pair_to_adopt = view_pair
                         return True
                 return False
@@ -304,7 +307,7 @@ class PredicatesAndAction():
                 raise ValueError('Not a valid case: {}'.format(case))
 
         # Actions
-        elif(type == "act"):
+        elif(type == ViewEstablishmentEnums.ACTION):
 
             # Adopt the new transit view
             if(case == 0):

@@ -16,3 +16,6 @@ class ViewEstablishmentEnums(Enum):
     NO_ACTION = 1
     RESET = 2
     NO_RETURN_VALUE = 3
+
+    PREDICATE = 4
+    ACTION = 5
