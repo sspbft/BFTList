@@ -147,9 +147,9 @@ class PredicatesAndAction():
 
     def get_view(self, node_j):
         """Returns the most recent reported view of node_j."""
-        if (node_j == self.id or
-                (self.view_module.get_phs(self.id) == 0 and
-                    self.view_module.witnes_seen())):
+        if (node_j == self.id and
+                self.view_module.get_phs(self.id) == 0 and
+                self.view_module.witnes_seen()):
             if self.allow_service():
                 return self.views[self.id].get("current")
             return self.TEE
@@ -179,7 +179,7 @@ class PredicatesAndAction():
 
         # Not a valid phase
         else:
-            raise Exception('Not a valid phase: {}'.format(phase))
+            raise ValueError('Not a valid phase: {}'.format(phase))
 
     def automation_phase_0(self, type, case):
         """Perform the action corresponding to the current case of phase 0."""
@@ -212,7 +212,7 @@ class PredicatesAndAction():
 
             # Not a valid case
             else:
-                raise Exception('Not a valid case: {}'.format(case))
+                raise ValueError('Not a valid case: {}'.format(case))
 
         # Actions
         elif(type == "act"):
@@ -226,7 +226,7 @@ class PredicatesAndAction():
                     self.reset_v_change()
                     return "Adopted new view"
                 else:
-                    raise Exception("Not a valid view pair to adopt")
+                    raise ValueError("Not a valid view pair to adopt")
                 # TODO What do return? and to we need a if statement
                 # for view_pair_to_adopt?
 
@@ -244,15 +244,16 @@ class PredicatesAndAction():
 
             # Full reset
             elif(case == 3):
+                self.reset_v_change()
                 return self.reset_all()
 
             # Not a valid case
             else:
-                raise Exception('Not a valid case: {}'.format(case))
+                raise ValueError('Not a valid case: {}'.format(case))
 
         # Not a valid type (act or pred)
         else:
-            raise Exception('Not a valid type: {}'.format(type))
+            raise ValueError('Not a valid type: {}'.format(type))
 
     def automation_phase_1(self, type, case):
         """Perform the action corresponding to the current case of phase 1."""
@@ -285,7 +286,7 @@ class PredicatesAndAction():
 
             # Not a valid case
             else:
-                raise Exception('Not a valid case: {}'.format(case))
+                raise ValueError('Not a valid case: {}'.format(case))
 
         # Actions
         elif(type == "act"):
@@ -298,7 +299,7 @@ class PredicatesAndAction():
                     self.reset_v_change()
                     return "Adopted new view"
                 else:
-                    raise Exception("Not a valid view pair to adopt")
+                    raise ValueError("Not a valid view pair to adopt")
                 # TODO What do return? and to we need a if statement
                 # for view_pair_to_adopt?
 
@@ -325,11 +326,11 @@ class PredicatesAndAction():
 
             # Not a valid case
             else:
-                raise Exception('Not a valid case: {}'.format(case))
+                raise ValueError('Not a valid case: {}'.format(case))
 
         # Not a valid type (act or pred)
         else:
-            raise Exception('Not a valid type: {}'.format(type))
+            raise ValueError('Not a valid type: {}'.format(type))
 
     def auto_max_case(self, phase):
         """Returns the max case for the phase."""

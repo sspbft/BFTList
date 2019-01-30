@@ -62,7 +62,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         # Should give back the TEE (None) by denying service
         view_est_mod.get_phs = MagicMock(return_value = 0)
         pred_module.allow_service = MagicMock(return_value = False)
-        self.assertIsNone(pred_module.get_view(1))
+        self.assertIsNone(pred_module.get_view(0))
 
     def test_interface_allow_service(self):
         resolver = Resolver()
@@ -188,8 +188,10 @@ class TestPredicatesAndAction(unittest.TestCase):
 
         # Case 3 should return "Reset"
         pred_module.reset_all = MagicMock(return_value = "Reset")
+        pred_module.reset_v_change = Mock()
         self.assertEqual(pred_module.automation("act", 0, 3), "Reset")
-        
+        pred_module.reset_v_change.assert_any_call()
+
         
     def test_automaton_phase_1_predicates(self):
         resolver = Resolver()
