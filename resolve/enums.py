@@ -13,4 +13,13 @@ class Module(Enum):
 class Function(Enum):
     """Represents an interface function in a module."""
 
+    # View Establishment Module
     GET_VIEW = 1
+    ALLOW_SERVICE = 2
+
+    # Replication Module
+    REPLICA_FLUSH = 3
+    GET_PEND_REQS = 4
+    REP_REQUEST_RESET = 5
+
+    # Primary Monitoring Module
