@@ -4,9 +4,9 @@ from resolve.resolver import Resolver
 from modules.view_establishment.predicates import PredicatesAndAction
 from modules.view_establishment.module import ViewEstablishmentModule
 from resolve.enums import Function, Module
+from modules.enums import ViewEstablishmentEnums
 
 
-# TODO implement more tests
 class TestPredicatesAndAction(unittest.TestCase):
     
     def test_predicate_can_be_initialized(self):
@@ -38,7 +38,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         view_est_mod.init_module = MagicMock()
         resolver.execute = MagicMock()
 
-        self.assertEqual(pred_module.reset_all(), "Reset")
+        self.assertEqual(pred_module.reset_all(), ViewEstablishmentEnums.RESET)
         # The views has been reset to DEFAULT view pair
         self.assertEqual(pred_module.views, [{"current": None, "next" : 0}])
         # Assert that the init(reset) method at algorithm 1 and algorithm 3 are being called
@@ -169,7 +169,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         pred_module.adopt = Mock()
         pred_module.reset_v_change = Mock()
         pred_module.view_pair_to_adopt = pred_module.RST_PAIR
-        self.assertEqual(pred_module.automation("act", 0, 0), "Adopted new view")
+        self.assertEqual(pred_module.automation("act", 0, 0), ViewEstablishmentEnums.NO_RETURN_VALUE)
         view_est_mod.next_phs.assert_any_call()
         pred_module.reset_v_change.assert_any_call()
         pred_module.adopt.assert_called_once_with(pred_module.RST_PAIR)
@@ -177,19 +177,19 @@ class TestPredicatesAndAction(unittest.TestCase):
         # Case 1 should call next_view and next_phs in view Establishment module
         pred_module.next_view = Mock()
         view_est_mod.next_phs = Mock()
-        self.assertEqual(pred_module.automation("act", 0, 1), "Incremented view")
+        self.assertEqual(pred_module.automation("act", 0, 1), ViewEstablishmentEnums.NO_RETURN_VALUE)
         pred_module.next_view.assert_any_call()
         view_est_mod.next_phs.assert_any_call()
 
         # Case 2 should return "No action" and call reset_v_change
         pred_module.reset_v_change = Mock()
-        self.assertEqual(pred_module.automation("act", 0, 2), "No action")
+        self.assertEqual(pred_module.automation("act", 0, 2), ViewEstablishmentEnums.NO_ACTION)
         pred_module.reset_v_change.assert_any_call()
 
         # Case 3 should return "Reset"
-        pred_module.reset_all = MagicMock(return_value = "Reset")
+        pred_module.reset_all = MagicMock(return_value = ViewEstablishmentEnums.RESET)
         pred_module.reset_v_change = Mock()
-        self.assertEqual(pred_module.automation("act", 0, 3), "Reset")
+        self.assertEqual(pred_module.automation("act", 0, 3), ViewEstablishmentEnums.RESET)
         pred_module.reset_v_change.assert_any_call()
 
         
@@ -237,7 +237,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         pred_module.reset_v_change = Mock()
         pred_module.view_pair_to_adopt = pred_module.RST_PAIR
 
-        self.assertEqual(pred_module.automation("act", 1, 0), "Adopted new view")
+        self.assertEqual(pred_module.automation("act", 1, 0), ViewEstablishmentEnums.NO_RETURN_VALUE)
         pred_module.adopt.assert_called_once_with(pred_module.RST_PAIR)
         pred_module.reset_v_change.assert_any_call()
 
@@ -248,7 +248,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         resolver.execute = Mock()
         pred_module.views[pred_module.id] = pred_module.RST_PAIR
 
-        self.assertEqual(pred_module.automation("act", 1, 1), "Established new view")
+        self.assertEqual(pred_module.automation("act", 1, 1), ViewEstablishmentEnums.NO_RETURN_VALUE)
         view_est_mod.next_phs.assert_any_call()
         pred_module.reset_v_change.assert_any_call()
         pred_module.establish.assert_any_call()
@@ -257,9 +257,9 @@ class TestPredicatesAndAction(unittest.TestCase):
 
         # Case 2 should return "No action" and call reset_v_change
         pred_module.reset_v_change = Mock()
-        self.assertEqual(pred_module.automation("act", 1, 2), "No action")
+        self.assertEqual(pred_module.automation("act", 1, 2), ViewEstablishmentEnums.NO_ACTION)
         pred_module.reset_v_change.assert_any_call()
 
         # Case 3 should return "Reset"
-        pred_module.reset_all = MagicMock(return_value = "Reset")
-        self.assertEqual(pred_module.automation("act", 1, 3), "Reset")
+        pred_module.reset_all = MagicMock(return_value = ViewEstablishmentEnums.RESET)
+        self.assertEqual(pred_module.automation("act", 1, 3), ViewEstablishmentEnums.RESET)

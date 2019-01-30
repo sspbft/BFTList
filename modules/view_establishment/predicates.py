@@ -1,6 +1,7 @@
 """Contains code related to the View Establishment module Algorithm 2."""
 
 from resolve.enums import Function, Module
+from modules.enums import ViewEstablishmentEnums
 
 
 class PredicatesAndAction():
@@ -139,7 +140,7 @@ class PredicatesAndAction():
             module=Module.REPLICATION_MODULE,
             func=Function.REP_REQUEST_RESET
         )
-        return("Reset")
+        return(ViewEstablishmentEnums.RESET)
 
     def view_change(self):
         """A view change is required."""
@@ -224,23 +225,20 @@ class PredicatesAndAction():
                     self.view_pair_to_adopt = None
                     self.view_module.next_phs()
                     self.reset_v_change()
-                    return "Adopted new view"
+                    return ViewEstablishmentEnums.NO_RETURN_VALUE
                 else:
                     raise ValueError("Not a valid view pair to adopt")
-                # TODO What do return? and to we need a if statement
-                # for view_pair_to_adopt?
 
             # Increment view (next view)
             elif(case == 1):
                 self.next_view()
                 self.view_module.next_phs()
-                return "Incremented view"
-                # TODO What do return?
+                return ViewEstablishmentEnums.NO_RETURN_VALUE
 
             # No action and reset the v_change-variable
             elif(case == 2):
                 self.reset_v_change()
-                return "No action"
+                return ViewEstablishmentEnums.NO_ACTION
 
             # Full reset
             elif(case == 3):
@@ -297,11 +295,9 @@ class PredicatesAndAction():
                     self.adopt(self.view_pair_to_adopt)
                     self.view_pair_to_adopt = None
                     self.reset_v_change()
-                    return "Adopted new view"
+                    return ViewEstablishmentEnums.NO_RETURN_VALUE
                 else:
                     raise ValueError("Not a valid view pair to adopt")
-                # TODO What do return? and to we need a if statement
-                # for view_pair_to_adopt?
 
             # Apply changes to view: establish the new view
             elif(case == 1):
@@ -313,12 +309,12 @@ class PredicatesAndAction():
                 self.establish()
                 self.reset_v_change()
                 self.view_module.next_phs()
-                return "Established new view"
+                return ViewEstablishmentEnums.NO_RETURN_VALUE
 
             # Return no action
             elif(case == 2):
                 self.reset_v_change()
-                return "No action"
+                return ViewEstablishmentEnums.NO_ACTION
 
             # Reset all
             elif(case == 3):
