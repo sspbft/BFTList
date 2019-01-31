@@ -25,6 +25,10 @@ class Sender():
         self.tcp_socket = None
         self.loop = asyncio.get_event_loop()
 
+    def log(self, msg):
+        """Temporary logging method."""
+        print(f"Node {os.getenv('ID')}.Sender: {msg}")
+
     async def receive(self, token):
         """Waits for data over TCP for self.timeout seconds."""
         while True:
@@ -37,7 +41,7 @@ class Sender():
             except Exception:
                 msg = token  # resend token, will add payload here too
                 await self.tcp_send(msg)
-                print("TIMEOUT: no response within {}s".format(self.timeout))
+                self.log(f"TIMEOUT: no response within {self.timeous} s")
         return (sender, msg_type, msg_cntr, msg_data)
 
     async def start(self):
@@ -49,12 +53,14 @@ class Sender():
         while True:
             token = struct.pack("iii", self.ch_type, counter, self.id)
             sender, msg_type, msg_cntr, msg_data = await self.receive(token)
-            print("Token arrival: cntr is {}".format(msg_cntr))
+            self.log(f"Got back token {msg_cntr} from node {sender}")
 
             if(msg_cntr >= counter):
                 counter = (msg_cntr + 1) % self.cap
                 token = struct.pack("iii", self.ch_type, counter, self.id)
                 msg = token  # msg = token + payload if payload is needed
+                self.log(f"Incrementing counter to {counter} and sending to\
+                    node {self.addr}")
                 await self.tcp_send(msg)
                 await asyncio.sleep(1)
 
@@ -62,16 +68,14 @@ class Sender():
         """Creates a new TCP socket and waits until there is a connection."""
         if self.tcp_socket:
             self.tcp_socket.close()
-        self.tcp_socket = socket.socket()
-        self.tcp_socket.setblocking(False)
         while True:
+            self.tcp_socket = socket.socket()
+            self.tcp_socket.setblocking(False)
             try:
                 await self.loop.sock_connect(self.tcp_socket,
                                              (self.ip, self.port))
             except OSError as e:
-                print("Node {}: Exception: {}".format(str(self.id), str(e)))
-                print("Node {}: Trying to connect to ({}, {})".format(
-                      str(self.id), self.ip, self.port))
+                self.log(f"Exception: {e} when connecting to {self.addr}")
                 await asyncio.sleep(1)
             else:
                 break

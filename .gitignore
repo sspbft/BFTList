@@ -6,3 +6,4 @@ include
 .Python
 .vscode
 .pytest_cache
+env
