@@ -5,11 +5,11 @@ import conf.config as config
 from communication import send, recv
 from threading import Thread
 from api.server import start_server
-from resolve.resolver import Resolver
 from modules.view_establishment.module import ViewEstablishmentModule
 from modules.replication.module import ReplicationModule
 from modules.primary_monitoring.module import PrimaryMonitoringModule
 from resolve.enums import Module
+from prometheus_client import start_http_server
 
 
 def start_api(resolver):
@@ -39,26 +39,41 @@ def start_modules(resolver):
 def setup_communication():
     """Sets up the communication using asyncio event loop."""
     loop = asyncio.get_event_loop()
-
     nodes = config.get_nodes()
     id = int(os.getenv("ID", 0))
-    _self = list(filter(lambda n: n.id == id, nodes))[0]
 
-    # setup communication channel with all other nodes
-    for node in config.get_nodes():
-        if id == 0 and node.id == 1:
+    # setup sender channel to other nodes
+    for _, node in nodes.items():
+        if id != node.id:
             sender = send.Sender(ip=node.ip, port=node.port)
             loop.create_task(sender.start())
 
-    receiver = recv.Receiver(_self.port, _self.ip)
+    # setup receiver channel from other nodes
+    receiver = recv.Receiver(nodes[id].ip, nodes[id].port)
     loop.create_task(receiver.tcp_listen())
 
     loop.run_forever()
     loop.close()
 
 
+def setup_metrics():
+    """Starts metrics server for Prometheus scraper on port 600{ID}."""
+    id = int(os.getenv("ID", 0))
+    port = 6000 + id
+    start_http_server(port)
+    print("Node {}: Running on {}".format(id, port))
+
+
+def setup_logging():
+    """Sets up logging for BFTList. TODO implement"""
+    return
+
+
 if __name__ == "__main__":
-    resolver = Resolver()
+    setup_logging()
+    setup_metrics()
+    setup_communication()
+
+    # resolver = Resolver()
     # start_api(resolver=resolver)
     # start_modules(resolver=resolver)
-    setup_communication()
