@@ -9,6 +9,8 @@ class PredicatesAndAction():
 
     CURRENT = "current"
     NEXT = "next"
+    FOLLOW = "follow"
+    REMAIN = "remain"
 
     views = []  # views[*] = {"current": *, "next": *}
     vChange = False
@@ -80,15 +82,25 @@ class PredicatesAndAction():
         (and phase if passed)
         and if node j is not stale.
         """
-        raise NotImplementedError
+        processor_set = set()
+        for processor_id, view_pair in enumerate(self.views):
+            if(self.view_module.get_phs(processor_id) == phase and
+                view_pair == self.views[node_j] and not
+                    self.stale_v(processor_id)):
+                        processor_set.add(processor_id)
+        return processor_set
 
     def transit_adopble(self, node_j, phase, mode):
-        """Methoid description.
+        """Method description.
 
         Checks if 3f+1 processors have reported to remain in
         or transiting to the phase.
         """
-        raise NotImplementedError
+        return(len(
+            self.same_v_set(node_j, self.view_module.get_phs(node_j))
+            .union(self.transit_set(node_j, phase, mode))) >=
+            (3 * self.number_of_byzantine + 1)
+        )
 
     def transit_set(self, node_j, phase, mode):
         """Method description.
@@ -100,7 +112,13 @@ class PredicatesAndAction():
         - Returns the set of nodes that will support
         to follow to a new view or to a view change.
         """
-        raise NotImplementedError
+        processor_set = set()
+        for processor_id, view_pair in enumerate(self.views):
+            if(self.view_module.get_phs(processor_id) != phase and
+                self.transition_cases(node_j, view_pair, phase, mode) and not
+                    self.stale_v(processor_id)):
+                        processor_set.add(processor_id)
+        return processor_set
 
     def transition_cases(self, node_j, vpair, phase, mode):
         """Method description.
@@ -114,19 +132,45 @@ class PredicatesAndAction():
         mode = "FOLLOW, phase = 1
         - Returns true if vpair.current is the same as the next view of node j
         """
-        raise NotImplementedError
+        if(mode == self.REMAIN):
+            return(
+                vpair.get(self.NEXT) == self.views[node_j].get(self.CURRENT)
+            )
+        elif(mode == self.FOLLOW):
+            if(phase == 0):
+                return(
+                    vpair.get(self.NEXT) ==
+                    ((self.views[node_j].get(self.CURRENT) + 1) %
+                        self.number_of_nodes)
+                )
+            elif(phase == 1):
+                return(
+                    vpair.get(self.CURRENT) ==
+                    self.views[node_j].get(self.NEXT)
+                )
+            else:
+                raise ValueError('Not a valid phase: {}'.format(phase))
+        else:
+            raise ValueError('Not a valid mode: {}'.format(mode))
 
     def adopt(self, vpair):
         """Assign the current view pair as vpair."""
-        raise NotImplementedError
+        self.views[self.id].update({self.NEXT: vpair.get(self.CURRENT)})
 
+    # In the code, sometimes view of self.id is used as input and sometimes
+    # not. I choose to remove it because it always uses the current
+    # processors view as input to transit_set.
     def establishable(self, phase, mode):
         """Method description.
 
         Checks if 4f+1 nodes are willing to move to a view change (phase 0)
         or to a new view (phase 1).
         """
-        raise NotImplementedError
+        return (len(self.same_v_set(
+                    self.views[self.id], self.view_module.get_phs(self.id))) +
+                len(self.transit_set(self.id, phase, mode)) >=
+                (4 * self.number_of_byzantine + 1)
+                )
 
     def establish(self):
         """Update the current view in the view pair to the next view."""
@@ -210,7 +254,7 @@ class PredicatesAndAction():
             # processor i
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
-                    if (self.transit_adopble(processor_id, 0, "Follow") and
+                    if (self.transit_adopble(processor_id, 0, self.FOLLOW) and
                         self.views[self.id].get(self.CURRENT) !=
                             view_pair.get(self.CURRENT)):
                         self.view_pair_to_adopt = view_pair
@@ -219,11 +263,11 @@ class PredicatesAndAction():
 
             # True if a view change was instructed by Primary Monitoring
             elif(case == 1):
-                return (self.vChange and self.establishable(0, "Follow"))
+                return (self.vChange and self.establishable(0, self.FOLLOW))
 
             # Monitoring/Waiting for more processors acknowledgement
             elif(case == 2):
-                return (self.transit_adopble(self.id, 0, "Remain") or
+                return (self.transit_adopble(self.id, 0, self.REMAIN) or
                         self.views[self.id] == self.RST_PAIR)
 
             # True if there is no adoptable view (predicates for other cases
@@ -282,7 +326,7 @@ class PredicatesAndAction():
             # processor i
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
-                    if (self.transit_adopble(processor_id, 1, "Follow") and
+                    if (self.transit_adopble(processor_id, 1, self.FOLLOW) and
                         self.views[self.id].get(self.NEXT) !=
                             view_pair.get(self.CURRENT)):
                         self.view_pair_to_adopt = view_pair
@@ -291,11 +335,11 @@ class PredicatesAndAction():
 
             # True if the view intended to be install is establishable
             elif(case == 1):
-                return self.establishable(1, "Follow")
+                return self.establishable(1, self.FOLLOW)
 
             # Monitoring/Waiting for more processors acknowledgement
             elif(case == 2):
-                return self.transit_adopble(self.id, 1, "Remain")
+                return self.transit_adopble(self.id, 1, self.REMAIN)
 
             # True if there is no adoptable view (predicates for other cases
             # are false)
