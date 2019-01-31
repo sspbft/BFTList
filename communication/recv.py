@@ -27,14 +27,16 @@ class Receiver():
         self.tcp_socket.bind((ip, int(port)))
         self.tcp_socket.listen()
 
+    def log(self, msg):
+        """Temporary logging method."""
+        print(f"Node {os.getenv('ID')}.Receiver: {msg}")
+
     async def tcp_listen(self):
         """Wait for tcp connections to arrive."""
-        print("Node {}: listening for tcp connections on {}:{}".
-              format(str(self.id), self.ip, self.port))
+        self.log(f"Listening for TCP connections on {self.ip}:{self.port}")
         while True:
             conn, addr = await self.loop.sock_accept(self.tcp_socket)
-            print("Node {}: {} got tcp connection from {}".
-                  format(str(self.id), self.port, addr))
+            self.log(f"Got TCP connection from {addr}")
             asyncio.ensure_future(self.tcp_response(conn))
 
     async def tcp_response(self, conn):
@@ -64,32 +66,23 @@ class Receiver():
                 conn.close()
                 return
         conn.close()
-        if __debug__:
-            print("Connection closed")
+        self.log("Connection closed")
 
     async def check_msg(self, res):
         """Determine message type and create response message accordingly."""
         token = res[:self.token_size]
-        payload = res[self.token_size:]
+        # payload = res[self.token_size:]
         msg_type, msg_cntr, sender = struct.unpack("iii", token)
 
         if(sender not in self.tokens.keys()):
-            print("Adding new token")
+            self.log(f"Received token from new sender with id {sender}")
             self.tokens[sender] = 0
 
         if(self.tokens[sender] != msg_cntr):
+            self.log(f"Got incremented token {msg_cntr} from node {sender}")
             self.tokens[sender] = msg_cntr
-            token = struct.pack("iii", msg_type, self.tokens[sender], self.id)
-            if(msg_type == 0):
-                if payload:
-                    response = token
-                else:
-                    response = token
-            elif(msg_type == 1):
-                raise NotImplementedError
         else:
-            print("NO TOKEN ARRIVAL")
-            token = struct.pack("iii", msg_type, self.tokens[sender], self.id)
-            response = token
+            self.log(f"Received same token {msg_cntr} from {sender}")
 
-        return response
+        token = struct.pack("iii", msg_type, self.tokens[sender], self.id)
+        return token
