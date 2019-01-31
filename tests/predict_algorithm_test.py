@@ -69,7 +69,6 @@ class TestPredicatesAndAction(unittest.TestCase):
         pred_module.type_check = MagicMock(return_value = False)
         self.assertFalse(pred_module.legit_phs_one(vpair_to_test))
 
-
     def test_type_check(self):
         resolver = Resolver()
         view_est_mod = ViewEstablishmentModule(resolver)
@@ -90,6 +89,126 @@ class TestPredicatesAndAction(unittest.TestCase):
         # current is valid but next is not
         vpair_to_test = {pred_module.CURRENT: 0, pred_module.NEXT: pred_module.TEE}
         self.assertFalse(pred_module.type_check(vpair_to_test))
+
+    def test_same_v_set(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+
+        # Both processors are in the same view and phase
+        view_est_mod.get_phs = MagicMock(return_value = 0)
+        pred_module.stale_v = MagicMock(return_value = False)
+        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT: 0}, {pred_module.CURRENT: 0, pred_module.NEXT: 0}]
+        self.assertEqual(pred_module.same_v_set(0, 0), {0, 1})
+
+        # Processor 1 is not in the same view and but same phase
+        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT: 0}, {pred_module.CURRENT: 0, pred_module.NEXT: 1}]
+        self.assertEqual(pred_module.same_v_set(0, 0), {0})
+        
+        # Processor 1 is in the same view and but not in same phase
+        view_est_mod.get_phs = MagicMock(side_effect=lambda x: x) # Returns the input value (works for this specific case)
+        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT: 0}, {pred_module.CURRENT: 0, pred_module.NEXT: 0}]
+        self.assertEqual(pred_module.same_v_set(0, 0), {0})
+
+        # Processors are stale, should return empty set
+        view_est_mod.get_phs = MagicMock(return_value = 0)
+        pred_module.stale_v = MagicMock(return_value = True)
+        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT: 0}, {pred_module.CURRENT: 0, pred_module.NEXT: 0}]
+        self.assertEqual(pred_module.same_v_set(0, 0), set())
+
+    def test_transit_set(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+
+        # All is well
+        view_est_mod.get_phs = MagicMock(return_value = 0)
+        pred_module.stale_v = MagicMock(return_value = False)
+        pred_module.transition_cases = MagicMock(return_value = True)
+        self.assertEqual(pred_module.transit_set(0, 1, pred_module.FOLLOW), {0,1})
+
+        # Different phases, node 0 in phase 1 and node 1 in phase 0
+        view_est_mod.get_phs = MagicMock(side_effect=lambda x: (x+1) % 2)
+        self.assertEqual(pred_module.transit_set(0, 1, pred_module.FOLLOW), {1})
+
+        # Transition case returns false
+        view_est_mod.get_phs = MagicMock(return_value = 0)
+        pred_module.transition_cases = MagicMock(return_value = False)
+        self.assertEqual(pred_module.transit_set(0, 1, pred_module.FOLLOW), set())
+
+        # Both processors are stale
+        pred_module.stale_v = MagicMock(return_value = True)
+        pred_module.transition_cases = MagicMock(return_value = True)
+        self.assertEqual(pred_module.transit_set(0, 1, pred_module.FOLLOW), set())
+
+    def test_transit_adopble(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+
+        view_est_mod.get_phs = MagicMock(return_value = 0)
+        pred_module.number_of_byzantine = 1
+        # Mocks sets which union does not add up to 4, should return false
+        pred_module.transit_set = MagicMock(return_value = {1})
+        pred_module.same_v_set = MagicMock(return_value = {1,2,3})
+        self.assertFalse(pred_module.transit_adopble(0, 0, pred_module.FOLLOW))
+
+        # Mocks sets which union adds up to 4, should return true
+        pred_module.same_v_set = MagicMock(return_value = {2,3,4})
+        self.assertTrue(pred_module.transit_adopble(0, 0, pred_module.REMAIN))
+
+    def test_transition_cases(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+        view_pair_to_test = {pred_module.CURRENT: 0, pred_module.NEXT: 1}
+        
+        # Mode REMAIN both phases, one 
+        pred_module.views[pred_module.id].update({pred_module.CURRENT: 1, pred_module.NEXT: 1})
+        self.assertTrue(pred_module.transition_cases(0, view_pair_to_test, 0, pred_module.REMAIN))
+        pred_module.views[pred_module.id].update({pred_module.CURRENT: 0, pred_module.NEXT: 0})
+        self.assertFalse(pred_module.transition_cases(0, view_pair_to_test, 1, pred_module.REMAIN))
+
+        # Mode FOLLOW, phase 0 should return true
+        self.assertTrue(pred_module.transition_cases(0, view_pair_to_test, 0, pred_module.FOLLOW))
+        # Mode FOLLOW, phase 0 should return false
+        pred_module.views[pred_module.id].update({pred_module.CURRENT: 1, pred_module.NEXT: 1})
+        self.assertFalse(pred_module.transition_cases(0, view_pair_to_test, 0, pred_module.FOLLOW))
+
+        # Mode FOLLOW, phase 1 should return false
+        self.assertFalse(pred_module.transition_cases(0, view_pair_to_test, 1, pred_module.FOLLOW))
+        
+        # Mode FOLLOW, phase 1 should return true
+        pred_module.views[pred_module.id].update({pred_module.CURRENT: 0, pred_module.NEXT: 0})
+        self.assertTrue(pred_module.transition_cases(0, view_pair_to_test, 1, pred_module.FOLLOW))
+
+
+    def test_adopt(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+
+        # Default pred_module.views = {self.CURRENT: None, self.NEXT: None}
+        vpair_to_test = {pred_module.CURRENT: 1, pred_module.NEXT: 1}
+        pred_module.adopt(vpair_to_test)
+        self.assertEqual(pred_module.views[pred_module.id],{pred_module.CURRENT: None, pred_module.NEXT: 1})
+
+    def test_establishable(self):
+        resolver = Resolver()
+        view_est_mod = ViewEstablishmentModule(resolver)
+        pred_module = PredicatesAndAction(view_est_mod, resolver)
+
+        # Mocks sets that does not add up to , should return false
+        view_est_mod.get_phs = MagicMock(return_value = 0)
+        pred_module.transit_set = MagicMock(return_value = set())
+        pred_module.same_v_set = MagicMock(return_value = set())
+        self.assertFalse(pred_module.establishable(0, pred_module.FOLLOW))
+        
+        # Mocks sets that adds up to over 1 , should return true
+        pred_module.transit_set = MagicMock(return_value = {1})
+        pred_module.same_v_set= MagicMock(return_value = {1})
+        self.assertTrue(pred_module.establishable(0, pred_module.REMAIN))
+        
 
     def test_establish(self):
         resolver = Resolver()
