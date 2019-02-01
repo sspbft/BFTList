@@ -7,4 +7,8 @@ include
 .vscode
 .pytest_cache
 env
+<<<<<<< HEAD
+conf/hosts.txt
+=======
 client/start
+>>>>>>> master

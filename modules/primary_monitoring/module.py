@@ -1,14 +1,15 @@
 """Contains code related to the Primary Monitoring module."""
 
 import time
+from modules.algorithm_module import AlgorithmModule
 # from resolve.enums import Function, Module
 # from modules.enums import PrimaryMonitoringEnums
 
 
-class PrimaryMonitoringModule:
-    """Models the Primary Monitoring moduel - View Change algorithm."""
+class PrimaryMonitoringModule(AlgorithmModule):
+    """Models the Primary Monitoring module - View Change algorithm."""
 
-    def __init__(self, resolver):
+    def __init__(self, id, resolver):
         """Initializes the module."""
         self.resolver = resolver
 

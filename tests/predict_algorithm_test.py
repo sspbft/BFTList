@@ -12,7 +12,7 @@ class TestPredicatesAndAction(unittest.TestCase):
     # Macros
     def test_stale_v(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
 
         # Stale and in phase 0
@@ -29,7 +29,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_legit_phs_zero(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         pred_module.type_check = MagicMock(return_value = True)
         vpair_to_test = {pred_module.CURRENT: 1, pred_module.NEXT: 1}
@@ -52,7 +52,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_legit_phs_one(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         pred_module.type_check = MagicMock(return_value = True)
         vpair_to_test = {pred_module.CURRENT: 1, pred_module.NEXT: 2}
@@ -71,7 +71,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_type_check(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
 
         # Type check correct because current is valid, number of byzantine nodes = 2
@@ -92,7 +92,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_same_v_set(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
 
         # Both processors are in the same view and phase
@@ -118,7 +118,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_transit_set(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
 
         # All is well
@@ -143,7 +143,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_transit_adopble(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
 
         view_est_mod.get_phs = MagicMock(return_value = 0)
@@ -159,7 +159,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_transition_cases(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         view_pair_to_test = {pred_module.CURRENT: 0, pred_module.NEXT: 1}
         
@@ -185,7 +185,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_adopt(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
 
         # Default pred_module.views = {self.CURRENT: None, self.NEXT: None}
@@ -195,7 +195,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_establishable(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
 
         # Mocks sets that does not add up to , should return false
@@ -212,7 +212,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_establish(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
 
         # Should update to view 1 in current
@@ -222,7 +222,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_next_view(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
 
         # Should update to view 1 in next
@@ -238,7 +238,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_reset_v_change(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         pred_module.vChange = True
         pred_module.reset_v_change()
@@ -247,13 +247,13 @@ class TestPredicatesAndAction(unittest.TestCase):
     # Interface functions
     def test_predicate_can_be_initialized(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         self.assertIsNotNone(pred_module)
 
     def test_need_reset(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         
         pred_module.stale_v = MagicMock(return_value = True)
@@ -269,7 +269,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_reset_all(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver, 1)
         view_est_mod.init_module = MagicMock()
         resolver.execute = MagicMock()
@@ -284,7 +284,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_interface_get_view(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 0}, {pred_module.CURRENT: 1, pred_module.NEXT : 1}]
         view_est_mod.get_phs = MagicMock(return_value = 1)
@@ -302,7 +302,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_interface_allow_service(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         # Allow service settings
         view_est_mod.get_phs = MagicMock(return_value = 0)
@@ -322,7 +322,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_interface_view_change(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         # Should change vChange to true
         pred_module.view_change()
@@ -330,7 +330,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_auto_max_case(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         # Should return the max case for each of the phases
         self.assertEqual(pred_module.auto_max_case(0), 3)
@@ -338,7 +338,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_get_info(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 0}, {pred_module.CURRENT: 1, pred_module.NEXT : 1}]
         # Should return node 1's view
@@ -346,7 +346,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_set_info(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 0}, {pred_module.CURRENT: 0, pred_module.NEXT : 0}]
         # Should change the view pair of node 1 
@@ -355,7 +355,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_automaton_phase_0_predicates(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         
         # Case 0
@@ -397,7 +397,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_automaton_phase_0_actions(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
 
         # Case 0 should call adopt and next_view in view Establishment module
@@ -431,7 +431,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         
     def test_automaton_phase_1_predicates(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
         
         # Case 0
@@ -465,7 +465,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_automaton_phase_1_actions(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
 
         # Case 0 should call adopt and next_view in view Establishment module

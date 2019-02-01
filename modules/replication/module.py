@@ -7,7 +7,7 @@ from modules.algorithm_module import AlgorithmModule
 class ReplicationModule(AlgorithmModule):
     """Models the Replication module."""
 
-    def __init__(self, resolver):
+    def __init__(self, id, resolver):
         """Initializes the module."""
         self.resolver = resolver
 

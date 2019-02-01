@@ -4,6 +4,7 @@ import io
 import os
 import socket
 import struct
+from queue import Queue
 
 
 class Sender():
@@ -19,6 +20,7 @@ class Sender():
         self.chunks_size = chunks_size
         self.token_size = struct.calcsize("iii")
         self.id = int(os.getenv("ID"))
+        self.msg_queue = Queue()
 
         self.ch_type = ch_type
         self.cap = 2**31
@@ -44,6 +46,20 @@ class Sender():
                 self.log(f"TIMEOUT: no response within {self.timeous} s")
         return (sender, msg_type, msg_cntr, msg_data)
 
+    def add_msg_to_queue(self, msg):
+        """Adds the message to the FIFO queue for this sender channel."""
+        self.msg_queue.put(msg)
+
+    async def get_msg_from_queue(self):
+        """Gets the next message from the queue.
+
+        Will block if there is no message to be sent.
+        """
+        while self.msg_queue.empty():
+            continue
+        msg = self.msg_queue.get()
+        return msg
+
     async def start(self):
         """Main loop for the sender channel."""
         counter = 1
@@ -58,11 +74,13 @@ class Sender():
             if(msg_cntr >= counter):
                 counter = (msg_cntr + 1) % self.cap
                 token = struct.pack("iii", self.ch_type, counter, self.id)
-                msg = token  # msg = token + payload if payload is needed
+                payload = await self.get_msg_from_queue()
+                msg = token + payload
                 self.log(f"Incrementing counter to {counter} and sending to\
                     node {self.addr}")
                 await self.tcp_send(msg)
-                await asyncio.sleep(1)
+                self.msg_queue.task_done()
+                # await asyncio.sleep(1)
 
     async def tcp_connect(self):
         """Creates a new TCP socket and waits until there is a connection."""

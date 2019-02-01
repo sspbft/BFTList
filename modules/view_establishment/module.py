@@ -24,7 +24,7 @@ class ViewEstablishmentModule(AlgorithmModule):
     id = 0
     run_forever = True
 
-    def __init__(self, resolver, id=0, n=2, byz=0):
+    def __init__(self, id, resolver=None, n=2, byz=0):
         """Initializes the module."""
         self.resolver = resolver
         self.phs = [0 for i in range(n)]
