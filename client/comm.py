@@ -12,7 +12,7 @@ def build_payload(op, val):
     return dict(operation=op, value=val)
 
 
-def send_to_node_node(node, payload):
+def send_to_node(node, payload):
     """
     Sends the given payload as a POST request to a Node.
 
@@ -43,7 +43,7 @@ def broadcast(payload):
     nodes = get_nodes()
     threads = []
     for _, node in nodes.items():
-        t = Thread(target=send_to_node_node, args=(node, payload))
+        t = Thread(target=send_to_node, args=(node, payload))
         t.start()
         threads.append(t)
     for t in threads:

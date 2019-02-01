@@ -5,6 +5,7 @@ import os
 import socket
 import struct
 from queue import Queue
+from metrics.messages import msgs_sent
 
 
 class Sender():
@@ -108,6 +109,7 @@ class Sender():
         while stream:
             stream = response_stream.read(self.chunks_size)
             await self.loop.sock_sendall(self.tcp_socket, stream)
+        msgs_sent.labels(self.id).inc()
 
     async def tcp_recv(self):
         """Read a stream of tcp messages until the server closes the socket."""
