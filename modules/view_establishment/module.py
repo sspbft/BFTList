@@ -209,3 +209,4 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.phs[j] = j_own_data[0]
         self.witnesses[j] = j_own_data[1]
         self.pred_and_action.set_info(j_own_data[2], j)
+        self.log_state("POST_MSG_RECV")

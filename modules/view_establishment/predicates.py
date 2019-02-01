@@ -192,7 +192,6 @@ class PredicatesAndAction():
 
     def reset_all(self):
         """Reset all modules."""
-        print("Reset_all()")
         self.views = [self.RST_PAIR for i in range(self.number_of_nodes)]
         self.view_module.init_module()
         self.resolver.execute(
