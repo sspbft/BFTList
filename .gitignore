@@ -7,3 +7,4 @@ include
 .vscode
 .pytest_cache
 env
+client/start
