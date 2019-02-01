@@ -22,6 +22,7 @@ class ViewEstablishmentModule(AlgorithmModule):
     number_of_nodes = 0
     number_of_byzantine = 0
     id = 0
+    run_forever = True
 
     def __init__(self, resolver, id=0, n=2, byz=0):
         """Initializes the module."""
@@ -39,35 +40,41 @@ class ViewEstablishmentModule(AlgorithmModule):
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
-        # while True:
-        if(self.pred_and_action.need_reset()):
-            self.pred_and_action.reset_all()
-        self.witnesses[self.id] = self.noticed_recent_value()
-        self.witnesses_set = self.witnesses_set.union(self.get_witnesses())
-        if (self.witnes_seen()):
-            case = 0
-            # Find the current case by testing the predicates and
-            # moving to next case if not fulfilled
-            while (self.pred_and_action.auto_max_case(
-                self.phs[self.id]) >= case and not
-                (self.pred_and_action.automation(
-                    ViewEstablishmentEnums.PREDICATE, self.phs[self.id], case))
-            ):
-                case += 1
-            # Onces a predicates is fulfilled, perfom action if valid case
-            if(self.pred_and_action.auto_max_case(self.phs[self.id]) >=
-                    case):
-                ret = self.pred_and_action.automation(
-                    ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
-                # Move to next phase if the return value is not a
-                # no_action or reset
-                if (ret != ViewEstablishmentEnums.NO_ACTION and
-                        ret != ViewEstablishmentEnums.RESET):
-                    self.next_phs()
+        while True:
+            if(self.pred_and_action.need_reset()):
+                self.pred_and_action.reset_all()
+            self.witnesses[self.id] = self.noticed_recent_value()
+            self.witnesses_set = self.witnesses_set.union(self.get_witnesses())
+            if (self.witnes_seen()):
+                case = 0
+                # Find the current case by testing the predicates and
+                # moving to next case if not fulfilled
+                while (self.pred_and_action.auto_max_case(
+                    self.phs[self.id]) >= case and not
+                    (self.pred_and_action.automation(
+                        ViewEstablishmentEnums.PREDICATE,
+                        self.phs[self.id],
+                        case))
+                ):
+                    case += 1
+                # Onces a predicates is fulfilled, perfom action if valid case
+                if(self.pred_and_action.auto_max_case(self.phs[self.id]) >=
+                        case):
+                    ret = self.pred_and_action.automation(
+                        ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
+                    # Move to next phase if the return value is not a
+                    # no_action or reset
+                    if (ret != ViewEstablishmentEnums.NO_ACTION and
+                            ret != ViewEstablishmentEnums.RESET):
+                        self.next_phs()
 
-        # Send message to all other processors
-        for processor_id in range(self.number_of_nodes):
-            self.send_msg(processor_id)
+            # Send message to all other processors
+            for processor_id in range(self.number_of_nodes):
+                self.send_msg(processor_id)
+
+            # Stoping the while loop, used for testing purpose
+            if(not self.run_forever):
+                break
 
     # Macros
     def echo_no_witn(self, processor_k):

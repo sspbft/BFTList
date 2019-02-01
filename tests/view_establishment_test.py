@@ -14,6 +14,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
     def test_while_true_case_1_is_true_and_return_is_an_action(self):
         resolver = Resolver()
         view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod.run_forever = False
 
         # (1)Predicates and action reset all should be called
         view_est_mod.pred_and_action.need_reset = MagicMock(return_value = True)
@@ -68,6 +69,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
     def test_while_true_case_1_is_true_and_return_is_no_action(self):
         resolver = Resolver()
         view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod.run_forever = False
 
         # (1)Predicates and action reset all should be called
         view_est_mod.pred_and_action.need_reset = MagicMock(return_value = True)
@@ -108,6 +110,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
     def test_while_true_no_case_is_true(self):
         resolver = Resolver()
         view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod.run_forever = False
 
         # (1)Predicates and action reset all should not be called
         view_est_mod.pred_and_action.need_reset = MagicMock(return_value = False)
