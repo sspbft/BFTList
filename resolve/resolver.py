@@ -18,7 +18,8 @@ class Resolver:
         try:
             self.nodes = get_nodes()
         except FileNotFoundError:
-            print("Warning: Could not find hosts file")
+            pass
+            # print("Warning: Could not find hosts file")
 
     def set_modules(self, modules):
         """Sets the modules dict of the resolver."""

@@ -2,8 +2,8 @@
 
 from modules.algorithm_module import AlgorithmModule
 from modules.view_establishment.predicates import PredicatesAndAction
-from resolve.enums import MessageType
-import time
+from modules.enums import ViewEstablishmentEnums
+from itertools import compress
 
 
 class ViewEstablishmentModule(AlgorithmModule):
@@ -22,6 +22,7 @@ class ViewEstablishmentModule(AlgorithmModule):
     number_of_nodes = 0
     number_of_byzantine = 0
     id = 0
+    run_forever = True
 
     def __init__(self, id, resolver=None, n=2, byz=0):
         """Initializes the module."""
@@ -39,17 +40,41 @@ class ViewEstablishmentModule(AlgorithmModule):
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
-        cntr = 0
         while True:
-            msg = dict(cntr=cntr, msg_type=MessageType.DUMMY_TYPE,
-                       body=f"Msg from {self.id}", sender=self.id)
-            self.resolver.broadcast(msg)
-            time.sleep(1)
-            cntr += 1
+            if(self.pred_and_action.need_reset()):
+                self.pred_and_action.reset_all()
+            self.witnesses[self.id] = self.noticed_recent_value()
+            self.witnesses_set = self.witnesses_set.union(self.get_witnesses())
+            if (self.witnes_seen()):
+                case = 0
+                # Find the current case by testing the predicates and
+                # moving to next case if not fulfilled
+                while (self.pred_and_action.auto_max_case(
+                    self.phs[self.id]) >= case and not
+                    (self.pred_and_action.automation(
+                        ViewEstablishmentEnums.PREDICATE,
+                        self.phs[self.id],
+                        case))
+                ):
+                    case += 1
+                # Onces a predicates is fulfilled, perfom action if valid case
+                if(self.pred_and_action.auto_max_case(self.phs[self.id]) >=
+                        case):
+                    ret = self.pred_and_action.automation(
+                        ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
+                    # Move to next phase if the return value is not a
+                    # no_action or reset
+                    if (ret != ViewEstablishmentEnums.NO_ACTION and
+                            ret != ViewEstablishmentEnums.RESET):
+                        self.next_phs()
 
-    def on_dummy_msg(self, msg):
-        """Dummy handler for dummy messages."""
-        print(f"Node {self.id}: Got dummy msg {msg} from node {msg['sender']}")
+            # Send message to all other processors
+            for processor_id in range(self.number_of_nodes):
+                self.send_msg(processor_id)
+
+            # Stoping the while loop, used for testing purpose
+            if(not self.run_forever):
+                break
 
     # Macros
     def echo_no_witn(self, processor_k):
@@ -91,6 +116,31 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.phs = [0 for i in range(self.number_of_nodes)]
         self.witnesses = [False for i in range(self.number_of_nodes)]
         self.witnesses_set = set()
+
+    # Help methods for the while true loop
+
+    def noticed_recent_value(self):
+        """Method description.
+
+        Returns true if 4f+1 processors have noticed the recent value of
+        processors i view and phase
+        """
+        processor_set = set()
+        for processor_id in range(self.number_of_nodes):
+            (processor_set.add(processor_id) if
+                self.echo_no_witn(processor_id)
+                else None)
+        return len(processor_set) >= (4 * self.number_of_byzantine + 1)
+
+    def get_witnesses(self):
+        """Method description.
+
+        Returns the set of processors that processor i knows that they have
+        been witnessed.
+        """
+        processor_set = set(compress(range(len(self.witnesses)),
+                            self.witnesses))
+        return processor_set
 
     # Methods to communicate with Algorithm 2 (View Establishment Module)
     def get_view(self, processor_k):
