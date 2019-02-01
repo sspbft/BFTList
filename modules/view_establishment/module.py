@@ -23,7 +23,7 @@ class ViewEstablishmentModule(AlgorithmModule):
     number_of_byzantine = 0
     id = 0
 
-    def __init__(self, id, resolver, n=2, byz=0):
+    def __init__(self, id, resolver=None, n=2, byz=0):
         """Initializes the module."""
         self.resolver = resolver
         self.phs = [0 for i in range(n)]

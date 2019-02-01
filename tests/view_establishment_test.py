@@ -12,7 +12,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
     def test_echo_no_witn(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
 
         # Both conditions are fulfilled
         view_est_mod.phs[view_est_mod.id] = 0
@@ -30,7 +30,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
     def test_witnes_seen(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
 
         # Both condition fulfilled with f = 0
         view_est_mod.witnesses[view_est_mod.id] = True
@@ -51,7 +51,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
     def test_next_phs(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         view_est_mod.phs[view_est_mod.id] = 0
 
         # Move to phase 1
@@ -66,14 +66,14 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
     def test_get_phs(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         view_est_mod.phs = [0, 1]
         self.assertEqual(view_est_mod.get_phs(0), 0)
         self.assertEqual(view_est_mod.get_phs(1), 1)
 
     def test_init(self):
         resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(resolver)
+        view_est_mod = ViewEstablishmentModule(0, resolver)
         view_est_mod.phs = [0, 1]
         view_est_mod.witnesses_set = {0}
         view_est_mod.witnesses = [True, True]

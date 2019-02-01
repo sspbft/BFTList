@@ -13,8 +13,12 @@ class Resolver:
         self.modules = None
         self.senders = {}
         self.receiver = None
-        self.nodes = get_nodes()
         self.pack_helper = PackHelper()
+
+        try:
+            self.nodes = get_nodes()
+        except FileNotFoundError:
+            print("Warning: Could not find hosts file")
 
     def set_modules(self, modules):
         """Sets the modules dict of the resolver."""
