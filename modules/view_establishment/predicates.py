@@ -12,23 +12,16 @@ class PredicatesAndAction():
     FOLLOW = "follow"
     REMAIN = "remain"
 
-    views = []  # views[*] = {"current": *, "next": *}
-    vChange = False
     DF_VIEW = 0
     TEE = None
     RST_PAIR = {CURRENT: TEE, NEXT: DF_VIEW}  # Default hardwired view Pair
-    id = 0
-    number_of_nodes = 0
-    number_of_byzantine = 0
-    view_module = None
-    resolver = None
 
     # Added variables
     # In automation (*, 0, 0) the found view pair in predicates need to
     # be store until the action (adopting the view pair) has been carried out.
     view_pair_to_adopt = None
 
-    def __init__(self, module, resolver, n=2, id=0, f=0):
+    def __init__(self, module, id, resolver, n, f):
         """Initializes the module."""
         self.views = [{self.CURRENT: None, self.NEXT: None} for i in range(n)]
         self.id = id
@@ -36,6 +29,7 @@ class PredicatesAndAction():
         self.number_of_byzantine = f
         self.number_of_nodes = n
         self.resolver = resolver
+        self.vChange = False
 
     # Macros
     def stale_v(self, node_k):
@@ -198,6 +192,7 @@ class PredicatesAndAction():
 
     def reset_all(self):
         """Reset all modules."""
+        print("Reset_all()")
         self.views = [self.RST_PAIR for i in range(self.number_of_nodes)]
         self.view_module.init_module()
         self.resolver.execute(

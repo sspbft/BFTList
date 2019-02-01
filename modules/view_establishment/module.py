@@ -15,19 +15,9 @@ class ViewEstablishmentModule(AlgorithmModule):
     VIEWS = "views"
     PHASE = "phase"
     WITNESSES = "witnesses"
-
-    phs = []
-    witnesses = []
-    witnesses_set = set()
-    echo = []
-    pred_and_action = None
-    resolver = None
-    number_of_nodes = 0
-    number_of_byzantine = 0
-    id = 0
     run_forever = True
 
-    def __init__(self, id, resolver=None, n=2, byz=0):
+    def __init__(self, id, resolver, n, f):
         """Initializes the module."""
         self.resolver = resolver
         self.phs = [0 for i in range(n)]
@@ -36,14 +26,16 @@ class ViewEstablishmentModule(AlgorithmModule):
             {self.VIEWS: None, self.PHASE: None, self.WITNESSES: None}
             for i in range(n)
         ]
-        self.pred_and_action = PredicatesAndAction(self, self.resolver, n)
+        self.pred_and_action = PredicatesAndAction(self, id, self.resolver,
+                                                   n, f)
         self.number_of_nodes = n
         self.id = id
-        self.number_of_byzantine = byz
+        self.number_of_byzantine = f
+        self.witnesses_set = set()
 
     def log_state(self, msg=""):
         """Helper log method."""
-        print(f"{msg} Node {self.id}: {self.echo[0]}")
+        print(f"{msg} Node {self.id}: {self.pred_and_action.views[self.id]}")
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -76,8 +68,8 @@ class ViewEstablishmentModule(AlgorithmModule):
                         self.next_phs()
 
             # Send message to all other processors
-            self.send_msg_to_other_nodes()
-            time.sleep(1)
+            self.send_msg()
+            time.sleep(0.5)
 
             # Stoping the while loop, used for testing purpose
             if(not self.run_forever):
@@ -159,7 +151,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         return self.pred_and_action.allow_service()
 
     # Methods to communicate with other processors
-    def send_msg_to_other_nodes(self):
+    def send_msg(self):
         """Method description.
 
         Calls the Resolver to send a message containing the phase, view and
@@ -167,53 +159,53 @@ class ViewEstablishmentModule(AlgorithmModule):
         processor j to processor_j
         """
         nodes = get_nodes()
-        for id, node in nodes.items():
-            if id == self.id:
+        for node_j, _ in nodes.items():
+            # update own echo instead of sending message
+            if node_j == self.id:
                 self.echo[self.id] = {
                     self.VIEWS: self.pred_and_action.get_info(self.id),
                     self.PHASE: self.phs[self.id],
                     self.WITNESSES: self.witnesses[self.id]
                 }
             else:
-                sender = (self.phs[self.id],
-                          self.witnesses[self.id],
-                          self.pred_and_action.get_info(self.id)
-                          )
-
-                receiver = (self.phs[id],
-                            self.witnesses[id],
-                            self.pred_and_action.get_info(id)
+                # node_i's own data
+                own_data = (self.phs[self.id],
+                            self.witnesses[self.id],
+                            self.pred_and_action.get_info(self.id)
                             )
+
+                # what node_i thinks about node_j
+                about_data = (self.phs[node_j],
+                              self.witnesses[node_j],
+                              self.pred_and_action.get_info(node_j)
+                              )
                 msg = {"type": MessageType.VIEW_ESTABLISHMENT_MESSAGE,
                        "sender": self.id,
                        "data": {
-                                "sender": sender,
-                                "receiver": receiver
+                                "own_data": own_data,
+                                "about_data": about_data
                             }
                        }
-                self.resolver.send_to_node(id, msg)
+                self.resolver.send_to_node(node_j, msg)
 
     def receive_msg(self, msg):
         """Method description.
 
         Resolver calls this function when a message to the View Establishment
         module from another processor has been delievered.
-        Valids the message and updates phase, witnesses, echo and views for the
-        sending processor.
+        Validates the message and updates phase, witnesses, echo and views for
+        the sending processor.
         """
-        self.log_state("pre_update")
-
-        j = msg["sender"]
-        recv_data = msg["data"]["receiver"]
-        send_data = msg["data"]["sender"]
+        j = msg["sender"]  # id of sender
+        j_own_data = msg["data"]["own_data"]  # j's own data
+        j_about_data = msg["data"]["about_data"]  # what j thinks about me
 
         self.echo[j] = {
-            self.PHASE: recv_data[0],
-            self.WITNESSES: recv_data[1],
-            self.VIEWS: recv_data[2]
+            self.PHASE: j_about_data[0],
+            self.WITNESSES: j_about_data[1],
+            self.VIEWS: j_about_data[2]
         }
 
-        self.phs[j] = send_data[0]
-        self.witnesses[j] = send_data[1]
-        self.pred_and_action.set_info(send_data[2], j)
-        self.log_state("post_update")
+        self.phs[j] = j_own_data[0]
+        self.witnesses[j] = j_own_data[1]
+        self.pred_and_action.set_info(j_own_data[2], j)
