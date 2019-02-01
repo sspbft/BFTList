@@ -191,7 +191,7 @@ class PredicatesAndAction():
     # Interface functions
     def need_reset(self):
         """True if the replication module requires a reset."""
-        return (self.stale_v() and self.resolver.execute(
+        return (self.stale_v(self.id) and self.resolver.execute(
                 module=Module.REPLICATION_MODULE,
                 func=Function.REPLICA_FLUSH
                 ))
