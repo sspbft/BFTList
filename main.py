@@ -10,6 +10,9 @@ from modules.replication.module import ReplicationModule
 from modules.primary_monitoring.module import PrimaryMonitoringModule
 from resolve.enums import Module
 from prometheus_client import start_http_server
+from resolve.resolver import Resolver
+
+id = int(os.getenv("ID", 0))
 
 
 def start_api(resolver):
@@ -22,11 +25,11 @@ def start_modules(resolver):
     """Starts all modules in separate threads."""
     modules = {
         Module.VIEW_ESTABLISHMENT_MODULE:
-            ViewEstablishmentModule(resolver=resolver),
+            ViewEstablishmentModule(id, resolver),
         Module.REPLICATION_MODULE:
-            ReplicationModule(resolver=resolver),
+            ReplicationModule(id, resolver),
         Module.PRIMARY_MONITORING_MODULE:
-            PrimaryMonitoringModule(resolver=resolver)
+            PrimaryMonitoringModule(id, resolver)
     }
 
     # start threads and attach to resolver
@@ -36,21 +39,25 @@ def start_modules(resolver):
     resolver.set_modules(modules)
 
 
-def setup_communication():
+def setup_communication(resolver):
     """Sets up the communication using asyncio event loop."""
     loop = asyncio.get_event_loop()
     nodes = config.get_nodes()
-    id = int(os.getenv("ID", 0))
 
     # setup sender channel to other nodes
+    senders = {}
     for _, node in nodes.items():
         if id != node.id:
-            sender = send.Sender(ip=node.ip, port=node.port)
+            sender = send.Sender(node.ip, node.port)
             loop.create_task(sender.start())
+            senders[node.id] = sender
 
     # setup receiver channel from other nodes
-    receiver = recv.Receiver(nodes[id].ip, nodes[id].port)
+    receiver = recv.Receiver(nodes[id].ip, nodes[id].port, resolver)
     loop.create_task(receiver.tcp_listen())
+
+    resolver.senders = senders
+    resolver.receiver = receiver
 
     loop.run_forever()
     loop.close()
@@ -58,7 +65,6 @@ def setup_communication():
 
 def setup_metrics():
     """Starts metrics server for Prometheus scraper on port 600{ID}."""
-    id = int(os.getenv("ID", 0))
     port = 6000 + id
     start_http_server(port)
     print("Node {}: Running on {}".format(id, port))
@@ -70,10 +76,10 @@ def setup_logging():
 
 
 if __name__ == "__main__":
+    resolver = Resolver()
+
     setup_logging()
     setup_metrics()
-    setup_communication()
-
-    # resolver = Resolver()
+    start_modules(resolver=resolver)
     # start_api(resolver=resolver)
-    # start_modules(resolver=resolver)
+    setup_communication(resolver)

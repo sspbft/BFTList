@@ -2,6 +2,7 @@
 
 from modules.algorithm_module import AlgorithmModule
 from modules.view_establishment.predicates import PredicatesAndAction
+from resolve.enums import MessageType
 import time
 
 
@@ -22,7 +23,7 @@ class ViewEstablishmentModule(AlgorithmModule):
     number_of_byzantine = 0
     id = 0
 
-    def __init__(self, resolver, id=0, n=2, byz=0):
+    def __init__(self, id, resolver, n=2, byz=0):
         """Initializes the module."""
         self.resolver = resolver
         self.phs = [0 for i in range(n)]
@@ -38,8 +39,17 @@ class ViewEstablishmentModule(AlgorithmModule):
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
+        cntr = 0
         while True:
-            time.sleep(3)
+            msg = dict(cntr=cntr, msg_type=MessageType.DUMMY_TYPE,
+                       body=f"Msg from {self.id}", sender=self.id)
+            self.resolver.broadcast(msg)
+            time.sleep(1)
+            cntr += 1
+
+    def on_dummy_msg(self, msg):
+        """Dummy handler for dummy messages."""
+        print(f"Node {self.id}: Got dummy msg {msg} from node {msg['sender']}")
 
     # Macros
     def echo_no_witn(self, processor_k):

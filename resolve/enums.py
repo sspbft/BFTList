@@ -1,5 +1,5 @@
 """Enums related to the resolver and inter-module communication."""
-from enum import Enum
+from enum import Enum, IntEnum
 
 
 class Module(Enum):
@@ -23,3 +23,9 @@ class Function(Enum):
     REP_REQUEST_RESET = 5
 
     # Primary Monitoring Module
+
+
+class MessageType(IntEnum):
+    """Represents a message type sent between nodes."""
+
+    DUMMY_TYPE = 1

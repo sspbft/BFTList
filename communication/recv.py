@@ -1,21 +1,25 @@
 """Self-stabilizing asynchronous receiver channel."""
 import asyncio
 import io
+import json
 import os
 import socket
 import struct
+from .pack_helper import PackHelper
 
 
 class Receiver():
     """Models a self-stabilizing receiver channel."""
 
-    def __init__(self, ip, port, chunks_size=1024):
+    def __init__(self, ip, port, resolver, chunks_size=1024):
         """Initializes the receiver channel."""
         self.port = port
         self.ip = ip
         self.host = socket.gethostname()
         self.chunks_size = chunks_size
         self.id = int(os.getenv("ID"))
+        self.resolver = resolver
+        self.pack_helper = PackHelper()
 
         self.tokens = {}
         self.token_size = struct.calcsize("iii")
@@ -71,8 +75,15 @@ class Receiver():
     async def check_msg(self, res):
         """Determine message type and create response message accordingly."""
         token = res[:self.token_size]
-        # payload = res[self.token_size:]
+        payload = res[self.token_size:]
         msg_type, msg_cntr, sender = struct.unpack("iii", token)
+        try:
+            msg_json = self.pack_helper.unpack(payload)[0][0]
+            msg = json.loads(msg_json.decode())
+            self.resolver.dispatch_msg(msg, sender)
+            # self.log(f"Received msg {msg} from node {sender}")
+        except struct.error:
+            self.log(f"Error: Could not unpack {payload}")
 
         if(sender not in self.tokens.keys()):
             self.log(f"Received token from new sender with id {sender}")
