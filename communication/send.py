@@ -29,6 +29,7 @@ class Sender():
 
     def log(self, msg):
         """Temporary logging method."""
+        return
         print(f"Node {os.getenv('ID')}.Sender: {msg}")
 
     async def receive(self, token):
@@ -43,7 +44,7 @@ class Sender():
             except Exception:
                 msg = token  # resend token, will add payload here too
                 await self.tcp_send(msg)
-                self.log(f"TIMEOUT: no response within {self.timeous} s")
+                # self.log(f"TIMEOUT: no response within {self.timeouts} s")
         return (sender, msg_type, msg_cntr, msg_data)
 
     def add_msg_to_queue(self, msg):

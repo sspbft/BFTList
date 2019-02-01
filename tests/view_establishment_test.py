@@ -9,11 +9,11 @@ from resolve.enums import Function, Module
 
 class ViewEstablishmentModuleTest(unittest.TestCase):
     
-    # While true loop
+    def setUp(self):
+        self.resolver = Resolver()
 
     def test_while_true_case_1_is_true_and_return_is_an_action(self):
-        resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(0, resolver)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         view_est_mod.run_forever = False
 
         # (1)Predicates and action reset all should be called
@@ -56,7 +56,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         # (4) Check that the functions are called with correct input
         view_est_mod.next_phs.assert_called_once()
         calls_send_msg = [call(0), call(1)]
-        view_est_mod.send_msg.assert_has_calls(calls_send_msg, any_order = False)
+        view_est_mod.send_msg.assert_called_once()
 
     # Used for mocking predicate_and_action automaton for different values
     # When called with predicate : case 0 returns false, case 1 returns true.
@@ -67,8 +67,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
             return case
 
     def test_while_true_case_1_is_true_and_return_is_no_action(self):
-        resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(0, resolver)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         view_est_mod.run_forever = False
 
         # (1)Predicates and action reset all should be called
@@ -105,11 +104,10 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         view_est_mod.next_phs.assert_not_called()
 
         calls_send_msg = [call(0), call(1)]
-        view_est_mod.send_msg.assert_has_calls(calls_send_msg, any_order = False)
+        view_est_mod.send_msg.assert_called_once()
         
     def test_while_true_no_case_is_true(self):
-        resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(0, resolver)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         view_est_mod.run_forever = False
 
         # (1)Predicates and action reset all should not be called
@@ -148,18 +146,16 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
         # (4) Check that next_phs is not called and send_msg are called with correct arguments
         view_est_mod.next_phs.assert_not_called()
-        calls_send_msg = [call(0), call(1)]
-        view_est_mod.send_msg.assert_has_calls(calls_send_msg, any_order = False)
+        view_est_mod.send_msg.assert_called_once()
 
     # Macros
 
     def test_echo_no_witn(self):
-        resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(0, resolver)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
 
         # Both conditions are fulfilled
         view_est_mod.phs[view_est_mod.id] = 0
-        view_est_mod.get_view = MagicMock(return_value = {"current": 0, "next": 1})
+        view_est_mod.get_current_view = MagicMock(return_value = {"current": 0, "next": 1})
         view_est_mod.echo[1] = {view_est_mod.VIEWS: {"current": 0, "next": 1}, view_est_mod.PHASE: 0, view_est_mod.WITNESSES: None}
         self.assertTrue(view_est_mod.echo_no_witn(1))
 
@@ -172,8 +168,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         self.assertFalse(view_est_mod.echo_no_witn(1))
 
     def test_witnes_seen(self):
-        resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(0, resolver)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
 
         # Both condition fulfilled with f = 0
         view_est_mod.witnesses[view_est_mod.id] = True
@@ -193,8 +188,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
 
     def test_next_phs(self):
-        resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(0, resolver)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         view_est_mod.phs[view_est_mod.id] = 0
 
         # Move to phase 1
@@ -208,15 +202,13 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
     # Interface functions
 
     def test_get_phs(self):
-        resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(0, resolver)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         view_est_mod.phs = [0, 1]
         self.assertEqual(view_est_mod.get_phs(0), 0)
         self.assertEqual(view_est_mod.get_phs(1), 1)
 
     def test_init(self):
-        resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(0, resolver)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         view_est_mod.phs = [0, 1]
         view_est_mod.witnesses_set = {0}
         view_est_mod.witnesses = [True, True]
@@ -229,8 +221,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
     # Function added for while true loop
 
     def test_noticed_recent_value(self):
-        resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(0, resolver)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
 
         # All have noticed
         view_est_mod.echo_no_witn = MagicMock(return_value = True)
@@ -245,8 +236,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         self.assertFalse(view_est_mod.noticed_recent_value())
 
     def test_get_witnesses(self):
-        resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(0, resolver)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
 
         # Both processors have been witnessed
         view_est_mod.witnesses=[True, True]
@@ -262,16 +252,14 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
     
     # Function added for re-routing inter-module communication
-    def test_get_view_from_predicts_and_action(self):
-        resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(0, resolver)
-        view_est_mod.pred_and_action.get_view = Mock()
-        view_est_mod.get_view(0)
-        view_est_mod.pred_and_action.get_view.assert_called_once_with(0)
+    def test_get_current_view_from_predicts_and_action(self):
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        view_est_mod.pred_and_action.get_current_view = Mock()
+        view_est_mod.get_current_view(0)
+        view_est_mod.pred_and_action.get_current_view.assert_called_once_with(0)
     
     def test_allow_service_from_predicts_and_action(self):
-        resolver = Resolver()
-        view_est_mod = ViewEstablishmentModule(0, resolver)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         view_est_mod.pred_and_action.allow_service = Mock()
         view_est_mod.allow_service()
         view_est_mod.pred_and_action.allow_service.assert_called_once()

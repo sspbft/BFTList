@@ -28,6 +28,6 @@ class PrimaryMonitoringModule:
         raise NotImplementedError
 
     # Functions added for inter-module communication
-    def get_view(self, processor_id):
-        """Calls get_view method at View Establishment module."""
+    def get_current_view(self, processor_id):
+        """Calls get_current_view method at View Establishment module."""
         raise NotImplementedError
