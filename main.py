@@ -9,8 +9,8 @@ from modules.view_establishment.module import ViewEstablishmentModule
 from modules.replication.module import ReplicationModule
 from modules.primary_monitoring.module import PrimaryMonitoringModule
 from resolve.enums import Module
-from prometheus_client import start_http_server
 from resolve.resolver import Resolver
+from prometheus_client import start_http_server
 
 id = int(os.getenv("ID", 0))
 
@@ -80,6 +80,6 @@ if __name__ == "__main__":
 
     setup_logging()
     setup_metrics()
-    start_modules(resolver=resolver)
-    # start_api(resolver=resolver)
+    start_modules(resolver)
+    # start_api(resolver)
     setup_communication(resolver)
