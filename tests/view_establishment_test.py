@@ -36,7 +36,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         view_est_mod.run()
 
         # (1) Predicates and action reset all should be called
-        view_est_mod.pred_and_action.reset_all.assert_any_call()
+        view_est_mod.pred_and_action.reset_all.assert_called_once()
 
         # (2) Processor i recent values are noticed and both processors have been witnessed 
         self.assertTrue(view_est_mod.witnesses[view_est_mod.id])
@@ -274,4 +274,4 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         view_est_mod = ViewEstablishmentModule(resolver)
         view_est_mod.pred_and_action.allow_service = Mock()
         view_est_mod.allow_service()
-        view_est_mod.pred_and_action.allow_service.assert_any_call()
+        view_est_mod.pred_and_action.allow_service.assert_called_once()
