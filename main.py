@@ -23,9 +23,17 @@ def start_api(resolver):
 
 def start_modules(resolver):
     """Starts all modules in separate threads."""
+    n = int(os.getenv("NUMBER_OF_NODES", 0))
+    f = int(os.getenv("NUMBER_OF_BYZANTINE", 0))
+
+    if n == 0:
+        print("Warning: env var NUMBER_OF_NODES not set or set to 0")
+    if f == 0:
+        print("Warning: env var NUMBER_OF_BYZANTINE not set or set to 0")
+
     modules = {
         Module.VIEW_ESTABLISHMENT_MODULE:
-            ViewEstablishmentModule(id, resolver),
+            ViewEstablishmentModule(id, resolver, n, f),
         Module.REPLICATION_MODULE:
             ReplicationModule(id, resolver),
         Module.PRIMARY_MONITORING_MODULE:

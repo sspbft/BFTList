@@ -14,7 +14,7 @@ class Function(Enum):
     """Represents an interface function in a module."""
 
     # View Establishment Module
-    GET_VIEW = 1
+    get_current_view = 1
     ALLOW_SERVICE = 2
 
     # Replication Module
@@ -28,4 +28,4 @@ class Function(Enum):
 class MessageType(IntEnum):
     """Represents a message type sent between nodes."""
 
-    DUMMY_TYPE = 1
+    VIEW_ESTABLISHMENT_MESSAGE = 1

@@ -282,7 +282,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         resolver.execute.assert_called_once_with(module=Module.REPLICATION_MODULE,
             func=Function.REP_REQUEST_RESET)
 
-    def test_interface_get_view(self):
+    def test_interface_get_current_view(self):
         resolver = Resolver()
         view_est_mod = ViewEstablishmentModule(0, resolver)
         pred_module = PredicatesAndAction(view_est_mod, resolver)
@@ -292,13 +292,13 @@ class TestPredicatesAndAction(unittest.TestCase):
         pred_module.allow_service = MagicMock(return_value = True)
 
         # Should return the view of the current node
-        self.assertEqual(pred_module.get_view(0), 0)
+        self.assertEqual(pred_module.get_current_view(0), 0)
         # Should return the view of an other processor
-        self.assertEqual(pred_module.get_view(1), 1)
+        self.assertEqual(pred_module.get_current_view(1), 1)
         # Should give back the TEE (None) by denying service
         view_est_mod.get_phs = MagicMock(return_value = 0)
         pred_module.allow_service = MagicMock(return_value = False)
-        self.assertIsNone(pred_module.get_view(0))
+        self.assertIsNone(pred_module.get_current_view(0))
 
     def test_interface_allow_service(self):
         resolver = Resolver()

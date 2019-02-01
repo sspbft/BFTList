@@ -159,7 +159,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
         # Both conditions are fulfilled
         view_est_mod.phs[view_est_mod.id] = 0
-        view_est_mod.get_view = MagicMock(return_value = {"current": 0, "next": 1})
+        view_est_mod.get_current_view = MagicMock(return_value = {"current": 0, "next": 1})
         view_est_mod.echo[1] = {view_est_mod.VIEWS: {"current": 0, "next": 1}, view_est_mod.PHASE: 0, view_est_mod.WITNESSES: None}
         self.assertTrue(view_est_mod.echo_no_witn(1))
 
@@ -262,12 +262,12 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
     
     # Function added for re-routing inter-module communication
-    def test_get_view_from_predicts_and_action(self):
+    def test_get_current_view_from_predicts_and_action(self):
         resolver = Resolver()
         view_est_mod = ViewEstablishmentModule(0, resolver)
-        view_est_mod.pred_and_action.get_view = Mock()
-        view_est_mod.get_view(0)
-        view_est_mod.pred_and_action.get_view.assert_called_once_with(0)
+        view_est_mod.pred_and_action.get_current_view = Mock()
+        view_est_mod.get_current_view(0)
+        view_est_mod.pred_and_action.get_current_view.assert_called_once_with(0)
     
     def test_allow_service_from_predicts_and_action(self):
         resolver = Resolver()

@@ -210,8 +210,8 @@ class PredicatesAndAction():
         """A view change is required."""
         self.vChange = True
 
-    def get_view(self, node_j):
-        """Returns the most recent reported view of node_j."""
+    def get_current_view(self, node_j):
+        """Returns the most recent reported *current* view of node_j."""
         if (node_j == self.id and
                 self.view_module.get_phs(self.id) == 0 and
                 self.view_module.witnes_seen()):

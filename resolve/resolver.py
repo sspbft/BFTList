@@ -42,8 +42,8 @@ class Resolver:
     def view_establishment_exec(self, func):
         """Executes a function on the View Establishment module."""
         module = self.modules[Module.VIEW_ESTABLISHMENT_MODULE]
-        if func == Function.GET_VIEW:
-            return module.get_view()
+        if func == Function.get_current_view:
+            return module.get_current_view()
         elif func == Function.ALLOW_SERVICE:
             return module.allow_service()
         else:
@@ -58,7 +58,7 @@ class Resolver:
         raise NotImplementedError
 
     # inter-node communication methods
-    def send_to(self, node_id, msg_dct):
+    def send_to_node(self, node_id, msg_dct):
         """Sends a message to a given node.
 
         Message should be a dictionary, which will be serialized to json
@@ -73,11 +73,11 @@ class Resolver:
     def broadcast(self, msg_dct):
         """Broadcasts a message to all nodes."""
         for node_id, _ in self.senders.items():
-            self.send_to(node_id, msg_dct)
+            self.send_to_node(node_id, msg_dct)
 
     def dispatch_msg(self, msg, sender_id):
         """Routes received message to the correct module."""
-        if msg["msg_type"] == MessageType.DUMMY_TYPE:
-            self.modules[Module.VIEW_ESTABLISHMENT_MODULE].on_dummy_msg(msg)
+        if msg["type"] == MessageType.VIEW_ESTABLISHMENT_MESSAGE:
+            self.modules[Module.VIEW_ESTABLISHMENT_MODULE].receive_msg(msg)
         else:
             raise NotImplementedError

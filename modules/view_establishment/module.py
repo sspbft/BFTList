@@ -3,7 +3,10 @@
 from modules.algorithm_module import AlgorithmModule
 from modules.view_establishment.predicates import PredicatesAndAction
 from modules.enums import ViewEstablishmentEnums
+from resolve.enums import MessageType
 from itertools import compress
+from conf.config import get_nodes
+import time
 
 
 class ViewEstablishmentModule(AlgorithmModule):
@@ -38,6 +41,10 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.id = id
         self.number_of_byzantine = byz
 
+    def log_state(self, msg=""):
+        """Helper log method."""
+        print(f"{msg} Node {self.id}: {self.echo[0]}")
+
     def run(self):
         """Called whenever the module is launched in a separate thread."""
         while True:
@@ -69,8 +76,8 @@ class ViewEstablishmentModule(AlgorithmModule):
                         self.next_phs()
 
             # Send message to all other processors
-            for processor_id in range(self.number_of_nodes):
-                self.send_msg(processor_id)
+            self.send_msg_to_other_nodes()
+            time.sleep(1)
 
             # Stoping the while loop, used for testing purpose
             if(not self.run_forever):
@@ -83,7 +90,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         Checks if processor k has reported(echo) a view and phase matching
         the current view and phase.
         """
-        return (self.get_view(self.id) ==
+        return (self.get_current_view(self.id) ==
                 self.echo[processor_k].get(self.VIEWS) and
                 self.phs[self.id] == self.echo[processor_k].get(self.PHASE))
 
@@ -143,23 +150,48 @@ class ViewEstablishmentModule(AlgorithmModule):
         return processor_set
 
     # Methods to communicate with Algorithm 2 (View Establishment Module)
-    def get_view(self, processor_k):
-        """Calls get_view of PredicatesAndAction."""
-        return self.pred_and_action.get_view(processor_k)
+    def get_current_view(self, processor_k):
+        """Calls get_current_view of PredicatesAndAction."""
+        return self.pred_and_action.get_current_view(processor_k)
 
     def allow_service(self):
         """Calls allow_service of PredicatesAndAction."""
         return self.pred_and_action.allow_service()
 
     # Methods to communicate with other processors
-    def send_msg(self, processor_j):
+    def send_msg_to_other_nodes(self):
         """Method description.
 
         Calls the Resolver to send a message containing the phase, view and
         witnesses of processor i and what processor wants to echo about
         processor j to processor_j
         """
-        raise NotImplementedError
+        nodes = get_nodes()
+        for id, node in nodes.items():
+            if id == self.id:
+                self.echo[self.id] = {
+                    self.VIEWS: self.pred_and_action.get_info(self.id),
+                    self.PHASE: self.phs[self.id],
+                    self.WITNESSES: self.witnesses[self.id]
+                }
+            else:
+                sender = (self.phs[self.id],
+                          self.witnesses[self.id],
+                          self.pred_and_action.get_info(self.id)
+                          )
+
+                receiver = (self.phs[id],
+                            self.witnesses[id],
+                            self.pred_and_action.get_info(id)
+                            )
+                msg = {"type": MessageType.VIEW_ESTABLISHMENT_MESSAGE,
+                       "sender": self.id,
+                       "data": {
+                                "sender": sender,
+                                "receiver": receiver
+                            }
+                       }
+                self.resolver.send_to_node(id, msg)
 
     def receive_msg(self, msg):
         """Method description.
@@ -169,4 +201,19 @@ class ViewEstablishmentModule(AlgorithmModule):
         Valids the message and updates phase, witnesses, echo and views for the
         sending processor.
         """
-        raise NotImplementedError
+        self.log_state("pre_update")
+
+        j = msg["sender"]
+        recv_data = msg["data"]["receiver"]
+        send_data = msg["data"]["sender"]
+
+        self.echo[j] = {
+            self.PHASE: recv_data[0],
+            self.WITNESSES: recv_data[1],
+            self.VIEWS: recv_data[2]
+        }
+
+        self.phs[j] = send_data[0]
+        self.witnesses[j] = send_data[1]
+        self.pred_and_action.set_info(send_data[2], j)
+        self.log_state("post_update")

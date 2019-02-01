@@ -33,6 +33,7 @@ class Receiver():
 
     def log(self, msg):
         """Temporary logging method."""
+        return
         print(f"Node {os.getenv('ID')}.Receiver: {msg}")
 
     async def tcp_listen(self):

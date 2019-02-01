@@ -29,6 +29,7 @@ class Sender():
 
     def log(self, msg):
         """Temporary logging method."""
+        return
         print(f"Node {os.getenv('ID')}.Sender: {msg}")
 
     async def receive(self, token):
