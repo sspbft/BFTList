@@ -65,9 +65,14 @@ class PredicatesAndAction():
                 0 <= vpair.get(self.NEXT) <= (self.number_of_nodes - 1))
                 )
 
-    def valid(self, msg, node_k):
-        """Validates the msg from node k and checks if structure is stale."""
-        raise NotImplementedError
+    def valid(self, msg):
+        """Validates the msg from node k and checks if structure is stale.
+
+        The message format is: msg[0] = phs, msg[1] = witnesses, msg[2] = views
+        """
+        return ((msg[0] == 0 and self.legit_phs_zero(msg[2])) or
+                (msg[0] == 1 and self.legit_phs_one(msg[2]))
+                )
 
     def same_v_set(self, node_j, phase=-1):
         """Method description.
