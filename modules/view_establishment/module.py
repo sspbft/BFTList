@@ -200,13 +200,18 @@ class ViewEstablishmentModule(AlgorithmModule):
         j_own_data = msg["data"]["own_data"]  # j's own data
         j_about_data = msg["data"]["about_data"]  # what j thinks about me
 
-        self.echo[j] = {
-            self.PHASE: j_about_data[0],
-            self.WITNESSES: j_about_data[1],
-            self.VIEWS: j_about_data[2]
-        }
+        if(self.pred_and_action.valid(j_own_data)):
+            self.echo[j] = {
+                self.PHASE: j_about_data[0],
+                self.WITNESSES: j_about_data[1],
+                self.VIEWS: j_about_data[2]
+            }
 
-        self.phs[j] = j_own_data[0]
-        self.witnesses[j] = j_own_data[1]
-        self.pred_and_action.set_info(j_own_data[2], j)
-        self.log_state("POST_MSG_RECV")
+            self.phs[j] = j_own_data[0]
+            self.witnesses[j] = j_own_data[1]
+            self.pred_and_action.set_info(j_own_data[2], j)
+            self.log_state("POST_MSG_RECV")
+
+        else:
+            self.log_state("FAULTY_MSG_RECV")
+            raise ValueError('Not a valid message: {}'.format(j_own_data))
