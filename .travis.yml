@@ -10,5 +10,3 @@ jobs:
       script: flake8
     - stage: unit tests
       script: bash test unit
-    - state: integration tests
-      script: bash test it
