@@ -7,6 +7,10 @@ from modules.algorithm_module import AlgorithmModule
 class ReplicationModule(AlgorithmModule):
     """Models the Replication module."""
 
+    flush = False
+    need_flush = False
+    view_changed = False
+
     def __init__(self, id, resolver):
         """Initializes the module."""
         self.resolver = resolver
@@ -149,16 +153,24 @@ class ReplicationModule(AlgorithmModule):
         assigned a sequence number and appears in the request queue
         of other processors.
         """
-        raise NotImplementedError
+        if not self.view_changed:
+            return(self.known_pend_reqs.intersection(self.unassigned_reqs()))
+        # I will leave this else until the calling algorithm is
+        # implemented and we can see how it will react
+        # else:
+            # return("view_change")
 
     def rep_request_reset(self):
         """Method description.
 
-        Sets the needFlush flag to False by the View Establishment module
+        Sets the need_flush flag to False by the View Establishment module
         after it has noted that a reset is required.
         Does not trigger a reset several times.
         """
-        raise NotImplementedError
+        if self.need_flush:
+            self.need_flush = False
+            return True
+        return False
 
     def replica_flush(self):
         """Method description.
@@ -166,7 +178,7 @@ class ReplicationModule(AlgorithmModule):
         Sets the flag flush to true.
         The View Establishment module can demand a reset of the replica state.
         """
-        raise NotImplementedError
+        self.flush = True
 
     # Functions not declared under macros and interface functions (Figure 6)
     def renew_reqs(self, processors_set):
@@ -196,3 +208,8 @@ class ReplicationModule(AlgorithmModule):
         that the new state has a correct prefix.
         """
         raise NotImplementedError
+
+    # Function to extract data
+    def get_data(self):
+        """Returns current values on local variables."""
+        return {}

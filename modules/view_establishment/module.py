@@ -117,7 +117,6 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.witnesses_set = set()
 
     # Help methods for the while true loop
-
     def noticed_recent_value(self):
         """Method description.
 
@@ -215,3 +214,15 @@ class ViewEstablishmentModule(AlgorithmModule):
         else:
             self.log_state("FAULTY_MSG_RECV")
             raise ValueError('Not a valid message: {}'.format(j_own_data))
+
+    # Function to extract data
+    def get_data(self):
+        """Returns current values on local variables."""
+        return {"id": self.id,
+                "phs": self.phs,
+                "views": self.pred_and_action.views,
+                "vChange": self.pred_and_action.vChange,
+                "witnesses": self.witnesses,
+                "witnesses_set": self.witnesses_set,
+                "echo": self.echo
+                }

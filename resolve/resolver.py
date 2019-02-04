@@ -81,3 +81,26 @@ class Resolver:
             self.modules[Module.VIEW_ESTABLISHMENT_MODULE].receive_msg(msg)
         else:
             raise NotImplementedError
+
+    # Methods to extract data
+
+    def get_view_establishment_data(self):
+        """Returns current values of variables.
+
+        View Establishment module.
+        """
+        return self.modules[Module.VIEW_ESTABLISHMENT_MODULE].get_data()
+
+    def get_replication_data(self):
+        """Returns current values of variables.
+
+        View Establishment module.
+        """
+        return self.modules[Module.REPLICATION_MODULE].get_data()
+
+    def get_primary_monitoring_data(self):
+        """Returns current values of variables.
+
+        View Establishment module.
+        """
+        return self.modules[Module.PRIMARY_MONITORING_MODULE].get_data()
