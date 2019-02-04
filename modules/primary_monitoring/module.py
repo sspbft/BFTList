@@ -46,3 +46,8 @@ class PrimaryMonitoringModule(AlgorithmModule):
     def get_default_vcm(self):
         """Returns the DEF_STATE for vcm."""
         raise NotImplementedError
+
+    # Function to extract data
+    def get_data(self):
+        """Returns current values on local variables."""
+        return {}
