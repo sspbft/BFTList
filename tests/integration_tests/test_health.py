@@ -2,6 +2,7 @@ from abstract_integration_test import AbstractIntegrationTest
 import helpers
 import asyncio
 import requests
+import time
 
 nodes = helpers.get_nodes()
 aws = []
@@ -11,14 +12,14 @@ class TestHealth(AbstractIntegrationTest):
 
     async def bootstrap(self):
         """Sets up BFTList for the test."""
-        await helpers.launch_bftlist()
-        await asyncio.sleep(0.5)
+        return await helpers.launch_bftlist()
 
     async def validate(self):
         """Validates response from / endpoint on all nodes"""
         aws = [helpers.GET(i, "/") for i in nodes]
         res = []
 
+        # waits for all health check calls to complete
         for a in asyncio.as_completed(aws):
             result = await a
             res.append(result["status_code"] == 200)
@@ -26,10 +27,10 @@ class TestHealth(AbstractIntegrationTest):
         return all(res)
 
     def test(self):
-        app_process = helpers.run_coro(self.bootstrap())
+        pids = helpers.run_coro(self.bootstrap())
         result = helpers.run_coro(self.validate())
         self.assertTrue(result)
-        helpers.kill(app_process)
+        helpers.kill(pids)
 
 if __name__ == '__main__':
     asyncio.run(unittest.main())

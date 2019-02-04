@@ -1,6 +1,22 @@
-echo "Running unit tests.."
-python3.7 -m unittest discover ./tests/unit_tests "test_*.py"
-echo "Unit tests done!"
-# echo "Running integration tests.."
-# python3.7 -m unittest discover ./tests/integration_tests "test_*.py"
-# echo "Integration tests done!"
+function run_unit_tests() {
+    echo "Running unit tests.."
+    python3.7 -m unittest discover ./tests/unit_tests "test_*.py"
+    echo "Unit tests done!"
+}
+
+function run_integration_tests() {
+    echo "Running integration tests.."
+    python3.7 -m unittest discover ./tests/integration_tests "test_*.py"
+    echo "Integration tests done!"
+}
+
+if [ $# -eq 0 ]; then
+    run_unit_tests
+    run_integration_tests
+elif [ $# -eq 1 ]; then
+    if [ "$1" = "it" ]; then
+        run_integration_tests
+    elif [ "$1" = "unit" ]; then
+        run_unit_tests
+    fi
+fi
