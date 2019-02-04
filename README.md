@@ -12,6 +12,7 @@ python3.7 -m venv env
 source ./env/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+chmod +x test
 ```
 
 Instructions for how to run this application without using [Thor](https://github.com/practicalbft/thor) (which you should not, since Thor was built for this exact use case) will be added later.
@@ -20,7 +21,13 @@ Instructions for how to run this application without using [Thor](https://github
 The code base is linted using [flake8](https://pypi.org/project/flake8/) with [pydocstyle](https://github.com/PyCQA/pydocstyle), so make sure to lint the code by running `flake8` before pushing any code.
 
 ### Testing
-[unittest](https://docs.python.org/2/library/unittest.html) is setup so add appropriate unit tests in the `tests` folder (make sure the file ends with `_test.py`) and make sure that all tests pass by running `./test` before pushing any code.
+[unittest](https://docs.python.org/2/library/unittest.html) is setup so add appropriate unit tests in the `tests` folder (make sure the file starts with `test_`) and tests are executed as seen below.
+
+```
+./test          # runs all tests
+./test unit     # runs only unit tests
+./test it       # runs only integration tests
+```
 
 ### Travis integration
 Both linting and testing is setup to be run for all Pull Requests and on each push to master by Travis.

@@ -4,3 +4,11 @@ python: 3.7
 script:
   - flake8
   - bash test
+jobs:
+  include:
+    - stage: lint
+      script: flake8
+    - stage: unit tests
+      script: bash test unit
+    - state: integration tests
+      script: bash test it
