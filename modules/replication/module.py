@@ -154,7 +154,7 @@ class ReplicationModule(AlgorithmModule):
         of other processors.
         """
         if not self.view_changed:
-            return(self.known_pend_reqs.union(self.unassigned_reqs()))
+            return(self.known_pend_reqs.intersection(self.unassigned_reqs()))
         # I will leave this else until the calling algorithm is
         # implemented and we can see how it will react
         # else:
