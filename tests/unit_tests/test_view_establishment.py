@@ -55,7 +55,6 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
         # (4) Check that the functions are called with correct input
         view_est_mod.next_phs.assert_called_once()
-        calls_send_msg = [call(0), call(1)]
         view_est_mod.send_msg.assert_called_once()
 
     # Used for mocking predicate_and_action automaton for different values
@@ -103,7 +102,6 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         # (4) Check that the functions are called with correct input
         view_est_mod.next_phs.assert_not_called()
 
-        calls_send_msg = [call(0), call(1)]
         view_est_mod.send_msg.assert_called_once()
         
     def test_while_true_no_case_is_true(self):
