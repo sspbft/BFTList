@@ -19,3 +19,11 @@ class ViewEstablishmentEnums(Enum):
 
     PREDICATE = 4
     ACTION = 5
+
+
+class ReplicationEnums(Enum):
+    """Represent status for messages."""
+
+    PRE_PREP = 0
+    PREP = 1
+    COMMIT = 2

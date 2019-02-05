@@ -2,14 +2,53 @@
 
 import time
 from modules.algorithm_module import AlgorithmModule
+# from modules.enums import ReplicationEnums
 
 
 class ReplicationModule(AlgorithmModule):
-    """Models the Replication module."""
+    """Models the Replication module.
 
-    flush = False
-    need_flush = False
-    view_changed = False
+    Structure of variables:
+    q (request by client): <client c, timestamp t, operation o>
+    request (accepted request): < request q, view v, sequence number seq_n>
+    rep_state = UNDEFINED
+    r_log (x_set is the set that claim to have executed/comitted request):
+        <request, x_set>
+    pend_req: <request>
+    req_q : <request, status t>
+    last_req: (last executed request for each client): <request, reply>
+
+    rep[n] (replica structure):
+        <rep_state, r_log, pend_req, req_q, last_req, con_flag, view_change>
+    """
+
+    # For Replica structure
+    REP_STATE = "rep_state"
+    R_LOG = "r_log"
+    PEND_REQS = "pend_reqs"
+    REQ_Q = "req_q"
+    LAST_REQ = "last_req"
+    CON_FLAG = "con_flag"
+    VIEW_CHANGE = "view_change"
+
+    # For R_LOG
+    REQUEST = "request"
+    X_SET = "x_set"
+    SEQUENCE_NO = "sequence_no"
+
+    # For REQ_Q
+    STATUS = "status"
+
+    # For LAST_REQ
+    REPLY = "reply"
+
+    DEF_STATE = {REP_STATE: {},
+                 R_LOG: [],
+                 PEND_REQS: [],
+                 REQ_Q: [],
+                 LAST_REQ: [],
+                 CON_FLAG: False,
+                 VIEW_CHANGE: False}
 
     def __init__(self, id, resolver, n, f):
         """Initializes the module."""
@@ -17,6 +56,21 @@ class ReplicationModule(AlgorithmModule):
         self.resolver = resolver
         self.number_of_nodes = n
         self.number_of_byzantine = f
+
+        self.flush = False
+        self.need_flush = False
+        self.seq_n = 0
+        self.rep = [
+            {self.REP_STATE: {},
+             self.R_LOG: [],
+             self.PEND_REQS: [],
+             self.REQ_Q: [],
+             self.LAST_REQ: [],
+             self.CON_FLAG: False,
+             self.VIEW_CHANGE: False}
+            for i in range(n)
+        ]
+        self.prim = None
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -27,15 +81,35 @@ class ReplicationModule(AlgorithmModule):
 
     def flush_local(self):
         """Resets all local variables."""
-        raise NotImplementedError
+        self.seq_n = 0
+        self.rep = [
+            {self.REP_STATE: {},
+             self.R_LOG: [],
+             self.PEND_REQS: [],
+             self.REQ_Q: [],
+             self.LAST_REQ: [],
+             self.CON_FLAG: False,
+             self.VIEW_CHANGE: False}
+            for i in range(self.number_of_nodes)
+        ]
 
     def msg(self, status, processor_j):
         """Returns requests reported to p_i from processor_j with status."""
-        raise NotImplementedError
+        request_set = set()
+        for request_pair in self.rep[processor_j].get(self.REQ_Q):
+            if request_pair.get(self.STATUS) == status:     # Enums
+                request_set.add(request_pair.get(self.REQUEST))
+        return request_set
 
     def last_exec(self):
         """Returns last request sequence number executed."""
-        raise NotImplementedError
+        last_execution = -1
+        for request_pair in self.rep[self.id].get(self.R_LOG):
+            if(request_pair.get(self.REQUEST).get(self.SEQUENCE_NO) >
+               last_execution):
+                last_execution = request_pair.get(
+                    self.REQUEST).get(self.SEQUENCE_NO)
+        return last_execution
 
     def last_common_exec(self):
         """Method description.
@@ -156,7 +230,7 @@ class ReplicationModule(AlgorithmModule):
         assigned a sequence number and appears in the request queue
         of other processors.
         """
-        if not self.view_changed:
+        if not self.rep[self.id].get(self.VIEW_CHANGE):
             return(self.known_pend_reqs().intersection(self.unassigned_reqs()))
         # I will leave this else until the calling algorithm is
         # implemented and we can see how it will react
