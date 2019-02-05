@@ -25,10 +25,14 @@ class TestHealth(AbstractIntegrationTest):
     def test(self):
         super().log(f"{__name__} starting")
         pids = helpers.run_coro(self.bootstrap())
+        super().set_pids(pids)
+
         helpers.run_coro(self.validate())
-        helpers.kill(pids)
-        helpers.cleanup()
         super().log(f"{__name__} finished")
+
+    def tearDown(self):
+        helpers.kill(super().get_pids())
+        helpers.cleanup()
 
 if __name__ == '__main__':
     asyncio.run(unittest.main())
