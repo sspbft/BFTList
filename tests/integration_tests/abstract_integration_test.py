@@ -1,15 +1,22 @@
 from abc import ABC, abstractmethod
 import unittest
-import asyncio
 
-# starting conf - n, f, initial state?
-# how to launch - Thor?
-# HTTP endpoint to validate target state
-# timeout and other settings
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+BLUE = "\033[94m"
+ENDC = "\033[0m"
 
 class AbstractIntegrationTest(unittest.TestCase, ABC):
     @abstractmethod
-    def bootstrap():
+    def bootstrap(self):
         """Bootstraps test.
 
         This method constructs the environment needed for the test, defined
@@ -18,7 +25,7 @@ class AbstractIntegrationTest(unittest.TestCase, ABC):
         pass
 
     @abstractmethod
-    def validate():
+    def validate(self):
         """Method for validating target state.
         
         This method is called every self.interval seconds and is used to
@@ -29,5 +36,6 @@ class AbstractIntegrationTest(unittest.TestCase, ABC):
         """
         pass
 
-    async def thor(args):
-        print("running thor with {args}")
+    def log(self, msg):
+        if msg:
+            print(f"{BLUE}IntegrationTest.log ==> {msg}{ENDC}")

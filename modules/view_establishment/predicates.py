@@ -74,7 +74,7 @@ class PredicatesAndAction():
                 (msg[0] == 1 and self.legit_phs_one(msg[2]))
                 )
 
-    def same_v_set(self, node_j, phase=-1):
+    def same_v_set(self, node_j, phase):
         """Method description.
 
         Returns a set of processors that has the view pair as node j
@@ -83,10 +83,15 @@ class PredicatesAndAction():
         """
         processor_set = set()
         for processor_id, view_pair in enumerate(self.views):
-            if(self.view_module.get_phs(processor_id) == phase and
-                view_pair == self.views[node_j] and not
-                    self.stale_v(processor_id)):
-                        processor_set.add(processor_id)
+            if phase is None:
+                if view_pair == self.views[node_j] and not \
+                   self.stale_v(processor_id):
+                    processor_set.add(processor_id)
+            else:
+                if self.view_module.get_phs(processor_id) == phase and \
+                   view_pair == self.views[node_j] and not \
+                   self.stale_v(processor_id):
+                    processor_set.add(processor_id)
         return processor_set
 
     def transit_adopble(self, node_j, phase, mode):
@@ -137,11 +142,13 @@ class PredicatesAndAction():
             )
         elif(mode == self.FOLLOW):
             if(phase == 0):
-                return(
-                    vpair.get(self.NEXT) ==
-                    ((self.views[node_j].get(self.CURRENT) + 1) %
-                        self.number_of_nodes)
-                )
+                if self.views[node_j].get(self.CURRENT) != self.TEE:
+                    return(
+                        vpair.get(self.NEXT) ==
+                        ((self.views[node_j].get(self.CURRENT) + 1) %
+                            self.number_of_nodes)
+                    )
+                return (vpair.get(self.NEXT) == self.DF_VIEW)
             elif(phase == 1):
                 return(
                     vpair.get(self.CURRENT) ==
@@ -154,7 +161,8 @@ class PredicatesAndAction():
 
     def adopt(self, vpair):
         """Assign the current view pair as vpair."""
-        self.views[self.id].update({self.NEXT: vpair.get(self.CURRENT)})
+        self.views[self.id][self.NEXT] = vpair.get(self.CURRENT)
+        # self.views[self.id].update({self.NEXT: vpair.get(self.CURRENT)})
 
     # In the code, sometimes view of self.id is used as input and sometimes
     # not. I choose to remove it because it always uses the current
@@ -166,22 +174,25 @@ class PredicatesAndAction():
         or to a new view (phase 1).
         """
         return (len(self.same_v_set(
-                    self.views[self.id], self.view_module.get_phs(self.id))) +
+                    self.id, self.view_module.get_phs(self.id))) +
                 len(self.transit_set(self.id, phase, mode)) >=
                 (4 * self.number_of_byzantine + 1)
                 )
 
     def establish(self):
         """Update the current view in the view pair to the next view."""
-        self.views[self.id].update(
-            {'current': self.views[self.id].get(self.NEXT)})
+        self.views[self.id][self.CURRENT] = self.views[self.id].get(self.NEXT)
+        # self.views[self.id].update(
+        #     {'current': self.views[self.id].get(self.NEXT)})
 
     def next_view(self):
         """Updates the next view in the view pair to upcoming view."""
-        self.views[self.id].update({'next':
-                                    (self.views[self.id].get(self.CURRENT) + 1)
-                                    % self.number_of_nodes
-                                    })
+        if self.views[self.id][self.CURRENT] is None:
+            self.views[self.id][self.NEXT] = self.DF_VIEW
+        else:
+            self.views[self.id][self.NEXT] = (
+                self.views[self.id].get(self.CURRENT) + 1) % \
+                    self.number_of_nodes
 
     def reset_v_change(self):
         """The node is no longer in a view change."""
@@ -254,8 +265,8 @@ class PredicatesAndAction():
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
                     if (self.transit_adopble(processor_id, 0, self.FOLLOW) and
-                        self.views[self.id].get(self.CURRENT) !=
-                            view_pair.get(self.CURRENT)):
+                        self.views[self.id][self.CURRENT] !=
+                            view_pair[self.CURRENT]):
                         self.view_pair_to_adopt = view_pair
                         return True
                 return False
@@ -290,7 +301,8 @@ class PredicatesAndAction():
                     self.reset_v_change()
                     return ViewEstablishmentEnums.NO_RETURN_VALUE
                 else:
-                    raise ValueError("Not a valid view pair to adopt")
+                    print(f"Node {self.id} not a valid view pair to adopt: \
+                        {self.view_pair_to_adopt}")
 
             # Increment view (next view)
             elif(case == 1):
@@ -326,8 +338,8 @@ class PredicatesAndAction():
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
                     if (self.transit_adopble(processor_id, 1, self.FOLLOW) and
-                        self.views[self.id].get(self.NEXT) !=
-                            view_pair.get(self.CURRENT)):
+                        self.views[self.id][self.NEXT] !=
+                            view_pair[self.NEXT]):
                         self.view_pair_to_adopt = view_pair
                         return True
                 return False

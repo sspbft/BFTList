@@ -1,11 +1,7 @@
-from abstract_integration_test import AbstractIntegrationTest
-import helpers
 import asyncio
-import requests
-import time
+import helpers
 
-nodes = helpers.get_nodes()
-aws = []
+from abstract_integration_test import AbstractIntegrationTest
 
 class TestHealth(AbstractIntegrationTest):
     """Performs health check on all nodes base endpoint (/)."""
@@ -16,7 +12,7 @@ class TestHealth(AbstractIntegrationTest):
 
     async def validate(self):
         """Validates response from / endpoint on all nodes"""
-        aws = [helpers.GET(i, "/") for i in nodes]
+        aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
         res = []
 
         # waits for all health check calls to complete
@@ -24,13 +20,15 @@ class TestHealth(AbstractIntegrationTest):
             result = await a
             res.append(result["status_code"] == 200)
 
-        return all(res)
+        self.assertTrue(all(res))
 
     def test(self):
+        super().log(f"{__name__} starting")
         pids = helpers.run_coro(self.bootstrap())
-        result = helpers.run_coro(self.validate())
-        self.assertTrue(result)
+        helpers.run_coro(self.validate())
         helpers.kill(pids)
+        helpers.cleanup()
+        super().log(f"{__name__} finished")
 
 if __name__ == '__main__':
     asyncio.run(unittest.main())
