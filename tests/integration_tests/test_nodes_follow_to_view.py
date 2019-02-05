@@ -1,9 +1,9 @@
 """TODO write description for test."""
 
-import helpers
 import asyncio
+from . import helpers
+from .abstract_integration_test import AbstractIntegrationTest
 
-from abstract_integration_test import AbstractIntegrationTest
 from resolve.enums import Module
 
 F = 1

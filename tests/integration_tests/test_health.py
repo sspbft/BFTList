@@ -1,7 +1,7 @@
 import asyncio
-import helpers
+from . import helpers
 
-from abstract_integration_test import AbstractIntegrationTest
+from .abstract_integration_test import AbstractIntegrationTest
 
 class TestHealth(AbstractIntegrationTest):
     """Performs health check on all nodes base endpoint (/)."""

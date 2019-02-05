@@ -24,9 +24,10 @@ The code base is linted using [flake8](https://pypi.org/project/flake8/) with [p
 [unittest](https://docs.python.org/2/library/unittest.html) is setup so add appropriate unit tests in the `tests` folder (make sure the file starts with `test_`) and tests are executed as seen below.
 
 ```
-./scripts/test          # runs all tests
-./scripts/test unit     # runs only unit tests
-./scripts/test it       # runs only integration tests
+./scripts/test              # runs all tests
+./scripts/test unit         # runs only unit tests
+./scripts/test it           # runs only integration tests
+./scripts/test <pattern>    # runs all test files with a filename matching pattern
 ```
 
 ### Travis integration
