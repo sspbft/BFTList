@@ -5,7 +5,8 @@ from modules.view_establishment.predicates import PredicatesAndAction
 from modules.enums import ViewEstablishmentEnums
 from resolve.enums import MessageType
 from itertools import compress
-from conf.config import get_nodes
+import conf.config as conf
+import os
 import time
 
 
@@ -33,12 +34,29 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.number_of_byzantine = f
         self.witnesses_set = set()
 
+        if os.getenv("INTEGRATION_TEST"):
+            start_state = conf.get_start_state()
+            if start_state is not {} and str(self.id) in start_state:
+                data = start_state[str(self.id)]["VIEW_ESTABLISHMENT_MODULE"]
+                if data is not None:
+                    if "phs" in data:
+                        self.phs = data["phs"]
+                    if "views" in data:
+                        self.pred_and_action.views = data["views"]
+                    if "witnesses" in data:
+                        self.witnesses = data["witnesses"]
+                    if "echo" in data:
+                        self.echo = data["echo"]
+                    if "vChange" in data:
+                        self.pred_and_action.vChange = data["vChange"]
+
     def log_state(self, msg=""):
         """Helper log method."""
         print(f"{msg} Node {self.id}: {self.pred_and_action.views[self.id]}")
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
+        # time.sleep(2)
         while True:
             if(self.pred_and_action.need_reset()):
                 self.pred_and_action.reset_all()
@@ -59,17 +77,17 @@ class ViewEstablishmentModule(AlgorithmModule):
                 # Onces a predicates is fulfilled, perfom action if valid case
                 if(self.pred_and_action.auto_max_case(self.phs[self.id]) >=
                         case):
-                    ret = self.pred_and_action.automation(
+                    print(f"Node {self.id}: Phase: {self.phs[self.id]} \
+                            Case: {case}")
+                    self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
-                    # Move to next phase if the return value is not a
-                    # no_action or reset
-                    if (ret != ViewEstablishmentEnums.NO_ACTION and
-                            ret != ViewEstablishmentEnums.RESET):
-                        self.next_phs()
 
             # Send message to all other processors
             self.send_msg()
-            time.sleep(0.5)
+            if os.getenv("INTEGRATION_TEST"):
+                time.sleep(0.25)
+            else:
+                time.sleep(0.5)
 
             # Stoping the while loop, used for testing purpose
             if(not self.run_forever):
@@ -82,7 +100,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         Checks if processor k has reported(echo) a view and phase matching
         the current view and phase.
         """
-        return (self.get_current_view(self.id) ==
+        return (self.pred_and_action.get_info(self.id) ==
                 self.echo[processor_k].get(self.VIEWS) and
                 self.phs[self.id] == self.echo[processor_k].get(self.PHASE))
 
@@ -103,7 +121,7 @@ class ViewEstablishmentModule(AlgorithmModule):
 
     def next_phs(self):
         """Proceeds the phase from 0 to 1, or 1 to 0."""
-        self.phs[self.id] ^= 1
+        self.phs[self.id] = 0 if self.phs[self.id] == 1 else 1
 
     # Interface functions
     def get_phs(self, processor_k):
@@ -125,9 +143,8 @@ class ViewEstablishmentModule(AlgorithmModule):
         """
         processor_set = set()
         for processor_id in range(self.number_of_nodes):
-            (processor_set.add(processor_id) if
-                self.echo_no_witn(processor_id)
-                else None)
+            if self.echo_no_witn(processor_id):
+                processor_set.add(processor_id)
         return len(processor_set) >= (4 * self.number_of_byzantine + 1)
 
     def get_witnesses(self):
@@ -157,7 +174,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         witnesses of processor i and what processor wants to echo about
         processor j to processor_j
         """
-        nodes = get_nodes()
+        nodes = conf.get_nodes()
         for node_j, _ in nodes.items():
             # update own echo instead of sending message
             if node_j == self.id:
@@ -209,11 +226,10 @@ class ViewEstablishmentModule(AlgorithmModule):
             self.phs[j] = j_own_data[0]
             self.witnesses[j] = j_own_data[1]
             self.pred_and_action.set_info(j_own_data[2], j)
-            self.log_state("POST_MSG_RECV")
-
         else:
             self.log_state("FAULTY_MSG_RECV")
-            raise ValueError('Not a valid message: {}'.format(j_own_data))
+            print(f"Node {self.id}: Not a valid message from \
+                    node {j}: {j_own_data}")
 
     # Function to extract data
     def get_data(self):
