@@ -1,20 +1,21 @@
 from abc import ABC, abstractmethod
+import asyncio
 import unittest
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+from . import helpers
 
 BLUE = "\033[94m"
 ENDC = "\033[0m"
 
 class AbstractIntegrationTest(unittest.TestCase, ABC):
+
+    def set_pids(self, pids):
+        self.pids = pids
+
+    def get_pids(self):
+        if self.pids:
+            return self.pids
+        return []
+
     @abstractmethod
     def bootstrap(self):
         """Bootstraps test.
@@ -27,12 +28,21 @@ class AbstractIntegrationTest(unittest.TestCase, ABC):
     @abstractmethod
     def validate(self):
         """Method for validating target state.
-        
+
         This method is called every self.interval seconds and is used to
         determine if the test has passed. It could for example call an HTTP
         endpoint on each node to validate the state. If the target state has
         not been reached in self.timeout seconds, the test will be marked
         as failed.
+        """
+        pass
+
+    @abstractmethod
+    def tearDown(self):
+        """Force extending classes to implement a tearDown function
+
+        Should ideally kill all launched subprocesses to avoid zombies
+        running around.
         """
         pass
 

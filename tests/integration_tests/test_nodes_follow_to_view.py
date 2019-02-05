@@ -1,9 +1,9 @@
 """TODO write description for test."""
 
-import helpers
 import asyncio
+from . import helpers
+from .abstract_integration_test import AbstractIntegrationTest
 
-from abstract_integration_test import AbstractIntegrationTest
 from resolve.enums import Module
 
 F = 1
@@ -56,10 +56,14 @@ class TestNodesFollow(AbstractIntegrationTest):
     def test(self):
         super().log(f"{__name__} starting")
         pids = helpers.run_coro(self.bootstrap())
+        super().set_pids(pids)
+        
         helpers.run_coro(self.validate())
-        helpers.kill(pids)
-        helpers.cleanup()
         super().log(f"{__name__} finished")
+
+    def tearDown(self):
+        helpers.kill(super().get_pids())
+        helpers.cleanup()
 
 if __name__ == '__main__':
     asyncio.run(unittest.main())
