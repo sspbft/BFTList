@@ -1,8 +1,5 @@
 <script>
     const nodes = JSON.parse('{{ data | tojson }}').map(el => el.node)
-    const show = node => node.style.opacity = 1
-    const hide = node => node.style.opacity = 0
-
     const strongify = s => `<b><u>${s}</u></b>`
 
     const renderViewEstData = (id, data) => {
@@ -38,26 +35,20 @@
     // fetches data for all nodes and updates the view
     const refreshNodes = () => {
         nodes.forEach(n => {
-            const label = document.getElementById(`refreshLabel${n.id}`)
-            show(label)
             fetch(`http://${n.ip}:400${n.id}/data`)
                 .then(res => res.json())
                 .then(res => {
                     renderViewEstData(res.node_id, res.VIEW_ESTABLISHMENT_MODULE)
                     renderRepData(res.node_id, res.REPLICATION_MODULE)
                     renderPriMonData(res.node_id, res.PRIMARY_MONITORING_MODULE)
-                    hide(label)
                 })
-                .catch(err => {
-                    console.error(err)
-                    hide(label)
-                })
+                .catch(err => console.error(err))
         })
     }
 
     // register listeners and handlers
     const onLoad = () => {
-        setInterval(refreshNodes, 3000)
+        setInterval(refreshNodes, 500)
         document.getElementById("refreshButton").onclick = refreshNodes
     }
     window.onload = onLoad;
