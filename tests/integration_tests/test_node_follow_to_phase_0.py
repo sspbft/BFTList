@@ -1,9 +1,5 @@
-"""Figure 4 in report: A change of view for p_0. 
-Enough processors are supporting the view change and will establish the view and then node 0 will follow.
-No one is acting Byzantine, but one node is not in the transition phase yet.
-
-The 5 nodes in the transition shall first establish the view and then node 0 will go to a phase 1 and 
-transit to view 2.
+"""Node 0 is behind and has a corrupt next view value. The others are stable in phase 0 and view 2
+Node 0 will eventually catch up.
 """
 
 import asyncio
