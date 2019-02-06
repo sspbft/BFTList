@@ -3,8 +3,19 @@
 # import current_app as app and access resolver through app.resolver
 from flask import Blueprint, jsonify, current_app as app
 import os
+import json
 
 routes = Blueprint("routes", __name__)
+
+
+class SetEncoder(json.JSONEncoder):
+    """Encoder with support for sets."""
+
+    def default(self, obj):
+        """Converts set to list, all other datatypes are treated as usual."""
+        if isinstance(obj, set):
+            return list(obj)
+        return json.JSONEncoder.default(self, obj)
 
 
 @routes.route("/", methods=["GET"])
@@ -29,6 +40,7 @@ def get_modules_data():
             "REPLICATION_MODULE":
             app.resolver.get_replication_data(),
             "PRIMARY_MONITORING_MODULE":
-            app.resolver.get_primary_monitoring_data()
+            app.resolver.get_primary_monitoring_data(),
+            "node_id": int(os.getenv("ID"))
             }
-    return jsonify(data)
+    return json.dumps(data, cls=SetEncoder)

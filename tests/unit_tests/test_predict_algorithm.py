@@ -5,13 +5,27 @@ from modules.view_establishment.predicates import PredicatesAndAction
 from modules.view_establishment.module import ViewEstablishmentModule
 from resolve.enums import Function, Module
 from modules.enums import ViewEstablishmentEnums
+from modules.constants import CURRENT, NEXT
 
 
 class TestPredicatesAndAction(unittest.TestCase):
 
     def setUp(self):
         self.resolver = Resolver()
-    
+
+    ## REMOVE
+    def test_valid(self):
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 5, 0)
+        # A msg has the following structure:[phase, witnesses, view_pair]
+        #v_pair = {view_est_mod.pred_and_action.CURRENT: -1, view_est_mod.pred_and_action.NEXT: 0}
+        v_pair = {CURRENT: ViewEstablishmentEnums.TEE, NEXT: ViewEstablishmentEnums.DF_VIEW}
+        msg_to_valid = [0, False, v_pair]
+        #self.assertTrue(view_est_mod.pred_and_action.legit_phs_zero(v_pair))
+        #self.assertTrue(view_est_mod.pred_and_action.legit_phs_zero(v_pair))
+        self.assertTrue(view_est_mod.pred_and_action.valid(msg_to_valid))
+
+
+    ####
     # Macros
     def test_stale_v(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
@@ -33,21 +47,21 @@ class TestPredicatesAndAction(unittest.TestCase):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
         pred_module.type_check = MagicMock(return_value = True)
-        vpair_to_test = {pred_module.CURRENT: 1, pred_module.NEXT: 1}
+        vpair_to_test = {CURRENT: 1, NEXT: 1}
 
         # Legit to be in phase 0
         self.assertTrue(pred_module.legit_phs_zero(vpair_to_test))
 
         # Reset vpair, also legit
-        vpair_to_test = {pred_module.CURRENT: pred_module.TEE, pred_module.NEXT: pred_module.DF_VIEW}
+        vpair_to_test = {CURRENT: ViewEstablishmentEnums.TEE, NEXT: ViewEstablishmentEnums.DF_VIEW}
         self.assertTrue(pred_module.legit_phs_zero(vpair_to_test))
 
         # In view change, not legit to be in phase 0
-        vpair_to_test = {pred_module.CURRENT: 1, pred_module.NEXT: 2}
+        vpair_to_test = {CURRENT: 1, NEXT: 2}
         self.assertFalse(pred_module.legit_phs_zero(vpair_to_test))
 
         # Type check fails
-        vpair_to_test = {pred_module.CURRENT: 1, pred_module.NEXT: 1}
+        vpair_to_test = {CURRENT: 1, NEXT: 1}
         pred_module.type_check = MagicMock(return_value = False)
         self.assertFalse(pred_module.legit_phs_zero(vpair_to_test))
 
@@ -55,38 +69,38 @@ class TestPredicatesAndAction(unittest.TestCase):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
         pred_module.type_check = MagicMock(return_value = True)
-        vpair_to_test = {pred_module.CURRENT: 1, pred_module.NEXT: 2}
+        vpair_to_test = {CURRENT: 1, NEXT: 2}
 
         # Legit to be in phase 1
         self.assertTrue(pred_module.legit_phs_one(vpair_to_test))
 
         # Not in a view change
-        vpair_to_test = {pred_module.CURRENT: 1, pred_module.NEXT: 1}
+        vpair_to_test = {CURRENT: 1, NEXT: 1}
         self.assertFalse(pred_module.legit_phs_one(vpair_to_test))
 
         # Type check fails
-        vpair_to_test = {pred_module.CURRENT: 1, pred_module.NEXT: 2}
+        vpair_to_test = {CURRENT: 1, NEXT: 2}
         pred_module.type_check = MagicMock(return_value = False)
         self.assertFalse(pred_module.legit_phs_one(vpair_to_test))
 
     def test_type_check(self):
-        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
-        pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 5, 0)
+        pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 5, 0)
 
-        # Type check correct because current is valid, number of byzantine nodes = 2
-        vpair_to_test = {pred_module.CURRENT: 0, pred_module.NEXT: 3}
+        # Type check correct because current is valid, number of nodes = 5
+        vpair_to_test = {CURRENT: 0, NEXT: 3}
         self.assertTrue(pred_module.type_check(vpair_to_test))
 
-        # Type check correct because current is valid, number of byzantine nodes = 2
-        vpair_to_test = {pred_module.CURRENT: pred_module.TEE, pred_module.NEXT: 3}
+        # Type check correct because current is valid, number of 5
+        vpair_to_test = {CURRENT: ViewEstablishmentEnums.TEE, NEXT: 3}
         self.assertTrue(pred_module.type_check(vpair_to_test))
 
         # Type check incorrect because next is not valid
-        vpair_to_test = {pred_module.CURRENT: pred_module.TEE, pred_module.NEXT: pred_module.TEE}
+        vpair_to_test = {CURRENT: ViewEstablishmentEnums.TEE, NEXT: ViewEstablishmentEnums.TEE}
         self.assertFalse(pred_module.type_check(vpair_to_test))
         
         # current is valid but next is not
-        vpair_to_test = {pred_module.CURRENT: 0, pred_module.NEXT: pred_module.TEE}
+        vpair_to_test = {CURRENT: 0, NEXT: ViewEstablishmentEnums.TEE}
         self.assertFalse(pred_module.type_check(vpair_to_test))
 
     def test_valid(self):
@@ -112,22 +126,22 @@ class TestPredicatesAndAction(unittest.TestCase):
         # Both processors are in the same view and phase
         view_est_mod.get_phs = MagicMock(return_value = 0)
         pred_module.stale_v = MagicMock(return_value = False)
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT: 0}, {pred_module.CURRENT: 0, pred_module.NEXT: 0}]
+        pred_module.views = [{CURRENT: 0, NEXT: 0}, {CURRENT: 0, NEXT: 0}]
         self.assertEqual(pred_module.same_v_set(0, 0), {0, 1})
 
         # Processor 1 is not in the same view and but same phase
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT: 0}, {pred_module.CURRENT: 0, pred_module.NEXT: 1}]
+        pred_module.views = [{CURRENT: 0, NEXT: 0}, {CURRENT: 0, NEXT: 1}]
         self.assertEqual(pred_module.same_v_set(0, 0), {0})
         
         # Processor 1 is in the same view and but not in same phase
         view_est_mod.get_phs = MagicMock(side_effect=lambda x: x) # Returns the input value (works for this specific case)
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT: 0}, {pred_module.CURRENT: 0, pred_module.NEXT: 0}]
+        pred_module.views = [{CURRENT: 0, NEXT: 0}, {CURRENT: 0, NEXT: 0}]
         self.assertEqual(pred_module.same_v_set(0, 0), {0})
 
         # Processors are stale, should return empty set
         view_est_mod.get_phs = MagicMock(return_value = 0)
         pred_module.stale_v = MagicMock(return_value = True)
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT: 0}, {pred_module.CURRENT: 0, pred_module.NEXT: 0}]
+        pred_module.views = [{CURRENT: 0, NEXT: 0}, {CURRENT: 0, NEXT: 0}]
         self.assertEqual(pred_module.same_v_set(0, 0), set())
 
     def test_transit_set(self):
@@ -138,21 +152,21 @@ class TestPredicatesAndAction(unittest.TestCase):
         view_est_mod.get_phs = MagicMock(return_value = 0)
         pred_module.stale_v = MagicMock(return_value = False)
         pred_module.transition_cases = MagicMock(return_value = True)
-        self.assertEqual(pred_module.transit_set(0, 1, pred_module.FOLLOW), {0,1})
+        self.assertEqual(pred_module.transit_set(0, 1, ViewEstablishmentEnums.FOLLOW), {0,1})
 
         # Different phases, node 0 in phase 1 and node 1 in phase 0
         view_est_mod.get_phs = MagicMock(side_effect=lambda x: (x+1) % 2)
-        self.assertEqual(pred_module.transit_set(0, 1, pred_module.FOLLOW), {1})
+        self.assertEqual(pred_module.transit_set(0, 1, ViewEstablishmentEnums.FOLLOW), {1})
 
         # Transition case returns false
         view_est_mod.get_phs = MagicMock(return_value = 0)
         pred_module.transition_cases = MagicMock(return_value = False)
-        self.assertEqual(pred_module.transit_set(0, 1, pred_module.FOLLOW), set())
+        self.assertEqual(pred_module.transit_set(0, 1, ViewEstablishmentEnums.FOLLOW), set())
 
         # Both processors are stale
         pred_module.stale_v = MagicMock(return_value = True)
         pred_module.transition_cases = MagicMock(return_value = True)
-        self.assertEqual(pred_module.transit_set(0, 1, pred_module.FOLLOW), set())
+        self.assertEqual(pred_module.transit_set(0, 1, ViewEstablishmentEnums.FOLLOW), set())
 
     def test_transit_adopble(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
@@ -163,45 +177,45 @@ class TestPredicatesAndAction(unittest.TestCase):
         # Mocks sets which union does not add up to 4, should return false
         pred_module.transit_set = MagicMock(return_value = {1})
         pred_module.same_v_set = MagicMock(return_value = {1,2,3})
-        self.assertFalse(pred_module.transit_adopble(0, 0, pred_module.FOLLOW))
+        self.assertFalse(pred_module.transit_adopble(0, 0, ViewEstablishmentEnums.FOLLOW))
 
         # Mocks sets which union adds up to 4, should return true
         pred_module.same_v_set = MagicMock(return_value = {2,3,4})
-        self.assertTrue(pred_module.transit_adopble(0, 0, pred_module.REMAIN))
+        self.assertTrue(pred_module.transit_adopble(0, 0, ViewEstablishmentEnums.REMAIN))
 
     def test_transition_cases(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
-        view_pair_to_test = {pred_module.CURRENT: 0, pred_module.NEXT: 1}
+        view_pair_to_test = {CURRENT: 0, NEXT: 1}
         
         # Mode REMAIN both phases, one 
-        pred_module.views[pred_module.id].update({pred_module.CURRENT: 1, pred_module.NEXT: 1})
-        self.assertTrue(pred_module.transition_cases(0, view_pair_to_test, 0, pred_module.REMAIN))
-        pred_module.views[pred_module.id].update({pred_module.CURRENT: 0, pred_module.NEXT: 0})
-        self.assertFalse(pred_module.transition_cases(0, view_pair_to_test, 1, pred_module.REMAIN))
+        pred_module.views[pred_module.id].update({CURRENT: 1, NEXT: 1})
+        self.assertTrue(pred_module.transition_cases(0, view_pair_to_test, 0, ViewEstablishmentEnums.REMAIN))
+        pred_module.views[pred_module.id].update({CURRENT: 0, NEXT: 0})
+        self.assertFalse(pred_module.transition_cases(0, view_pair_to_test, 1, ViewEstablishmentEnums.REMAIN))
 
         # Mode FOLLOW, phase 0 should return true
-        self.assertTrue(pred_module.transition_cases(0, view_pair_to_test, 0, pred_module.FOLLOW))
+        self.assertTrue(pred_module.transition_cases(0, view_pair_to_test, 0, ViewEstablishmentEnums.FOLLOW))
         # Mode FOLLOW, phase 0 should return false
-        pred_module.views[pred_module.id].update({pred_module.CURRENT: 1, pred_module.NEXT: 1})
-        self.assertFalse(pred_module.transition_cases(0, view_pair_to_test, 0, pred_module.FOLLOW))
+        pred_module.views[pred_module.id].update({CURRENT: 1, NEXT: 1})
+        self.assertFalse(pred_module.transition_cases(0, view_pair_to_test, 0, ViewEstablishmentEnums.FOLLOW))
 
         # Mode FOLLOW, phase 1 should return false
-        self.assertFalse(pred_module.transition_cases(0, view_pair_to_test, 1, pred_module.FOLLOW))
+        self.assertFalse(pred_module.transition_cases(0, view_pair_to_test, 1, ViewEstablishmentEnums.FOLLOW))
         
         # Mode FOLLOW, phase 1 should return true
-        pred_module.views[pred_module.id].update({pred_module.CURRENT: 0, pred_module.NEXT: 0})
-        self.assertTrue(pred_module.transition_cases(0, view_pair_to_test, 1, pred_module.FOLLOW))
+        pred_module.views[pred_module.id].update({CURRENT: 0, NEXT: 0})
+        self.assertTrue(pred_module.transition_cases(0, view_pair_to_test, 1, ViewEstablishmentEnums.FOLLOW))
 
 
     def test_adopt(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
-        pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
 
-        # Default pred_module.views = {self.CURRENT: None, self.NEXT: None}
-        vpair_to_test = {pred_module.CURRENT: 1, pred_module.NEXT: 1}
-        pred_module.adopt(vpair_to_test)
-        self.assertEqual(pred_module.views[pred_module.id],{pred_module.CURRENT: None, pred_module.NEXT: 1})
+        # Default pred_module.views = {self.CURRENT: TEE, self.NEXT: DF_VIEW}
+        vpair_to_test = {CURRENT: 1, NEXT: 1}
+        view_est_mod.pred_and_action.adopt(vpair_to_test)
+        self.assertEqual(view_est_mod.pred_and_action.views[view_est_mod.pred_and_action.id],
+                        {CURRENT: ViewEstablishmentEnums.TEE, NEXT: 1})
 
     def test_establishable(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
@@ -211,12 +225,12 @@ class TestPredicatesAndAction(unittest.TestCase):
         view_est_mod.get_phs = MagicMock(return_value = 0)
         pred_module.transit_set = MagicMock(return_value = set())
         pred_module.same_v_set = MagicMock(return_value = set())
-        self.assertFalse(pred_module.establishable(0, pred_module.FOLLOW))
+        self.assertFalse(pred_module.establishable(0, ViewEstablishmentEnums.FOLLOW))
         
         # Mocks sets that adds up to over 1 , should return true
         pred_module.transit_set = MagicMock(return_value = {1})
         pred_module.same_v_set= MagicMock(return_value = {1})
-        self.assertTrue(pred_module.establishable(0, pred_module.REMAIN))
+        self.assertTrue(pred_module.establishable(0, ViewEstablishmentEnums.REMAIN))
         
 
     def test_establish(self):
@@ -224,23 +238,23 @@ class TestPredicatesAndAction(unittest.TestCase):
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
 
         # Should update to view 1 in current
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT: 1}]
+        pred_module.views = [{CURRENT: 0, NEXT: 1}]
         pred_module.establish()
-        self.assertEqual(pred_module.views, [{pred_module.CURRENT: 1, pred_module.NEXT: 1}])
+        self.assertEqual(pred_module.views, [{CURRENT: 1, NEXT: 1}])
 
     def test_next_view(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
 
         # Should update to view 1 in next
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT: 0}]
+        pred_module.views = [{CURRENT: 0, NEXT: 0}]
         pred_module.next_view()
-        self.assertEqual(pred_module.views,[{pred_module.CURRENT: 0, pred_module.NEXT: 1}])
+        self.assertEqual(pred_module.views,[{CURRENT: 0, NEXT: 1}])
 
         # number of byzantine nodes = 2 so "next" should flip to view 0
-        pred_module.views = [{pred_module.CURRENT: 1, pred_module.NEXT: 1}]
+        pred_module.views = [{CURRENT: 1, NEXT: 1}]
         pred_module.next_view()
-        self.assertEqual(pred_module.views,[{pred_module.CURRENT: 1, pred_module.NEXT: 0}])
+        self.assertEqual(pred_module.views,[{CURRENT: 1, NEXT: 0}])
 
 
     def test_reset_v_change(self):
@@ -279,7 +293,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
         self.assertEqual(pred_module.reset_all(), ViewEstablishmentEnums.RESET)
         # The views has been reset to DEFAULT view pair
-        self.assertEqual(pred_module.views, [{pred_module.CURRENT: None, pred_module.NEXT : 0}])
+        self.assertEqual(pred_module.views, [{CURRENT: ViewEstablishmentEnums.TEE, NEXT : ViewEstablishmentEnums.DF_VIEW}])
         # Assert that the init(reset) method at algorithm 1 and algorithm 3 are being called
         view_est_mod.init_module.assert_any_call()
         self.resolver.execute.assert_called_once_with(module=Module.REPLICATION_MODULE,
@@ -288,7 +302,7 @@ class TestPredicatesAndAction(unittest.TestCase):
     def test_interface_get_current_view(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 0}, {pred_module.CURRENT: 1, pred_module.NEXT : 1}]
+        pred_module.views = [{CURRENT: 0, NEXT : 0}, {CURRENT: 1, NEXT : 1}]
         view_est_mod.get_phs = MagicMock(return_value = 1)
         view_est_mod.witnes_seen = MagicMock(return_value = True)
         pred_module.allow_service = MagicMock(return_value = True)
@@ -300,14 +314,14 @@ class TestPredicatesAndAction(unittest.TestCase):
         # Should give back the TEE (None) by denying service
         view_est_mod.get_phs = MagicMock(return_value = 0)
         pred_module.allow_service = MagicMock(return_value = False)
-        self.assertIsNone(pred_module.get_current_view(0))
+        self.assertEqual(pred_module.get_current_view(0), ViewEstablishmentEnums.TEE)
 
     def test_interface_allow_service(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
         # Allow service settings
         view_est_mod.get_phs = MagicMock(return_value = 0)
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 0}]
+        pred_module.views = [{CURRENT: 0, NEXT : 0}]
         pred_module.same_v_set = MagicMock(return_value = {0,0,0,0})
         self.assertTrue(pred_module.allow_service())
 
@@ -315,9 +329,9 @@ class TestPredicatesAndAction(unittest.TestCase):
         view_est_mod.get_phs = MagicMock(return_value = 1)
         self.assertFalse(pred_module.allow_service())
         view_est_mod.get_phs = MagicMock(return_value = 0)
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 1}]
+        pred_module.views = [{CURRENT: 0, NEXT : 1}]
         self.assertFalse(pred_module.allow_service())
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 0}]
+        pred_module.views = [{CURRENT: 0, NEXT : 0}]
         pred_module.same_v_set = MagicMock(return_value = {})
         self.assertFalse(pred_module.allow_service())
 
@@ -338,31 +352,31 @@ class TestPredicatesAndAction(unittest.TestCase):
     def test_get_info(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 0}, {pred_module.CURRENT: 1, pred_module.NEXT : 1}]
+        pred_module.views = [{CURRENT: 0, NEXT : 0}, {CURRENT: 1, NEXT : 1}]
         # Should return node 1's view
-        self.assertEqual(pred_module.get_info(1), {pred_module.CURRENT: 1, pred_module.NEXT : 1})
+        self.assertEqual(pred_module.get_info(1), {CURRENT: 1, NEXT : 1})
 
     def test_set_info(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 0}, {pred_module.CURRENT: 0, pred_module.NEXT : 0}]
+        pred_module.views = [{CURRENT: 0, NEXT : 0}, {CURRENT: 0, NEXT : 0}]
         # Should change the view pair of node 1 
-        pred_module.set_info({pred_module.CURRENT: 1, pred_module.NEXT : 1}, 1)
-        self.assertEqual(pred_module.views[1], {pred_module.CURRENT: 1, pred_module.NEXT : 1})
+        pred_module.set_info({CURRENT: 1, NEXT : 1}, 1)
+        self.assertEqual(pred_module.views[1], {CURRENT: 1, NEXT : 1})
 
     def test_automaton_phase_0_predicates(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
         
         # Case 0
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 0}, {pred_module.CURRENT: 1, pred_module.NEXT : 1}]
+        pred_module.views = [{CURRENT: 0, NEXT : 0}, {CURRENT: 1, NEXT : 1}]
         pred_module.transit_adopble = MagicMock(return_value = True)
         self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 0))
         # Not a adoptable view in transit
         pred_module.transit_adopble = MagicMock(return_value = False)
         self.assertFalse(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 0))
         # The adoptable view is the same as processor i
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 0}, {pred_module.CURRENT: 0, pred_module.NEXT : 0}]
+        pred_module.views = [{CURRENT: 0, NEXT : 0}, {CURRENT: 0, NEXT : 0}]
         pred_module.transit_adopble = MagicMock(return_value = True)
         self.assertFalse(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 0))
 
@@ -429,14 +443,14 @@ class TestPredicatesAndAction(unittest.TestCase):
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
         
         # Case 0
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 0}, {pred_module.CURRENT: 1, pred_module.NEXT : 1}]
+        pred_module.views = [{CURRENT: 0, NEXT : 0}, {CURRENT: 1, NEXT : 1}]
         pred_module.transit_adopble = MagicMock(return_value = True)
         self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 1, 0))
         # Not a adoptable view in transit
         pred_module.transit_adopble = MagicMock(return_value = False)
         self.assertFalse(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 1, 0))
         # The adoptable view is the same as processor i
-        pred_module.views = [{pred_module.CURRENT: 0, pred_module.NEXT : 0}, {pred_module.CURRENT: 0, pred_module.NEXT : 0}]
+        pred_module.views = [{CURRENT: 0, NEXT : 0}, {CURRENT: 0, NEXT : 0}]
         pred_module.transit_adopble = MagicMock(return_value = True)
         self.assertFalse(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 1, 0))
 

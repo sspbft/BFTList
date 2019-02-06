@@ -1,15 +1,23 @@
 from abc import ABC, abstractmethod
-import unittest
 import asyncio
+import unittest
+from . import helpers
 
-# starting conf - n, f, initial state?
-# how to launch - Thor?
-# HTTP endpoint to validate target state
-# timeout and other settings
+BLUE = "\033[94m"
+ENDC = "\033[0m"
 
 class AbstractIntegrationTest(unittest.TestCase, ABC):
+
+    def set_pids(self, pids):
+        self.pids = pids
+
+    def get_pids(self):
+        if self.pids:
+            return self.pids
+        return []
+
     @abstractmethod
-    def bootstrap():
+    def bootstrap(self):
         """Bootstraps test.
 
         This method constructs the environment needed for the test, defined
@@ -18,9 +26,9 @@ class AbstractIntegrationTest(unittest.TestCase, ABC):
         pass
 
     @abstractmethod
-    def validate():
+    def validate(self):
         """Method for validating target state.
-        
+
         This method is called every self.interval seconds and is used to
         determine if the test has passed. It could for example call an HTTP
         endpoint on each node to validate the state. If the target state has
@@ -29,5 +37,15 @@ class AbstractIntegrationTest(unittest.TestCase, ABC):
         """
         pass
 
-    async def thor(args):
-        print("running thor with {args}")
+    @abstractmethod
+    def tearDown(self):
+        """Force extending classes to implement a tearDown function
+
+        Should ideally kill all launched subprocesses to avoid zombies
+        running around.
+        """
+        pass
+
+    def log(self, msg):
+        if msg:
+            print(f"{BLUE}IntegrationTest.log ==> {msg}{ENDC}")

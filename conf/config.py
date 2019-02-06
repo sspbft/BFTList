@@ -1,6 +1,7 @@
 """Module handling config related actions."""
 from communication.node import Node
 import os
+import json
 
 
 def get_nodes(hosts_path="conf/hosts.txt"):
@@ -17,3 +18,14 @@ def get_nodes(hosts_path="conf/hosts.txt"):
         for l in lines:
             nodes[int(l[0])] = Node(id=l[0], hostname=l[1], ip=l[2], port=l[3])
         return nodes
+
+
+def get_start_state():
+    """Gets start state for this node."""
+    path = os.path.abspath("./conf/start_state.json")
+    try:
+        with open(path) as f:
+            data = json.load(f)
+            return data
+    except FileNotFoundError:
+        return {}
