@@ -8,6 +8,7 @@ from itertools import compress
 import conf.config as conf
 import os
 import time
+from copy import deepcopy
 
 
 class ViewEstablishmentModule(AlgorithmModule):
@@ -23,12 +24,13 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.resolver = resolver
         self.phs = [0 for i in range(n)]
         self.witnesses = [False for i in range(n)]
-        self.echo = [
-            {self.VIEWS: None, self.PHASE: None, self.WITNESSES: None}
-            for i in range(n)
-        ]
         self.pred_and_action = PredicatesAndAction(self, id, self.resolver,
                                                    n, f)
+        self.echo = [
+            {self.VIEWS: {}, self.PHASE: 0, self.WITNESSES: {}}
+            for i in range(n)
+        ]
+
         self.number_of_nodes = n
         self.id = id
         self.number_of_byzantine = f
@@ -40,15 +42,16 @@ class ViewEstablishmentModule(AlgorithmModule):
                 data = start_state[str(self.id)]["VIEW_ESTABLISHMENT_MODULE"]
                 if data is not None:
                     if "phs" in data:
-                        self.phs = data["phs"]
+                        self.phs = deepcopy(data["phs"])
                     if "views" in data:
-                        self.pred_and_action.views = data["views"]
+                        self.pred_and_action.views = deepcopy(data["views"])
                     if "witnesses" in data:
-                        self.witnesses = data["witnesses"]
+                        self.witnesses = deepcopy(data["witnesses"])
                     if "echo" in data:
-                        self.echo = data["echo"]
+                        self.echo = deepcopy(data["echo"])
                     if "vChange" in data:
-                        self.pred_and_action.vChange = data["vChange"]
+                        self.pred_and_action.vChange = deepcopy(
+                                                        data["vChange"])
 
     def log_state(self, msg=""):
         """Helper log method."""
@@ -185,16 +188,16 @@ class ViewEstablishmentModule(AlgorithmModule):
                 }
             else:
                 # node_i's own data
-                own_data = (self.phs[self.id],
+                own_data = [self.phs[self.id],
                             self.witnesses[self.id],
                             self.pred_and_action.get_info(self.id)
-                            )
+                            ]
 
                 # what node_i thinks about node_j
-                about_data = (self.phs[node_j],
+                about_data = [self.phs[node_j],
                               self.witnesses[node_j],
                               self.pred_and_action.get_info(node_j)
-                              )
+                              ]
                 msg = {"type": MessageType.VIEW_ESTABLISHMENT_MESSAGE,
                        "sender": self.id,
                        "data": {
