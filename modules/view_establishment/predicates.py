@@ -164,14 +164,12 @@ class PredicatesAndAction():
         if(self.views[self.id][CURRENT] == enums.TEE):
             self.views[self.id][CURRENT] = enums.DF_VIEW
 
-
-
     # def adopt_phase_1(self, vpair):
         """Assign the next view pair as vpairs next."""
         # f(vpair[CURRENT] == vpair[NEXT]):
         # self.views[self.id][NEXT] = deepcopy(vpair[CURRENT])
         # else:
-       # self.views[self.id] = deepcopy(vpair)
+        # self.views[self.id] = deepcopy(vpair)
 
     # In the code, sometimes view of self.id is used as input and sometimes
     # not. I choose to remove it because it always uses the current
