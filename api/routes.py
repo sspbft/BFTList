@@ -70,4 +70,4 @@ def render_view():
     data = fetch_data_for_all_nodes()
     # for _, node in conf.get_nodes().items():
     #     data.append(node)
-    return render_template("view.html", data=data)
+    return render_template("view/main.html", data=data)
