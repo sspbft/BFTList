@@ -11,9 +11,12 @@ class ReplicationModule(AlgorithmModule):
     need_flush = False
     view_changed = False
 
-    def __init__(self, id, resolver):
+    def __init__(self, id, resolver, n, f):
         """Initializes the module."""
+        self.id = id
         self.resolver = resolver
+        self.number_of_nodes = n
+        self.number_of_byzantine = f
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -154,7 +157,7 @@ class ReplicationModule(AlgorithmModule):
         of other processors.
         """
         if not self.view_changed:
-            return(self.known_pend_reqs.intersection(self.unassigned_reqs()))
+            return(self.known_pend_reqs().intersection(self.unassigned_reqs()))
         # I will leave this else until the calling algorithm is
         # implemented and we can see how it will react
         # else:

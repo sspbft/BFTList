@@ -103,6 +103,22 @@ class TestPredicatesAndAction(unittest.TestCase):
         vpair_to_test = {CURRENT: 0, NEXT: ViewEstablishmentEnums.TEE}
         self.assertFalse(pred_module.type_check(vpair_to_test))
 
+    def test_valid(self):
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        # A msg has the following structure:[phase, witnesses, view_pair]
+
+        # The view pairs are allowed in the corresponding phase
+        msg_to_valid = [0, {}, {"current": 0, "next": 0}]
+        self.assertTrue(view_est_mod.pred_and_action.valid(msg_to_valid))
+        msg_to_valid = [1, {}, {"current": 0, "next": 1}]
+        self.assertTrue(view_est_mod.pred_and_action.valid(msg_to_valid))
+        # The view pairs are not allowed in the corresponding phase
+        msg_to_valid = [0, {}, {"current": 0, "next": 1}]
+        self.assertFalse(view_est_mod.pred_and_action.valid(msg_to_valid))
+        msg_to_valid = [1, {}, {"current": 0, "next": 0}]
+        self.assertFalse(view_est_mod.pred_and_action.valid(msg_to_valid))
+
+
     def test_same_v_set(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
