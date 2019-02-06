@@ -12,7 +12,7 @@ python3.7 -m venv env
 source ./env/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
-chmod +x test
+chmod +x ./scripts/*
 ```
 
 Instructions for how to run this application without using [Thor](https://github.com/practicalbft/thor) (which you should not, since Thor was built for this exact use case) will be added later.
@@ -24,19 +24,19 @@ The code base is linted using [flake8](https://pypi.org/project/flake8/) with [p
 [unittest](https://docs.python.org/2/library/unittest.html) is setup so add appropriate unit tests in the `tests` folder (make sure the file starts with `test_`) and tests are executed as seen below.
 
 ```
-./test          # runs all tests
-./test unit     # runs only unit tests
-./test it       # runs only integration tests
+./scripts/test              # runs all tests
+./scripts/test unit         # runs only unit tests
+./scripts/test it           # runs only integration tests
+./scripts/test <pattern>    # runs all test files with a filename matching pattern
 ```
 
 ### Travis integration
 Both linting and testing is setup to be run for all Pull Requests and on each push to master by Travis.
 
 ## System description
-Each node uses two ports: one for the API (default to `4000`) and one for the self-stabilizing communication channel with other nodes (`500{node_id}`). Node with id `1` would therefore be using ports `4001`, `5001` and `6001` for example.
 
 ### Ports
-BFTList uses three ports (for now) to be able to run with full functionality. 
+Each running node uses three ports: one for the API (default to `400{node_id}`), one for the self-stabilizing communication channel with other nodes (`500{node_id}`) and one for exposing metrics to the Prometheus scraper (`600{node_id}`). Node with id `1` would therefore be using ports `4001`, `5001` and `6001` for example.
 
 | Port number   | Service                       | 
 | ------------- |:-----------------------------:|

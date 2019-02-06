@@ -7,8 +7,6 @@ include
 .vscode
 .pytest_cache
 env
-<<<<<<< HEAD
 conf/hosts.txt
-=======
+conf/start_state.json
 client/start
->>>>>>> master

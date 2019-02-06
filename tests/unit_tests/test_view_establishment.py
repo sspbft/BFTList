@@ -29,7 +29,6 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         view_est_mod.pred_and_action.automation = MagicMock(side_effect=(lambda t ,y, x: x))
 
         # (4) Mocks the final calls
-        view_est_mod.next_phs = Mock()
         view_est_mod.send_msg = Mock()
 
         # Run the method and check all statements above
@@ -54,7 +53,6 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         view_est_mod.pred_and_action.automation.assert_has_calls(calls_automaton, any_order = False)
 
         # (4) Check that the functions are called with correct input
-        view_est_mod.next_phs.assert_called_once()
         view_est_mod.send_msg.assert_called_once()
 
     # Used for mocking predicate_and_action automaton for different values
@@ -147,13 +145,12 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         view_est_mod.send_msg.assert_called_once()
 
     # Macros
-
     def test_echo_no_witn(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
 
         # Both conditions are fulfilled
         view_est_mod.phs[view_est_mod.id] = 0
-        view_est_mod.get_current_view = MagicMock(return_value = {"current": 0, "next": 1})
+        view_est_mod.pred_and_action.get_info = MagicMock(return_value = {"current": 0, "next": 1})
         view_est_mod.echo[1] = {view_est_mod.VIEWS: {"current": 0, "next": 1}, view_est_mod.PHASE: 0, view_est_mod.WITNESSES: None}
         self.assertTrue(view_est_mod.echo_no_witn(1))
 

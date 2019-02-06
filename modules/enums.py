@@ -1,5 +1,5 @@
 """Enums related to the modules of the algorithm."""
-from enum import Enum
+from enum import Enum, IntEnum
 
 
 class PrimaryMonitoringEnums(Enum):
@@ -10,8 +10,11 @@ class PrimaryMonitoringEnums(Enum):
     V_CHANGE = 3
 
 
-class ViewEstablishmentEnums(Enum):
+class ViewEstablishmentEnums(IntEnum):
     """Represents strings for return values from automaton."""
+
+    TEE = -1
+    DF_VIEW = 0
 
     NO_ACTION = 1
     RESET = 2
@@ -19,3 +22,6 @@ class ViewEstablishmentEnums(Enum):
 
     PREDICATE = 4
     ACTION = 5
+
+    FOLLOW = 8
+    REMAIN = 9

@@ -51,7 +51,8 @@ class Resolver:
 
     def replication_exec(self, func):
         """Executes a function on the Replication module."""
-        raise NotImplementedError
+        pass
+        # raise NotImplementedError
 
     def primary_monitoring_exec(self, func):
         """Executes a function on the Primary Monitoring module."""
