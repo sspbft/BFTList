@@ -1,0 +1,144 @@
+<!-- Template for global view of BFTList -->
+
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
+
+    <style>
+        :root {
+            --blue: #326273;
+            --white: white;
+            --light: #EEEEEE;
+            --node-side: 300px;
+        }
+
+        * {
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 1.25em;
+        }
+
+        .nodes-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 50px;
+        }
+
+        .node-wrapper {
+            flex-basis: 33%;
+            margin: 25px 0;
+        }
+
+        .node {
+            width: var(--node-side);
+            height: var(--node-side);
+            margin: auto;
+            background: var(--blue);
+            color: var(--white);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .node > p:first-child { font-size: 1.5em; }
+        p { margin: 0; }
+        .node span { opacity: 0; margin-top: 10px; }
+
+        .data {
+            font-size: 1.2em;
+            background: var(--light);
+            width: 90%;
+            margin: 25px auto;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>BFTList global view</h1>
+    <p>Another day, another algorithm</p>
+    <button id="refreshButton">Refresh view</button>
+
+    <div class="nodes-container">
+    {% for item in data %}
+        <div class="node-wrapper">
+            <div class="node">
+                <p>Node {{ item.node.id }}</p>
+                <p>Hostname {{ item.node.hostname }}</p>
+                <p>IP:port {{ item.node.ip }}:{{ item.node.port }}</p></p>
+                <span id=refreshLabel{{ item.node.id }}>Refreshing node data..</span>
+            </div>
+            
+            <div class="data">
+                <p>Phases: 
+                {% for phs in item.data.VIEW_ESTABLISHMENT_MODULE.phs %}
+                    {% if item.node.id == (loop.index - 1) %}
+                        <b><u>{{ phs }}</u></b>
+                    {% else %}
+                        {{ phs }}
+                    {% endif %}
+                {% endfor %}
+                </p>
+                <p>Views: 
+                {% for v in item.data.VIEW_ESTABLISHMENT_MODULE.views %}
+                    {% if item.node.id == (loop.index - 1) %}
+                        <b><u>[{{ v.current }},{{ v.next }}]</u></b>
+                    {% else %}
+                        [{{ v.current }},{{ v.next }}]
+                    {% endif %}
+                {% endfor %}
+                </p>
+                <p>vChange: {{ item.data.VIEW_ESTABLISHMENT_MODULE.vChange }}</p>
+                <p>Witnesses: 
+                {% for w in item.data.VIEW_ESTABLISHMENT_MODULE.witnesses %}
+                    {% if item.node.id == (loop.index - 1) %}
+                        <b><u>{{ w }}</u></b>
+                    {% else %}
+                        {{ w }}
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+
+    <script>
+        const nodes = JSON.parse('{{ data | tojson }}').map(el => el.node)
+
+        const show = node => node.style.opacity = 1
+        const hide = node => node.style.opacity = 0
+
+        // fetches data for all nodes and updates the view
+        const refreshNodes = () => {
+            nodes.forEach(n => {
+                const label = document.getElementById(`refreshLabel${n.id}`)
+                fetch(`http://${n.ip}:400${n.id}/data`)
+                    .then(res => res.json())
+                    .then(res => {
+                        console.log(res)
+                    })
+                    .catch(err => console.error(err))
+            })
+        }
+
+        // register listeners and handlers
+        const onLoad = () => {
+            setInterval(refreshNodes, 3000)
+            document.getElementById("refreshButton").onclick = refreshNodes
+        }
+        window.onload = onLoad;
+    </script>
+</body>

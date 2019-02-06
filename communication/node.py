@@ -10,3 +10,8 @@ class Node:
         self.hostname = hostname
         self.ip = ip
         self.port = int(port)
+
+    def to_dct(self):
+        """Converts a node to a corresponding dictionary."""
+        return {"id": self.id, "ip": self.ip, "hostname": self.hostname,
+                "port": self.port}

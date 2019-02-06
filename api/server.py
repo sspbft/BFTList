@@ -2,14 +2,16 @@
 
 from flask import Flask
 from api.routes import routes
+from flask_cors import CORS
 import os
 
 
 def create_app(resolver):
     """Creates the Flask app and injects a resolver."""
-    app = Flask("BFTList API")
+    app = Flask("BFTList API", template_folder="api/templates")
     app.resolver = resolver
     app.register_blueprint(routes)
+    CORS(app)
     return app
 
 

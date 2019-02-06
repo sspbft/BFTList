@@ -35,7 +35,7 @@ def start_modules(resolver):
         Module.VIEW_ESTABLISHMENT_MODULE:
             ViewEstablishmentModule(id, resolver, n, f),
         Module.REPLICATION_MODULE:
-            ReplicationModule(id, resolver),
+            ReplicationModule(id, resolver, n, f),
         Module.PRIMARY_MONITORING_MODULE:
             PrimaryMonitoringModule(id, resolver)
     }
