@@ -3,6 +3,10 @@
 import time
 from modules.algorithm_module import AlgorithmModule
 # from modules.enums import ReplicationEnums
+from modules.constants import (REP_STATE, R_LOG, PEND_REQS, REQ_Q,
+                               LAST_REQ, CON_FLAG, VIEW_CHANGE,
+                               REQUEST, SEQUENCE_NO, STATUS)  # X_SET, REPLY
+from copy import deepcopy
 
 
 class ReplicationModule(AlgorithmModule):
@@ -22,52 +26,31 @@ class ReplicationModule(AlgorithmModule):
         <rep_state, r_log, pend_req, req_q, last_req, con_flag, view_change>
     """
 
-    # For Replica structure
-    REP_STATE = "rep_state"
-    R_LOG = "r_log"
-    PEND_REQS = "pend_reqs"
-    REQ_Q = "req_q"
-    LAST_REQ = "last_req"
-    CON_FLAG = "con_flag"
-    VIEW_CHANGE = "view_change"
-
-    # For R_LOG
-    REQUEST = "request"
-    X_SET = "x_set"
-    SEQUENCE_NO = "sequence_no"
-
-    # For REQ_Q
-    STATUS = "status"
-
-    # For LAST_REQ
-    REPLY = "reply"
-
-    DEF_STATE = {REP_STATE: {},
-                 R_LOG: [],
-                 PEND_REQS: [],
-                 REQ_Q: [],
-                 LAST_REQ: [],
-                 CON_FLAG: False,
-                 VIEW_CHANGE: False}
-
     def __init__(self, id, resolver, n, f):
         """Initializes the module."""
         self.id = id
         self.resolver = resolver
         self.number_of_nodes = n
         self.number_of_byzantine = f
+        self.DEF_STATE = {REP_STATE: {},
+                          R_LOG: [],
+                          PEND_REQS: [],
+                          REQ_Q: [],
+                          LAST_REQ: [],
+                          CON_FLAG: False,
+                          VIEW_CHANGE: False}
 
         self.flush = False
         self.need_flush = False
         self.seq_n = 0
         self.rep = [
-            {self.REP_STATE: {},
-             self.R_LOG: [],
-             self.PEND_REQS: [],
-             self.REQ_Q: [],
-             self.LAST_REQ: [],
-             self.CON_FLAG: False,
-             self.VIEW_CHANGE: False}
+            {REP_STATE: {},
+             R_LOG: [],
+             PEND_REQS: [],
+             REQ_Q: [],
+             LAST_REQ: [],
+             CON_FLAG: False,
+             VIEW_CHANGE: False}
             for i in range(n)
         ]
         self.prim = None
@@ -82,33 +65,24 @@ class ReplicationModule(AlgorithmModule):
     def flush_local(self):
         """Resets all local variables."""
         self.seq_n = 0
-        self.rep = [
-            {self.REP_STATE: {},
-             self.R_LOG: [],
-             self.PEND_REQS: [],
-             self.REQ_Q: [],
-             self.LAST_REQ: [],
-             self.CON_FLAG: False,
-             self.VIEW_CHANGE: False}
-            for i in range(self.number_of_nodes)
-        ]
+        self.rep = [deepcopy(self.DEF_STATE) for i in range(
+                                                        self.number_of_nodes)]
 
     def msg(self, status, processor_j):
         """Returns requests reported to p_i from processor_j with status."""
         request_set = set()
-        for request_pair in self.rep[processor_j].get(self.REQ_Q):
-            if request_pair.get(self.STATUS) == status:     # Enums
-                request_set.add(request_pair.get(self.REQUEST))
+        for request_pair in self.rep[processor_j].get(REQ_Q):
+            if request_pair.get(STATUS) == status:
+                request_set.add(request_pair.get(REQUEST))
         return request_set
 
     def last_exec(self):
-        """Returns last request sequence number executed."""
-        last_execution = -1
-        for request_pair in self.rep[self.id].get(self.R_LOG):
-            if(request_pair.get(self.REQUEST).get(self.SEQUENCE_NO) >
-               last_execution):
-                last_execution = request_pair.get(
-                    self.REQUEST).get(self.SEQUENCE_NO)
+        """Returns last request (highest sequence number) executed."""
+        last_execution = {REQUEST: {SEQUENCE_NO: -1}}  # Dummy request
+        for request_pair in self.rep[self.id].get(R_LOG):
+            if(request_pair.get(REQUEST).get(SEQUENCE_NO) >
+               last_execution.get(REQUEST).get(SEQUENCE_NO)):
+                last_execution = deepcopy(request_pair)
         return last_execution
 
     def last_common_exec(self):
@@ -230,7 +204,7 @@ class ReplicationModule(AlgorithmModule):
         assigned a sequence number and appears in the request queue
         of other processors.
         """
-        if not self.rep[self.id].get(self.VIEW_CHANGE):
+        if not self.rep[self.id].get(VIEW_CHANGE):
             return(self.known_pend_reqs().intersection(self.unassigned_reqs()))
         # I will leave this else until the calling algorithm is
         # implemented and we can see how it will react
