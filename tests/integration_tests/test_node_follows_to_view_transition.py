@@ -1,9 +1,15 @@
-"""TODO write description for test."""
+"""Figure 4 in report: A change of view for p_0. 
+Enough processors are supporting the view change and will establish the view and then node 0 will follow.
+No one is acting Byzantine, but one node is not in the transition phase yet.
+
+The 5 nodes in the transition shall first establish the view and then node 0 will go to a phase 1 and 
+transit to view 2.
+"""
 
 import asyncio
+
 from . import helpers
 from .abstract_integration_test import AbstractIntegrationTest
-
 from resolve.enums import Module
 
 F = 1
@@ -57,7 +63,7 @@ class TestNodesFollow(AbstractIntegrationTest):
         super().log(f"{__name__} starting")
         pids = helpers.run_coro(self.bootstrap())
         super().set_pids(pids)
-        
+
         helpers.run_coro(self.validate())
         super().log(f"{__name__} finished")
 
