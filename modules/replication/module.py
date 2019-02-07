@@ -2,14 +2,29 @@
 
 import time
 from modules.algorithm_module import AlgorithmModule
+# from modules.enums import ReplicationEnums
+from modules.constants import (REP_STATE, R_LOG, PEND_REQS, REQ_Q,
+                               LAST_REQ, CON_FLAG, VIEW_CHANGE,
+                               REQUEST, STATUS)  # X_SET, REPLY, SEQUENCE_NO
+from copy import deepcopy
 
 
 class ReplicationModule(AlgorithmModule):
-    """Models the Replication module."""
+    """Models the Replication module.
 
-    flush = False
-    need_flush = False
-    view_changed = False
+    Structure of variables:
+    q (request by client): <client c, timestamp t, operation o>
+    request (accepted request): < request q, view v, sequence number seq_n>
+    rep_state = UNDEFINED
+    r_log (x_set is the set that claim to have executed/comitted request):
+        [<request, x_set>]
+    pend_req: [<request>]
+    req_q : [<request, status t>]
+    last_req[K]: (last executed request for each client): [<request, reply>]
+
+    rep[N] (replica structure):
+        [<rep_state, r_log, pend_req, req_q, last_req, con_flag, view_change>]
+    """
 
     def __init__(self, id, resolver, n, f):
         """Initializes the module."""
@@ -17,6 +32,28 @@ class ReplicationModule(AlgorithmModule):
         self.resolver = resolver
         self.number_of_nodes = n
         self.number_of_byzantine = f
+        self.DEF_STATE = {REP_STATE: {},
+                          R_LOG: [],
+                          PEND_REQS: [],
+                          REQ_Q: [],
+                          LAST_REQ: [],
+                          CON_FLAG: False,
+                          VIEW_CHANGE: False}
+
+        self.flush = False
+        self.need_flush = False
+        self.seq_n = 0
+        self.rep = [
+            {REP_STATE: {},
+             R_LOG: [],
+             PEND_REQS: [],
+             REQ_Q: [],
+             LAST_REQ: [],
+             CON_FLAG: False,
+             VIEW_CHANGE: False}
+            for i in range(n)
+        ]
+        self.prim = -1
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -27,15 +64,25 @@ class ReplicationModule(AlgorithmModule):
 
     def flush_local(self):
         """Resets all local variables."""
-        raise NotImplementedError
+        self.seq_n = 0
+        self.rep = [deepcopy(self.DEF_STATE) for i in range(
+                                                        self.number_of_nodes)]
 
     def msg(self, status, processor_j):
         """Returns requests reported to p_i from processor_j with status."""
-        raise NotImplementedError
+        request_set = []
+        for request_pair in self.rep[processor_j].get(REQ_Q):
+            if request_pair.get(STATUS) == status:
+                request_set.append(request_pair.get(REQUEST))
+        return request_set
 
     def last_exec(self):
-        """Returns last request sequence number executed."""
-        raise NotImplementedError
+        """Returns last request (highest sequence number) executed.
+
+        Requests are always added with consecutive sequence number, the last
+        element in the list is the last executed.
+        """
+        return self.rep[self.id][R_LOG][len(self.rep[self.id][R_LOG]) - 1]
 
     def last_common_exec(self):
         """Method description.
@@ -156,7 +203,7 @@ class ReplicationModule(AlgorithmModule):
         assigned a sequence number and appears in the request queue
         of other processors.
         """
-        if not self.view_changed:
+        if not self.rep[self.id].get(VIEW_CHANGE):
             return(self.known_pend_reqs().intersection(self.unassigned_reqs()))
         # I will leave this else until the calling algorithm is
         # implemented and we can see how it will react
