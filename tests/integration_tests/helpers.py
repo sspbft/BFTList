@@ -54,6 +54,7 @@ async def launch_bftlist():
         env["API_PORT"] = str(4000 + node_id)
         env["NUMBER_OF_NODES"] = str(N)
         env["NUMBER_OF_BYZANTINE"] = str(F)
+        env["NUMBER_OF_CLIENTS"] = 1
         env["HOSTS_PATH"] = os.path.abspath(RELATIVE_PATH_FIXTURES_HOST)
         env["INTEGRATION_TEST"] = "1"
         p = subprocess.Popen(cmd, shell=True, cwd=cwd, env=env)
