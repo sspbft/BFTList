@@ -1,10 +1,13 @@
 """Methods related to communication with BFTList nodes."""
 
+# standard
 import http.client
 import json
-from node import get_nodes
 import time
 from threading import Thread
+
+# local
+from node import get_nodes
 
 
 def build_payload(op, val):

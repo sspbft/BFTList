@@ -1,7 +1,15 @@
 """Module handling config related actions."""
-from communication.node import Node
+
+# standard
 import os
+import logging
 import json
+
+# local
+from communication.node import Node
+
+# globals
+logger = logging.getLogger(__name__)
 
 
 def get_nodes(hosts_path="conf/hosts.txt"):
@@ -12,12 +20,16 @@ def get_nodes(hosts_path="conf/hosts.txt"):
     """
     if os.getenv("HOSTS_PATH"):
         hosts_path = os.getenv("HOSTS_PATH")
-    with open(hosts_path) as f:
-        lines = [x.strip().split(",") for x in f.readlines()]
-        nodes = {}
-        for l in lines:
-            nodes[int(l[0])] = Node(id=l[0], hostname=l[1], ip=l[2], port=l[3])
-        return nodes
+    try:
+        with open(hosts_path) as f:
+            lines = [x.strip().split(",") for x in f.readlines()]
+            nodes = {}
+            for l in lines:
+                nodes[int(l[0])] = Node(id=l[0], hostname=l[1], ip=l[2],
+                                        port=l[3])
+            return nodes
+    except FileNotFoundError as e:
+        logger.error(e)
 
 
 def get_start_state():

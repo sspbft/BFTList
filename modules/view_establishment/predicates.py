@@ -1,9 +1,16 @@
 """Contains code related to the View Establishment module Algorithm 2."""
 
+# standard
+from copy import deepcopy
+import logging
+
+# local
 from resolve.enums import Function, Module
 from modules.enums import ViewEstablishmentEnums as enums
-from copy import deepcopy
 from modules.constants import CURRENT, NEXT
+
+# globals
+logger = logging.getLogger(__name__)
 
 
 class PredicatesAndAction():
@@ -305,7 +312,7 @@ class PredicatesAndAction():
                     self.reset_v_change()
                     return enums.NO_RETURN_VALUE
                 else:
-                    print(f"Node {self.id} not a valid view pair to adopt: \
+                    logger.error(f"Not a valid view pair to adopt: \
                         {self.view_pair_to_adopt}")
 
             # Increment view (next view)

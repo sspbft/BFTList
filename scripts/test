@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export WERKZEUG_RUN_MAIN=true
+
 function run_unit_tests() {
     echo "Running unit tests.."
     python3.7 -m unittest discover -s tests.unit_tests

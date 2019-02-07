@@ -6,14 +6,19 @@ The 5 nodes in the transition shall first establish the view and then node 0 wil
 transit to view 2.
 """
 
+# standard
 import asyncio
+import logging
 
+# local
 from . import helpers
 from .abstract_integration_test import AbstractIntegrationTest
 from resolve.enums import Module
 
+# globals
 F = 1
 N = 6
+logger = logging.getLogger(__name__)
 
 start_state = {
     "0": {
@@ -60,12 +65,12 @@ class TestNodesFollow(AbstractIntegrationTest):
                 self.assertEqual(vp, target)
 
     def test(self):
-        super().log(f"{__name__} starting")
+        logger.info(f"{__name__} starting")
         pids = helpers.run_coro(self.bootstrap())
         super().set_pids(pids)
 
         helpers.run_coro(self.validate())
-        super().log(f"{__name__} finished")
+        logger.info(f"{__name__} finished")
 
     def tearDown(self):
         helpers.kill(super().get_pids())

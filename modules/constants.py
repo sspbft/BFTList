@@ -3,6 +3,9 @@
 # View Establishment module
 CURRENT = "current"
 NEXT = "next"
+VIEWS = "views"
+PHASE = "phase"
+WITNESSES = "witnesses"
 
 # Replication module
 CLIENT_REQ = "client_request"
