@@ -165,13 +165,6 @@ class PredicatesAndAction():
         elif(self.legit_phs_one(vpair)):  # CHECK THAT NEXT IS CURRENT + 1
             self.views[self.id][NEXT] = deepcopy(vpair[NEXT])
 
-    #def adopt_phase_1(self, vpair):
-     #   """Assign the next view pair as vpairs next."""
-      #  if(vpair[NEXT] == vpair[CURRENT]):
-       #     self.views[self.id][NEXT] = deepcopy(vpair[CURRENT])
-        #else:
-         #   self.views[self.id] = deepcopy(vpair)
-
     # In the code, sometimes view of self.id is used as input and sometimes
     # not. I choose to remove it because it always uses the current
     # processors view as input to transit_set.
@@ -272,12 +265,12 @@ class PredicatesAndAction():
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
                     if (self.transit_adopble(processor_id, 0, enums.FOLLOW) and
-                        view_pair[CURRENT] != enums.TEE and
-                            self.views[self.id][CURRENT] !=
-                            view_pair[CURRENT] or (
-                                self.views[self.id][CURRENT] ==
+                        # view_pair[CURRENT] != enums.TEE and
+                            (self.views[self.id][CURRENT] !=
+                                view_pair[CURRENT] or (
+                            self.views[self.id][CURRENT] ==
                                 view_pair[CURRENT] and
-                                self.views[self.id][NEXT] != view_pair[NEXT])):
+                            self.views[self.id][NEXT] != view_pair[NEXT]))):
                         self.view_pair_to_adopt = deepcopy(view_pair)
                         return True
                 return False
