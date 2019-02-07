@@ -5,6 +5,7 @@ CURRENT = "current"
 NEXT = "next"
 
 # Replication module
+CLIENT_REQ = "client_request"
 REP_STATE = "rep_state"
 R_LOG = "r_log"
 PEND_REQS = "pend_reqs"

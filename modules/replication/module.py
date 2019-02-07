@@ -5,7 +5,7 @@ from modules.algorithm_module import AlgorithmModule
 # from modules.enums import ReplicationEnums
 from modules.constants import (REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE,
-                               REQUEST, SEQUENCE_NO, STATUS)  # X_SET, REPLY
+                               REQUEST, STATUS)  # X_SET, REPLY, SEQUENCE_NO
 from copy import deepcopy
 
 
@@ -17,13 +17,13 @@ class ReplicationModule(AlgorithmModule):
     request (accepted request): < request q, view v, sequence number seq_n>
     rep_state = UNDEFINED
     r_log (x_set is the set that claim to have executed/comitted request):
-        <request, x_set>
-    pend_req: <request>
-    req_q : <request, status t>
-    last_req: (last executed request for each client): <request, reply>
+        [<request, x_set>]
+    pend_req: [<request>]
+    req_q : [<request, status t>]
+    last_req[K]: (last executed request for each client): [<request, reply>]
 
-    rep[n] (replica structure):
-        <rep_state, r_log, pend_req, req_q, last_req, con_flag, view_change>
+    rep[N] (replica structure):
+        [<rep_state, r_log, pend_req, req_q, last_req, con_flag, view_change>]
     """
 
     def __init__(self, id, resolver, n, f):
@@ -53,7 +53,7 @@ class ReplicationModule(AlgorithmModule):
              VIEW_CHANGE: False}
             for i in range(n)
         ]
-        self.prim = None
+        self.prim = -1
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -70,20 +70,19 @@ class ReplicationModule(AlgorithmModule):
 
     def msg(self, status, processor_j):
         """Returns requests reported to p_i from processor_j with status."""
-        request_set = set()
+        request_set = []
         for request_pair in self.rep[processor_j].get(REQ_Q):
             if request_pair.get(STATUS) == status:
-                request_set.add(request_pair.get(REQUEST))
+                request_set.append(request_pair.get(REQUEST))
         return request_set
 
     def last_exec(self):
-        """Returns last request (highest sequence number) executed."""
-        last_execution = {REQUEST: {SEQUENCE_NO: -1}}  # Dummy request
-        for request_pair in self.rep[self.id].get(R_LOG):
-            if(request_pair.get(REQUEST).get(SEQUENCE_NO) >
-               last_execution.get(REQUEST).get(SEQUENCE_NO)):
-                last_execution = deepcopy(request_pair)
-        return last_execution
+        """Returns last request (highest sequence number) executed.
+
+        Requests are always added with consecutive sequence number, the last
+        element in the list is the last executed.
+        """
+        return self.rep[self.id][R_LOG][len(self.rep[self.id][R_LOG]) - 1]
 
     def last_common_exec(self):
         """Method description.

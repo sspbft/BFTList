@@ -27,7 +27,7 @@ class ViewEstablishmentEnums(IntEnum):
     REMAIN = 9
 
 
-class ReplicationEnums(Enum):
+class ReplicationEnums(IntEnum):
     """Represent status for messages."""
 
     PRE_PREP = 0
