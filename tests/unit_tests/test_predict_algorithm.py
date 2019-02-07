@@ -210,7 +210,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         vpair_to_test = {CURRENT: 1, NEXT: 1}
         view_est_mod.pred_and_action.adopt(vpair_to_test)
         self.assertEqual(view_est_mod.pred_and_action.views[view_est_mod.pred_and_action.id],
-                        {CURRENT: ViewEstablishmentEnums.DF_VIEW, NEXT: 1})
+                        {CURRENT: ViewEstablishmentEnums.TEE, NEXT: 1})
 
     def test_establishable(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
