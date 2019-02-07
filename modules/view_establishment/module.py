@@ -61,6 +61,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         """Called whenever the module is launched in a separate thread."""
         # time.sleep(2)
         while True:
+            self.resolver.lock.acquire()
             if(self.pred_and_action.need_reset()):
                 self.pred_and_action.reset_all()
             self.witnesses[self.id] = self.noticed_recent_value()
@@ -80,10 +81,10 @@ class ViewEstablishmentModule(AlgorithmModule):
                 # Onces a predicates is fulfilled, perfom action if valid case
                 if(self.pred_and_action.auto_max_case(self.phs[self.id]) >=
                         case):
-                    logger.debug(f"Phase: {self.phs[self.id]} Case: {case}")
+                    logger.info(f"Phase: {self.phs[self.id]} Case: {case}")
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
-
+            self.resolver.lock.release()
             # Send message to all other processors
             self.send_msg()
 
@@ -230,8 +231,8 @@ class ViewEstablishmentModule(AlgorithmModule):
             self.witnesses[j] = j_own_data[1]
             self.pred_and_action.set_info(j_own_data[2], j)
         else:
-            logger.info(f"Not a valid message from \
-                    node {j}: {j_own_data}")
+            logger.info(f"Not a valid message from " +
+                        f"node {j}: {j_own_data}")
 
     # Function to extract data
     def get_data(self):

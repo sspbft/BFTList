@@ -3,6 +3,7 @@ from resolve.enums import Function, Module, MessageType
 from conf.config import get_nodes
 from communication.pack_helper import PackHelper
 import json
+from threading import Lock
 
 
 class Resolver:
@@ -15,6 +16,7 @@ class Resolver:
         self.receiver = None
         self.pack_helper = PackHelper()
         self.nodes = get_nodes()
+        self.lock = Lock()
 
     def set_modules(self, modules):
         """Sets the modules dict of the resolver."""
@@ -73,10 +75,14 @@ class Resolver:
 
     def dispatch_msg(self, msg, sender_id):
         """Routes received message to the correct module."""
-        if msg["type"] == MessageType.VIEW_ESTABLISHMENT_MESSAGE:
-            self.modules[Module.VIEW_ESTABLISHMENT_MODULE].receive_msg(msg)
-        else:
-            raise NotImplementedError
+        self.lock.acquire()
+        try:
+            if msg["type"] == MessageType.VIEW_ESTABLISHMENT_MESSAGE:
+                self.modules[Module.VIEW_ESTABLISHMENT_MODULE].receive_msg(msg)
+            else:
+                raise NotImplementedError
+        finally:
+            self.lock.release()
 
     # Methods to extract data
 

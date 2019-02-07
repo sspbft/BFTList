@@ -31,7 +31,8 @@ class PredicatesAndAction():
         self.number_of_nodes = n
         self.resolver = resolver
         self.vChange = False
-        self.RST_PAIR = {CURRENT: enums.TEE, NEXT: enums.DF_VIEW}
+        # self.RST_PAIR = {CURRENT: enums.TEE, NEXT: enums.DF_VIEW}
+        self.RST_PAIR = {CURRENT: enums.DF_VIEW, NEXT: enums.DF_VIEW}
 
     # Macros
     def stale_v(self, node_k):
@@ -165,8 +166,8 @@ class PredicatesAndAction():
             raise ValueError('Not a valid mode: {}'.format(mode))
 
     def adopt(self, vpair):
-        """Assign the next view pair as vpairs current."""
-        if (vpair[CURRENT] == vpair[NEXT]):
+        """Adopt the view pair."""
+        if self.legit_phs_zero(vpair):
             self.views[self.id][NEXT] = deepcopy(
                                         vpair.get(CURRENT))
         elif(self.legit_phs_one(vpair)):  # CHECK THAT NEXT IS CURRENT + 1
@@ -271,15 +272,28 @@ class PredicatesAndAction():
             # processor i
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
-                    if (self.transit_adopble(processor_id, 0, enums.FOLLOW) and
-                        # view_pair[CURRENT] != enums.TEE and
-                            (self.views[self.id][CURRENT] !=
-                                view_pair[CURRENT] or (
-                            self.views[self.id][CURRENT] ==
-                                view_pair[CURRENT] and
-                            self.views[self.id][NEXT] != view_pair[NEXT]))):
-                        self.view_pair_to_adopt = deepcopy(view_pair)
-                        return True
+                    if processor_id != self.id:
+                        if (self.transit_adopble(processor_id, 0, enums.FOLLOW) and
+                            view_pair[CURRENT] != enums.TEE):
+                            own_current = self.views[self.id][CURRENT]
+                            # own_next = self.views[self.id][NEXT]
+                            logger.info(f"current view {self.views[self.id]}, view_pair {view_pair}")
+                            if own_current != view_pair[CURRENT]:
+                                self.view_pair_to_adopt = deepcopy(view_pair)
+                                return True
+                            else:
+                                # Same current view, need different next
+                                if own_current != view_pair[NEXT]:
+                                    self.view_pair_to_adopt = deepcopy(view_pair)
+                                    return True
+                            # view_pair[CURRENT] != enums.TEE and
+                            #    (self.views[self.id][CURRENT] !=
+                            #        view_pair[CURRENT] or (
+                            #    self.views[self.id][CURRENT] ==
+                            #        view_pair[CURRENT] and
+                            #    self.views[self.id][NEXT] != view_pair[NEXT]))):
+                            #self.view_pair_to_adopt = deepcopy(view_pair)
+                            #return True
                 return False
 
             # True if a view change was instructed by Primary Monitoring
@@ -344,16 +358,45 @@ class PredicatesAndAction():
         # Predicates
         if(type == enums.PREDICATE):
 
-            # # True if a view pair is adoptable but is not the view of
+            # True if a view pair is adoptable but is not the view of
             # processor i
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
-                    if (self.transit_adopble(processor_id, 1, enums.FOLLOW) and
-                        self.views[self.id][NEXT] !=
-                            view_pair[NEXT]):
-                        self.view_pair_to_adopt = deepcopy(view_pair)
-                        return True
+                    if view_pair[CURRENT] == view_pair[NEXT]:
+                        return False
+                    if processor_id != self.id:
+                        own_current = self.views[self.id][CURRENT] # 1
+                        own_next = self.views[self.id][NEXT] # 2
+                        if self.transit_adopble(processor_id, 1, enums.FOLLOW):
+                            if own_next != view_pair[NEXT]:
+                                if own_next != (view_pair[NEXT] + 1) % self.number_of_nodes: # our next is behind
+                                    self.view_pair_to_adopt = view_pair
+                                    return True
+                                else:
+                                    return False
+                            # else: # same next view
+                            #     if own_current != view_pair[CURRENT]: # different current view
+                            #         if own_current != view_pair[NEXT]:
+                            #             self.view_pair_to_adopt = deepcopy(view_pair)
+                            #             return True
+                            #     else: # cant adopt my own view pair
+                            #         return False 
+                                    
+                        #    ((self.views[self.id][NEXT] != view_pair[NEXT]) and (self.views[self.id][NEXT] != ((view_pair[NEXT] + 1) % self.number_of_nodes)) or
+                        #    (self.views[self.id][NEXT] == view_pair[NEXT] and self.views[self.id][CURRENT] != view_pair[CURRENT]))):
+                        #     self.view_pair_to_adopt = deepcopy(view_pair)
+                        #     return True
                 return False
+
+# if (self.transit_adopble(processor_id, 0, enums.FOLLOW) and
+#     # view_pair[CURRENT] != enums.TEE and
+#         (self.views[self.id][CURRENT] !=
+#             view_pair[CURRENT] or (
+#         self.views[self.id][CURRENT] ==
+#             view_pair[CURRENT] and
+#         self.views[self.id][NEXT] != view_pair[NEXT]))):
+#     self.view_pair_to_adopt = deepcopy(view_pair)
+#     return True
 
             # True if the view intended to be install is establishable
             elif(case == 1):
