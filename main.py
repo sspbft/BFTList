@@ -1,18 +1,27 @@
-"""Main application for BFTList."""
+"""Main script for BFTList."""
+
+# standard
 import asyncio
 import os
-import conf.config as config
-from communication import send, recv
+import logging
 from threading import Thread
+
+# external
+from prometheus_client import start_http_server
+
+# local
+from communication import send, recv
+import conf.config as config
 from api.server import start_server
 from modules.view_establishment.module import ViewEstablishmentModule
 from modules.replication.module import ReplicationModule
 from modules.primary_monitoring.module import PrimaryMonitoringModule
 from resolve.enums import Module
 from resolve.resolver import Resolver
-from prometheus_client import start_http_server
 
+# globals
 id = int(os.getenv("ID", 0))
+logger = logging.getLogger(__name__)
 
 
 def start_api(resolver):
@@ -75,12 +84,26 @@ def setup_metrics():
     """Starts metrics server for Prometheus scraper on port 600{ID}."""
     port = 6000 + id
     start_http_server(port)
-    print("Node {}: Running on {}".format(id, port))
+    logger.info(f"Node {id} running on {port}")
 
 
 def setup_logging():
-    """Sets up logging for BFTList. TODO implement"""
-    return
+    """Sets up logging for BFTList."""
+    colors = ["\033[95m", "\033[94m", "\033[92m", "\033[93m",
+              "\033[91m", "\033[0m"]
+    node_color = colors[id % len(colors)]
+    end_color = colors[len(colors) - 1]
+
+    FORMAT = f"{node_color}BFTList : Node {id}" + " ==> %(asctime)-15s : " + \
+             "[%(levelname)s] : %(message)s" + f"{end_color}"
+    logging.basicConfig(format=FORMAT, level=logging.NOTSET)
+
+    # only log ERROR messages from external loggers
+    externals = ["werkzeug", "asyncio"]
+    for e in externals:
+        logging.getLogger(e).setLevel(logging.ERROR)
+
+    logger.info("Logging configured")
 
 
 if __name__ == "__main__":

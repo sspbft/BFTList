@@ -1,10 +1,14 @@
+# standard
 from abc import ABC, abstractmethod
-import asyncio
 import unittest
-from . import helpers
+import logging
 
-BLUE = "\033[94m"
-ENDC = "\033[0m"
+# setup logging for integration tests
+FORMAT = "\33[1mIntegrationTest ==> %(name)s : [%(levelname)s]" + \
+         " : %(message)s\033[0m"
+logging.basicConfig(format=FORMAT, level=logging.NOTSET)
+logging.getLogger("urllib3.connectionpool").setLevel(logging.ERROR)
+
 
 class AbstractIntegrationTest(unittest.TestCase, ABC):
 
@@ -45,7 +49,3 @@ class AbstractIntegrationTest(unittest.TestCase, ABC):
         running around.
         """
         pass
-
-    def log(self, msg):
-        if msg:
-            print(f"{BLUE}IntegrationTest.log ==> {msg}{ENDC}")

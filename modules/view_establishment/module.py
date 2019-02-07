@@ -1,14 +1,20 @@
 """Contains code related to the View Establishment module Algorithm 1."""
 
+# standard
+import logging
+import os
+import time
+from copy import deepcopy
+from itertools import compress
+
+# local
 from modules.algorithm_module import AlgorithmModule
 from modules.view_establishment.predicates import PredicatesAndAction
 from modules.enums import ViewEstablishmentEnums
 from resolve.enums import MessageType
-from itertools import compress
 import conf.config as conf
-import os
-import time
-from copy import deepcopy
+
+logger = logging.getLogger(__name__)
 
 
 class ViewEstablishmentModule(AlgorithmModule):
@@ -80,13 +86,13 @@ class ViewEstablishmentModule(AlgorithmModule):
                 # Onces a predicates is fulfilled, perfom action if valid case
                 if(self.pred_and_action.auto_max_case(self.phs[self.id]) >=
                         case):
-                    print(f"Node {self.id}: Phase: {self.phs[self.id]} \
-                            Case: {case}")
+                    logger.debug(f"Phase: {self.phs[self.id]} Case: {case}")
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
 
             # Send message to all other processors
             self.send_msg()
+
             if os.getenv("INTEGRATION_TEST"):
                 time.sleep(0.25)
             else:
