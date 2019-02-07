@@ -346,8 +346,8 @@ class PredicatesAndAction():
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
                     if (self.transit_adopble(processor_id, 1, enums.FOLLOW) and
-                        self.views[self.id][CURRENT] !=
-                            view_pair[CURRENT]):
+                        self.views[self.id][NEXT] !=
+                            view_pair[NEXT]):
                         self.view_pair_to_adopt = deepcopy(view_pair)
                         return True
                 return False
