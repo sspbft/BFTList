@@ -1,6 +1,7 @@
+
 """
 Two nodes are behind, there is not enough node to establish view 2.
-Node 0 and 1 will perform an reset and then catch up to phase 1 for moving into view 2.
+Node 0 and 1 will catch up to phase 1 for moving into view 2.
 Then all will establish view 2 and the system will be in a safe state in phase 0, view 2.
 """
 
@@ -60,7 +61,7 @@ class TestNodesFollow(AbstractIntegrationTest):
 
     async def validate(self):
         """Validates response from / endpoint on all nodes"""
-        await asyncio.sleep(10)
+        await asyncio.sleep(20)
         aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
         res = {}
         target = {CURRENT: 2, NEXT: 2}
