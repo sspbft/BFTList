@@ -1,7 +1,12 @@
+# standard
 import asyncio
-from . import helpers
+import logging
 
+# local
+from . import helpers
 from .abstract_integration_test import AbstractIntegrationTest
+
+logger = logging.getLogger(__name__)
 
 class TestHealth(AbstractIntegrationTest):
     """Performs health check on all nodes base endpoint (/)."""
@@ -23,12 +28,12 @@ class TestHealth(AbstractIntegrationTest):
         self.assertTrue(all(res))
 
     def test(self):
-        super().log(f"{__name__} starting")
+        logger.info(f"{__name__} starting")
         pids = helpers.run_coro(self.bootstrap())
         super().set_pids(pids)
 
         helpers.run_coro(self.validate())
-        super().log(f"{__name__} finished")
+        logger.info(f"{__name__} finished")
 
     def tearDown(self):
         helpers.kill(super().get_pids())

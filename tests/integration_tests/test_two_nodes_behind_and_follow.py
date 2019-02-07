@@ -1,5 +1,7 @@
-"""Node 0 is behind and has a corrupt next view value. The others are stable in phase 0 and view 2
-Node 0 will eventually catch up.
+"""
+Two nodes are behind, there is not enough node to establish view 2.
+Node 0 and 1 will catch up to phase 1 for moving into view 2.
+Then all will establish view 2 and the system will be in a safe state in phase 0, view 2.
 """
 
 # standard
@@ -10,6 +12,8 @@ import logging
 from . import helpers
 from .abstract_integration_test import AbstractIntegrationTest
 from resolve.enums import Module
+from modules.enums import ViewEstablishmentEnums as venum
+from modules.constants import CURRENT, NEXT
 
 # globals
 F = 1
@@ -19,26 +23,31 @@ logger = logging.getLogger(__name__)
 start_state = {
     "0": {
         "VIEW_ESTABLISHMENT_MODULE": {
-            "views": [{"current": 1, "next": 4}, {"current": 2, "next": 2}, {"current": 2, "next": 2}, {"current": 2, "next": 2}, {"current": 2, "next": 2}, {"current": 2, "next": 2}],
-            "phs": [1, 0, 0, 0, 0, 0],
+            "views": [{CURRENT: 1, NEXT: 1}] + [{CURRENT: 1, NEXT: 1}] + [{CURRENT: 1, NEXT: 2} for i in range(0, N-2)],
+            "phs": [0, 0, 1, 1, 1, 1],
             "witnesses": [True for i in range (0, N)],
-            "echo": [{"views": {"current": 1, "next": 4} , "phase": 1, "witnesses": True}] +
-                    [{"views": {"current": 2, "next": 2} , "phase": 0, "witnesses": True} for i in range(0, N-1)]
-        }
+            "echo": [{"views": {CURRENT: 1, NEXT: 1} , "phase": 0, "witnesses": True} for i in range(0,N)]}
     },
     "1": {
         "VIEW_ESTABLISHMENT_MODULE": {
-            "views": [{"current": 1, "next": 4}] + [{"current": 2, "next": 2} for i in range(0, N-1)],
-            "phs": [1, 0, 0, 0, 0, 0],
+            "views": [{CURRENT: 1, NEXT: 1}] + [{CURRENT: 1, NEXT: 1}] + [{CURRENT: 1, NEXT: 2} for i in range(0, N-2)],
+            "phs": [0, 0, 1, 1, 1, 1],
             "witnesses": [True for i in range (0, N)],
-            "echo": [{"views": {"current": 1, "next": 4} , "phase": 1, "witnesses": True}] +
-                    [{"views": {"current": 2, "next": 2} , "phase": 0, "witnesses": True} for i in range(0, N-1)]
+            "echo": [{"views": {CURRENT: 1, NEXT: 1} , "phase": 0, "witnesses": True} for i in range(0,N)]
+        }
+    },
+    "2": {
+        "VIEW_ESTABLISHMENT_MODULE": {
+            "views": [{CURRENT: 1, NEXT: 1}] + [{CURRENT: 1, NEXT: 1}] + [{CURRENT: 1, NEXT: 2} for i in range(0, N-2)],
+            "phs": [0, 0, 1, 1, 1, 1],
+            "witnesses": [True for i in range (0, N)],
+            "echo": [{"views": {CURRENT: 1, NEXT: 2} , "phase": 1, "witnesses": True} for i in range(0, N)]
         }
     }
 }
 
-for i in range(2, N):
-    start_state[str(i)] = start_state["1"]
+for i in range(3, N):
+    start_state[str(i)] = start_state["2"]
 
 class TestNodesFollow(AbstractIntegrationTest):
     async def bootstrap(self):
@@ -48,10 +57,10 @@ class TestNodesFollow(AbstractIntegrationTest):
 
     async def validate(self):
         """Validates response from / endpoint on all nodes"""
-        await asyncio.sleep(10)
+        await asyncio.sleep(20)
         aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
         res = {}
-        target = {"current": 2, "next": 2}
+        target = {CURRENT: 2, NEXT: 2}
 
         # waits for all health check calls to complete
         for a in asyncio.as_completed(aws):

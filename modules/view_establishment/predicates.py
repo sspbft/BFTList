@@ -1,9 +1,16 @@
 """Contains code related to the View Establishment module Algorithm 2."""
 
+# standard
+from copy import deepcopy
+import logging
+
+# local
 from resolve.enums import Function, Module
 from modules.enums import ViewEstablishmentEnums as enums
-from copy import deepcopy
 from modules.constants import CURRENT, NEXT
+
+# globals
+logger = logging.getLogger(__name__)
 
 
 class PredicatesAndAction():
@@ -159,17 +166,11 @@ class PredicatesAndAction():
 
     def adopt(self, vpair):
         """Assign the next view pair as vpairs current."""
-        self.views[self.id][NEXT] = deepcopy(
-                                    vpair.get(CURRENT))
-        if(self.views[self.id][CURRENT] == enums.TEE):
-            self.views[self.id][CURRENT] = enums.DF_VIEW
-
-    # def adopt_phase_1(self, vpair):
-        """Assign the next view pair as vpairs next."""
-        # f(vpair[CURRENT] == vpair[NEXT]):
-        # self.views[self.id][NEXT] = deepcopy(vpair[CURRENT])
-        # else:
-        # self.views[self.id] = deepcopy(vpair)
+        if (vpair[CURRENT] == vpair[NEXT]):
+            self.views[self.id][NEXT] = deepcopy(
+                                        vpair.get(CURRENT))
+        elif(self.legit_phs_one(vpair)):  # CHECK THAT NEXT IS CURRENT + 1
+            self.views[self.id][NEXT] = deepcopy(vpair[NEXT])
 
     # In the code, sometimes view of self.id is used as input and sometimes
     # not. I choose to remove it because it always uses the current
@@ -181,10 +182,9 @@ class PredicatesAndAction():
         or to a new view (phase 1).
         """
         return (len(self.same_v_set(
-                    self.id, self.view_module.get_phs(self.id))) +
+                self.id, self.view_module.get_phs(self.id))) +
                 len(self.transit_set(self.id, phase, mode)) >=
-                (4 * self.number_of_byzantine + 1)
-                )
+                (4 * self.number_of_byzantine + 1))
 
     def establish(self):
         """Update the current view in the view pair to the next view."""
@@ -272,9 +272,12 @@ class PredicatesAndAction():
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
                     if (self.transit_adopble(processor_id, 0, enums.FOLLOW) and
-                        self.views[self.id][CURRENT] !=
-                            view_pair[CURRENT] and
-                            view_pair[CURRENT] != enums.TEE):
+                        # view_pair[CURRENT] != enums.TEE and
+                            (self.views[self.id][CURRENT] !=
+                                view_pair[CURRENT] or (
+                            self.views[self.id][CURRENT] ==
+                                view_pair[CURRENT] and
+                            self.views[self.id][NEXT] != view_pair[NEXT]))):
                         self.view_pair_to_adopt = deepcopy(view_pair)
                         return True
                 return False
@@ -309,7 +312,7 @@ class PredicatesAndAction():
                     self.reset_v_change()
                     return enums.NO_RETURN_VALUE
                 else:
-                    print(f"Node {self.id} not a valid view pair to adopt: \
+                    logger.error(f"Not a valid view pair to adopt: \
                         {self.view_pair_to_adopt}")
 
             # Increment view (next view)
