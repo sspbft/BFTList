@@ -46,9 +46,10 @@ class Sender():
                 msg_data = res[self.token_size:]
                 break
             except Exception:
-                msg = token  # resend token, will add payload here too
+                logger.warning(f"TIMEOUT: no response in {self.timeout} s")
+                # re-send message TODO add payload here and not send only token
+                msg = token
                 await self.tcp_send(msg)
-                # self.log(f"TIMEOUT: no response within {self.timeouts} s")
         return (sender, msg_type, msg_cntr, msg_data)
 
     def add_msg_to_queue(self, msg):

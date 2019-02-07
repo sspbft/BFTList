@@ -1,20 +1,24 @@
-
 """
 Two nodes are behind, there is not enough node to establish view 2.
 Node 0 and 1 will catch up to phase 1 for moving into view 2.
 Then all will establish view 2 and the system will be in a safe state in phase 0, view 2.
 """
 
+# standard
 import asyncio
+import logging
 
+# local
 from . import helpers
 from .abstract_integration_test import AbstractIntegrationTest
 from resolve.enums import Module
 from modules.enums import ViewEstablishmentEnums as venum
 from modules.constants import CURRENT, NEXT
 
+# globals
 F = 1
 N = 6
+logger = logging.getLogger(__name__)
 
 start_state = {
     "0": {
@@ -66,12 +70,12 @@ class TestNodesFollow(AbstractIntegrationTest):
                 self.assertEqual(vp, target)
 
     def test(self):
-        super().log(f"{__name__} starting")
+        logger.info(f"{__name__} starting")
         pids = helpers.run_coro(self.bootstrap())
         super().set_pids(pids)
 
         helpers.run_coro(self.validate())
-        super().log(f"{__name__} finished")
+        logger.info(f"{__name__} finished")
 
     def tearDown(self):
         helpers.kill(super().get_pids())
