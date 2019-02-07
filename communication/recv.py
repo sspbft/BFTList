@@ -1,11 +1,19 @@
 """Self-stabilizing asynchronous receiver channel."""
+
+# standard
 import asyncio
 import io
 import json
 import os
+import logging
 import socket
 import struct
+
+# local
 from .pack_helper import PackHelper
+
+# globals
+logger = logging.getLogger(__name__)
 
 
 class Receiver():
@@ -31,17 +39,12 @@ class Receiver():
         self.tcp_socket.bind((ip, int(port)))
         self.tcp_socket.listen()
 
-    def log(self, msg):
-        """Temporary logging method."""
-        return
-        print(f"Node {os.getenv('ID')}.Receiver: {msg}")
-
     async def tcp_listen(self):
         """Wait for tcp connections to arrive."""
-        self.log(f"Listening for TCP connections on {self.ip}:{self.port}")
+        logger.debug(f"Listening for TCP connections on {self.ip}:{self.port}")
         while True:
             conn, addr = await self.loop.sock_accept(self.tcp_socket)
-            self.log(f"Got TCP connection from {addr}")
+            logger.debug(f"Got TCP connection from {addr}")
             asyncio.ensure_future(self.tcp_response(conn))
 
     async def tcp_response(self, conn):
@@ -51,7 +54,7 @@ class Receiver():
         try:
             msg_size = struct.unpack("i", recv_msg_size)[0]
         except Exception as e:
-            print(e)
+            logger.error(e)
             conn.close()
             return
         res = b''
@@ -67,11 +70,11 @@ class Receiver():
             try:
                 await self.loop.sock_sendall(conn, stream)
             except Exception as e:
-                print(e)
+                logger.error(e)
                 conn.close()
                 return
         conn.close()
-        self.log("Connection closed")
+        logger.debug("Connection closed")
 
     async def check_msg(self, res):
         """Determine message type and create response message accordingly."""
@@ -82,19 +85,20 @@ class Receiver():
             msg_json = self.pack_helper.unpack(payload)[0][0]
             msg = json.loads(msg_json.decode())
             self.resolver.dispatch_msg(msg, sender)
-            # self.log(f"Received msg {msg} from node {sender}")
+            logger.debug(f"Received msg {msg} from node {sender}")
         except struct.error:
-            self.log(f"Error: Could not unpack {payload}")
+            logger.debug(f"Error: Could not unpack {payload}")
 
         if(sender not in self.tokens.keys()):
-            self.log(f"Received token from new sender with id {sender}")
+            logger.debug(f"Received token from new sender with id {sender}")
             self.tokens[sender] = 0
 
         if(self.tokens[sender] != msg_cntr):
-            self.log(f"Got incremented token {msg_cntr} from node {sender}")
+            logger.debug(f"Got incremented token {msg_cntr} from " +
+                         f"node {sender}")
             self.tokens[sender] = msg_cntr
         else:
-            self.log(f"Received same token {msg_cntr} from {sender}")
+            logger.debug(f"Received same token {msg_cntr} from {sender}")
 
         token = struct.pack("iii", msg_type, self.tokens[sender], self.id)
         return token

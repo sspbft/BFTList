@@ -59,10 +59,6 @@ class ViewEstablishmentModule(AlgorithmModule):
                         self.pred_and_action.vChange = deepcopy(
                                                         data["vChange"])
 
-    def log_state(self, msg=""):
-        """Helper log method."""
-        print(f"{msg} Node {self.id}: {self.pred_and_action.views[self.id]}")
-
     def run(self):
         """Called whenever the module is launched in a separate thread."""
         # time.sleep(2)
@@ -236,8 +232,7 @@ class ViewEstablishmentModule(AlgorithmModule):
             self.witnesses[j] = j_own_data[1]
             self.pred_and_action.set_info(j_own_data[2], j)
         else:
-            self.log_state("FAULTY_MSG_RECV")
-            print(f"Node {self.id}: Not a valid message from \
+            logger.info(f"Not a valid message from \
                     node {j}: {j_own_data}")
 
     # Function to extract data

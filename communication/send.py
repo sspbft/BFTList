@@ -1,11 +1,19 @@
 """Self-stabilizing asynchronous sender channel."""
+
+# standard
 import asyncio
+import logging
 import io
 import os
 import socket
 import struct
 from queue import Queue
+
+# local
 from metrics.messages import msgs_sent
+
+# globals
+logger = logging.getLogger(__name__)
 
 
 class Sender():
@@ -27,11 +35,6 @@ class Sender():
         self.cap = 2**31
         self.tcp_socket = None
         self.loop = asyncio.get_event_loop()
-
-    def log(self, msg):
-        """Temporary logging method."""
-        return
-        print(f"Node {os.getenv('ID')}.Sender: {msg}")
 
     async def receive(self, token):
         """Waits for data over TCP for self.timeout seconds."""
@@ -71,15 +74,15 @@ class Sender():
         while True:
             token = struct.pack("iii", self.ch_type, counter, self.id)
             sender, msg_type, msg_cntr, msg_data = await self.receive(token)
-            self.log(f"Got back token {msg_cntr} from node {sender}")
+            logger.debug(f"Got back token {msg_cntr} from node {sender}")
 
             if(msg_cntr >= counter):
                 counter = (msg_cntr + 1) % self.cap
                 token = struct.pack("iii", self.ch_type, counter, self.id)
                 payload = await self.get_msg_from_queue()
                 msg = token + payload
-                self.log(f"Incrementing counter to {counter} and sending to\
-                    node {self.addr}")
+                logger.debug(f"Incrementing counter to {counter} and " +
+                             f"sending to node {self.addr}")
                 await self.tcp_send(msg)
                 self.msg_queue.task_done()
                 # await asyncio.sleep(1)
@@ -95,7 +98,7 @@ class Sender():
                 await self.loop.sock_connect(self.tcp_socket,
                                              (self.ip, self.port))
             except OSError as e:
-                self.log(f"Exception: {e} when connecting to {self.addr}")
+                logger.error(f"Exception: {e} when connecting to {self.addr}")
                 await asyncio.sleep(1)
             else:
                 break

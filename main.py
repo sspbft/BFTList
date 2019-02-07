@@ -36,9 +36,9 @@ def start_modules(resolver):
     f = int(os.getenv("NUMBER_OF_BYZANTINE", 0))
 
     if n == 0:
-        print("Warning: env var NUMBER_OF_NODES not set or set to 0")
+        logger.warning("Env var NUMBER_OF_NODES not set or set to 0")
     if f == 0:
-        print("Warning: env var NUMBER_OF_BYZANTINE not set or set to 0")
+        logger.warning("Env var NUMBER_OF_BYZANTINE not set or set to 0")
 
     modules = {
         Module.VIEW_ESTABLISHMENT_MODULE:
@@ -94,9 +94,10 @@ def setup_logging():
     node_color = colors[id % len(colors)]
     end_color = colors[len(colors) - 1]
 
-    FORMAT = f"{node_color}BFTList : Node {id}" + " ==> %(asctime)-15s : " + \
+    FORMAT = f"{node_color}BFTList.%(name)s : Node {id}" + " ==> " + \
              "[%(levelname)s] : %(message)s" + f"{end_color}"
-    logging.basicConfig(format=FORMAT, level=logging.NOTSET)
+    level = logging.NOTSET if os.getenv("DEBUG") == "true" else logging.INFO
+    logging.basicConfig(format=FORMAT, level=level)
 
     # only log ERROR messages from external loggers
     externals = ["werkzeug", "asyncio"]
