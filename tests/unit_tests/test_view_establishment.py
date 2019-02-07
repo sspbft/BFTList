@@ -5,6 +5,7 @@ from modules.view_establishment.predicates import PredicatesAndAction
 from modules.view_establishment.module import ViewEstablishmentModule
 from modules.enums import ViewEstablishmentEnums
 from resolve.enums import Function, Module
+from modules.constants import VIEWS, PHASE, WITNESSES
 
 
 class ViewEstablishmentModuleTest(unittest.TestCase):
@@ -151,15 +152,15 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         # Both conditions are fulfilled
         view_est_mod.phs[view_est_mod.id] = 0
         view_est_mod.pred_and_action.get_info = MagicMock(return_value = {"current": 0, "next": 1})
-        view_est_mod.echo[1] = {view_est_mod.VIEWS: {"current": 0, "next": 1}, view_est_mod.PHASE: 0, view_est_mod.WITNESSES: None}
+        view_est_mod.echo[1] = {VIEWS: {"current": 0, "next": 1}, PHASE: 0, WITNESSES: None}
         self.assertTrue(view_est_mod.echo_no_witn(1))
 
         # The view in the echo is not correct
-        view_est_mod.echo[1] = {view_est_mod.VIEWS: {"current": 0, "next": 0}, view_est_mod.PHASE: 0, view_est_mod.WITNESSES: None}
+        view_est_mod.echo[1] = {VIEWS: {"current": 0, "next": 0}, PHASE: 0, WITNESSES: None}
         self.assertFalse(view_est_mod.echo_no_witn(1))
 
         # The phase in the echo is not correct
-        view_est_mod.echo[1] = {view_est_mod.VIEWS: {"current": 0, "next": 1}, view_est_mod.PHASE: 1, view_est_mod.WITNESSES: None}
+        view_est_mod.echo[1] = {VIEWS: {"current": 0, "next": 1}, PHASE: 1, WITNESSES: None}
         self.assertFalse(view_est_mod.echo_no_witn(1))
 
     def test_witnes_seen(self):
@@ -168,8 +169,8 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         # Both condition fulfilled with f = 0
         view_est_mod.witnesses[view_est_mod.id] = True
         view_est_mod.witnesses_set = {1}
-        view_est_mod.echo[0] = {view_est_mod.VIEWS: {"current": 0, "next": 1}, view_est_mod.PHASE: 1, view_est_mod.WITNESSES: None}
-        view_est_mod.echo[1] = {view_est_mod.VIEWS: {"current": 0, "next": 1}, view_est_mod.PHASE: 1, view_est_mod.WITNESSES: None}
+        view_est_mod.echo[0] = {VIEWS: {"current": 0, "next": 1}, PHASE: 1, WITNESSES: None}
+        view_est_mod.echo[1] = {VIEWS: {"current": 0, "next": 1}, PHASE: 1, WITNESSES: None}
         self.assertTrue(view_est_mod.witnes_seen())
 
         # Processor i has not been witnessed

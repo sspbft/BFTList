@@ -13,6 +13,7 @@ from modules.view_establishment.predicates import PredicatesAndAction
 from modules.enums import ViewEstablishmentEnums
 from resolve.enums import MessageType
 import conf.config as conf
+from modules.constants import VIEWS, PHASE, WITNESSES
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +21,6 @@ logger = logging.getLogger(__name__)
 class ViewEstablishmentModule(AlgorithmModule):
     """Models the View Establishment module."""
 
-    VIEWS = "views"
-    PHASE = "phase"
-    WITNESSES = "witnesses"
     run_forever = True
 
     def __init__(self, id, resolver, n, f):
@@ -33,7 +31,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.pred_and_action = PredicatesAndAction(self, id, self.resolver,
                                                    n, f)
         self.echo = [
-            {self.VIEWS: {}, self.PHASE: 0, self.WITNESSES: {}}
+            {VIEWS: {}, PHASE: 0, WITNESSES: {}}
             for i in range(n)
         ]
 
@@ -106,8 +104,8 @@ class ViewEstablishmentModule(AlgorithmModule):
         the current view and phase.
         """
         return (self.pred_and_action.get_info(self.id) ==
-                self.echo[processor_k].get(self.VIEWS) and
-                self.phs[self.id] == self.echo[processor_k].get(self.PHASE))
+                self.echo[processor_k].get(VIEWS) and
+                self.phs[self.id] == self.echo[processor_k].get(PHASE))
 
     def witnes_seen(self):
         """Method description.
@@ -184,9 +182,9 @@ class ViewEstablishmentModule(AlgorithmModule):
             # update own echo instead of sending message
             if node_j == self.id:
                 self.echo[self.id] = {
-                    self.VIEWS: self.pred_and_action.get_info(self.id),
-                    self.PHASE: self.phs[self.id],
-                    self.WITNESSES: self.witnesses[self.id]
+                    VIEWS: self.pred_and_action.get_info(self.id),
+                    PHASE: self.phs[self.id],
+                    WITNESSES: self.witnesses[self.id]
                 }
             else:
                 # node_i's own data
@@ -223,9 +221,9 @@ class ViewEstablishmentModule(AlgorithmModule):
 
         if(self.pred_and_action.valid(j_own_data)):
             self.echo[j] = {
-                self.PHASE: j_about_data[0],
-                self.WITNESSES: j_about_data[1],
-                self.VIEWS: j_about_data[2]
+                PHASE: j_about_data[0],
+                WITNESSES: j_about_data[1],
+                VIEWS: j_about_data[2]
             }
 
             self.phs[j] = j_own_data[0]
