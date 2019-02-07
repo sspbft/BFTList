@@ -1,0 +1,66 @@
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
+
+    <style>
+        :root {
+            --blue: #326273;
+            --white: white;
+            --light: #EEEEEE;
+            --node-side: 300px;
+        }
+
+        * {
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 1.25em;
+        }
+
+        .nodes-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 50px;
+        }
+
+        .node-wrapper {
+            flex-basis: 33%;
+            margin: 25px 0;
+        }
+
+        .node {
+            width: var(--node-side);
+            height: var(--node-side);
+            margin: auto;
+            background: var(--blue);
+            color: var(--white);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .node > p:first-child { font-size: 1.5em; }
+        p { margin: 0; }
+        .node span { opacity: 0; margin-top: 10px; }
+
+        .data {
+            font-size: 1.2em;
+            background: var(--light);
+            width: 90%;
+            margin: 25px auto;
+            padding: 10px;
+        }
+    </style>
+</head>
