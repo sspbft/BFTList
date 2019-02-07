@@ -5,7 +5,7 @@ from modules.algorithm_module import AlgorithmModule
 # from modules.enums import ReplicationEnums
 from modules.constants import (REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE,
-                               REQUEST, STATUS)  # X_SET, REPLY, SEQUENCE_NO
+                               REQUEST, STATUS, SEQUENCE_NO)  # , X_SET, REPLY
 from copy import deepcopy
 
 
@@ -82,19 +82,54 @@ class ReplicationModule(AlgorithmModule):
         Requests are always added with consecutive sequence number, the last
         element in the list is the last executed.
         """
-        return self.rep[self.id][R_LOG][len(self.rep[self.id][R_LOG]) - 1]
+        # If empty, return none
+        if(self.rep[self.id][R_LOG]):
+            return self.rep[self.id][R_LOG][-1]
+        return None
 
     def last_common_exec(self):
         """Method description.
 
-        Returns last request sequence number executed by at least 3f+1
-        processors.
+        Returns last request (highest sequence number) executed by at
+        least 3f+1 processors. If no such request exist, returns None.
         """
-        raise NotImplementedError
+        # TODO Check if we can use x[X_SET] instead of having the
+        # nested for loop. Need to check the logic behind it.
+        # The Xset is never set anywhere in pseudo code.
+
+        # Dummy request to start with
+        last_common_exec_request = None
+        for replica_structure in self.rep:
+            # If R_LOG is empty, ignore that processor
+            if(replica_structure[R_LOG]):
+                # Get last excecuted request done by this processor
+                x = replica_structure[R_LOG][-1]
+                number_of_processor_to_agree = 0
+                # Check if 3f + 1 other processors has executed this request
+                for replica_structure2 in self.rep:
+                    if x in replica_structure2[R_LOG]:
+                        number_of_processor_to_agree += 1
+                # If so, compare sequence number
+                if (number_of_processor_to_agree >=
+                   (3 * self.number_of_byzantine + 1)):
+                        if (last_common_exec_request is None):
+                            last_common_exec_request = deepcopy(x)
+                        elif (x[REQUEST][SEQUENCE_NO] >
+                              last_common_exec_request[REQUEST][SEQUENCE_NO]):
+                                last_common_exec_request = deepcopy(x)
+        return last_common_exec_request
 
     def conflict(self):
         """Returns true if 4f+1 processors has conFlag to true."""
-        raise NotImplementedError
+        processors_with_conflicts = 0
+        for replica_structure in self.rep:
+            if(replica_structure[CON_FLAG]):
+                processors_with_conflicts += 1
+
+        if processors_with_conflicts >= (4 * self.number_of_byzantine + 1):
+            return True
+
+        return False
 
     def com_pref_states(self, required_processors):
         """Method description.

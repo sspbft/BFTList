@@ -67,6 +67,85 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.last_exec(), {REQUEST: self.dummyRequest2, X_SET: {5}})
         
 
+    def test_last_common_execution(self):
+        # 4 nodes, 1 byzantine
+        replication = ReplicationModule(0, self.resolver, 5, 1)
+
+        # The last common executed request is 2
+        replication.rep = [{
+             REP_STATE: {},
+             R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}},
+                    {REQUEST: self.dummyRequest2, X_SET:{}}],
+             PEND_REQS: [],
+             REQ_Q: [],
+             LAST_REQ: [],
+             CON_FLAG: False,
+            VIEW_CHANGE: False} for i in range(5)]
+
+        self.assertEqual(replication.last_common_exec(), {REQUEST: self.dummyRequest2, X_SET:{}})
+
+        # There is no common last executed request, 3 nodes have
+        # request 1 and 2 nodes have not executed anything.
+        replication.rep = [{
+             REP_STATE: {},
+             R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}}],
+             PEND_REQS: [],
+             REQ_Q: [],
+             LAST_REQ: [],
+             CON_FLAG: False,
+            VIEW_CHANGE: False} for i in range(2)] + [{
+                REP_STATE: {},
+                R_LOG: [],
+                PEND_REQS: [],
+                REQ_Q: [],
+                LAST_REQ: [],
+                CON_FLAG: False,
+                VIEW_CHANGE: False} for i in range(3,5)]
+
+        self.assertIsNone(replication.last_common_exec())
+
+        # There is no common last executed request, 3 nodes have request 1 and 2 nodes request 2
+        # This case should not happen, the last 2 nodes should not be able to add request 2 without
+        # seeing request 2. But it checks the logic of the function.
+        replication.rep = [{
+             REP_STATE: {},
+             R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}}],
+             PEND_REQS: [],
+             REQ_Q: [],
+             LAST_REQ: [],
+             CON_FLAG: False,
+            VIEW_CHANGE: False} for i in range(2)] + [{
+                REP_STATE: {},
+                R_LOG: [{REQUEST: self.dummyRequest2, X_SET:{}}],
+                PEND_REQS: [],
+                REQ_Q: [],
+                LAST_REQ: [],
+                CON_FLAG: False,
+                VIEW_CHANGE: False} for i in range(3,5)]
+
+        self.assertIsNone(replication.last_common_exec())
+
+        # The common last executed request is request 1
+        # 3 nodes have only request 1 and 2 nodes request 1 and request 2
+        replication.rep = [{
+             REP_STATE: {},
+             R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}}],
+             PEND_REQS: [],
+             REQ_Q: [],
+             LAST_REQ: [],
+             CON_FLAG: False,
+            VIEW_CHANGE: False} for i in range(2)] + [{
+                REP_STATE: {},
+                R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}},
+                        {REQUEST: self.dummyRequest2, X_SET:{}}],
+                PEND_REQS: [],
+                REQ_Q: [],
+                LAST_REQ: [],
+                CON_FLAG: False,
+                VIEW_CHANGE: False} for i in range(3,5)]
+
+        self.assertEqual(replication.last_common_exec(), {REQUEST: self.dummyRequest1, X_SET:{}})
+
     # Interface functions
 
     def test_get_pend_reqs(self):
