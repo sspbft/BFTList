@@ -114,13 +114,13 @@ class PredicatesAndAction():
         - Returns the set of nodes that will support
         to enums.FOLLOW to a new view or to a view change.
         """
-        processor_set = set()
+        processor_set_transit = set()
         for processor_id, view_pair in enumerate(self.views):
             if(self.view_module.get_phs(processor_id) != phase and
                 self.transition_cases(node_j, view_pair, phase, mode) and not
                     self.stale_v(processor_id)):
-                        processor_set.add(processor_id)
-        return processor_set
+                        processor_set_transit.add(processor_id)
+        return processor_set_transit
 
     def transition_cases(self, node_j, vpair, phase, mode):
         """Method description.
@@ -158,10 +158,18 @@ class PredicatesAndAction():
             raise ValueError('Not a valid mode: {}'.format(mode))
 
     def adopt(self, vpair):
-        """Assign the current view pair as vpair."""
+        """Assign the next view pair as vpairs current."""
         self.views[self.id][NEXT] = deepcopy(
-                                            vpair.get(CURRENT))
-        # self.views[self.id].update({NEXT: vpair.get(CURRENT)})
+                                    vpair.get(CURRENT))
+        if(self.views[self.id][CURRENT] == enums.TEE):
+            self.views[self.id][CURRENT] = enums.DF_VIEW
+
+    # def adopt_phase_1(self, vpair):
+        """Assign the next view pair as vpairs next."""
+        # f(vpair[CURRENT] == vpair[NEXT]):
+        # self.views[self.id][NEXT] = deepcopy(vpair[CURRENT])
+        # else:
+        # self.views[self.id] = deepcopy(vpair)
 
     # In the code, sometimes view of self.id is used as input and sometimes
     # not. I choose to remove it because it always uses the current
@@ -181,9 +189,7 @@ class PredicatesAndAction():
     def establish(self):
         """Update the current view in the view pair to the next view."""
         self.views[self.id][CURRENT] = deepcopy(self.views[
-                                                self.id].get(NEXT))
-        # self.views[self.id].update(
-        #     {'current': self.views[self.id].get(NEXT)})
+                                                self.id][NEXT])
 
     def next_view(self):
         """Updates the next view in the view pair to upcoming view."""
@@ -267,7 +273,8 @@ class PredicatesAndAction():
                 for processor_id, view_pair in enumerate(self.views):
                     if (self.transit_adopble(processor_id, 0, enums.FOLLOW) and
                         self.views[self.id][CURRENT] !=
-                            view_pair[CURRENT]):
+                            view_pair[CURRENT] and
+                            view_pair[CURRENT] != enums.TEE):
                         self.view_pair_to_adopt = deepcopy(view_pair)
                         return True
                 return False
@@ -339,8 +346,8 @@ class PredicatesAndAction():
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
                     if (self.transit_adopble(processor_id, 1, enums.FOLLOW) and
-                        self.views[self.id][NEXT] !=
-                            view_pair[NEXT]):
+                        self.views[self.id][CURRENT] !=
+                            view_pair[CURRENT]):
                         self.view_pair_to_adopt = deepcopy(view_pair)
                         return True
                 return False

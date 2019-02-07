@@ -13,19 +13,14 @@ class TestPredicatesAndAction(unittest.TestCase):
     def setUp(self):
         self.resolver = Resolver()
 
-    ## REMOVE
     def test_valid(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 5, 0)
-        # A msg has the following structure:[phase, witnesses, view_pair]
-        #v_pair = {view_est_mod.pred_and_action.CURRENT: -1, view_est_mod.pred_and_action.NEXT: 0}
         v_pair = {CURRENT: ViewEstablishmentEnums.TEE, NEXT: ViewEstablishmentEnums.DF_VIEW}
         msg_to_valid = [0, False, v_pair]
-        #self.assertTrue(view_est_mod.pred_and_action.legit_phs_zero(v_pair))
-        #self.assertTrue(view_est_mod.pred_and_action.legit_phs_zero(v_pair))
         self.assertTrue(view_est_mod.pred_and_action.valid(msg_to_valid))
+        msg_to_valid = [1, False, {CURRENT: 1, NEXT: 1}]
+        self.assertFalse(view_est_mod.pred_and_action.valid(msg_to_valid))
 
-
-    ####
     # Macros
     def test_stale_v(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
@@ -215,7 +210,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         vpair_to_test = {CURRENT: 1, NEXT: 1}
         view_est_mod.pred_and_action.adopt(vpair_to_test)
         self.assertEqual(view_est_mod.pred_and_action.views[view_est_mod.pred_and_action.id],
-                        {CURRENT: ViewEstablishmentEnums.TEE, NEXT: 1})
+                        {CURRENT: ViewEstablishmentEnums.DF_VIEW, NEXT: 1})
 
     def test_establishable(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
