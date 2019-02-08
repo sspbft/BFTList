@@ -8,17 +8,20 @@ FORMAT = "\33[1mIntegrationTest ==> %(name)s : [%(levelname)s]" + \
          " : %(message)s\033[0m"
 logging.basicConfig(format=FORMAT, level=logging.NOTSET)
 logging.getLogger("urllib3.connectionpool").setLevel(logging.ERROR)
+logging.getLogger("asyncio").setLevel(logging.ERROR)
 
 
 class AbstractIntegrationTest(unittest.TestCase, ABC):
+
+    pids = []
 
     def set_pids(self, pids):
         self.pids = pids
 
     def get_pids(self):
-        if self.pids:
-            return self.pids
-        return []
+        if not self.pids:
+            return []
+        return self.pids
 
     @abstractmethod
     def bootstrap(self):

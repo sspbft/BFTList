@@ -13,7 +13,7 @@ HOST = "http://localhost"
 BASE_PORT = 4000
 N = 6
 F = 1
-RELATIVE_PATH_FIXTURES_HOST = "./tests/integration_tests/fixtures/nodes.txt"
+RELATIVE_PATH_FIXTURES_HOST = "./tests/fixtures/hosts.txt"
 start_state_file_path = os.path.abspath("./conf/start_state.json")
 
 def run_coro(coro):
@@ -54,7 +54,7 @@ async def launch_bftlist():
         env["API_PORT"] = str(4000 + node_id)
         env["NUMBER_OF_NODES"] = str(N)
         env["NUMBER_OF_BYZANTINE"] = str(F)
-        env["NUMBER_OF_CLIENTS"] = 1
+        env["NUMBER_OF_CLIENTS"] = "1"
         env["HOSTS_PATH"] = os.path.abspath(RELATIVE_PATH_FIXTURES_HOST)
         env["INTEGRATION_TEST"] = "1"
         p = subprocess.Popen(cmd, shell=True, cwd=cwd, env=env)

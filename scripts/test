@@ -2,20 +2,35 @@
 
 export WERKZEUG_RUN_MAIN=true
 
+function check_fail() {
+    if [ $? -ne 0 ]; then
+        echo $1
+        exit 1
+    fi
+}
+
+# inject hosts file
+cp ./tests/fixtures/hosts.txt ./conf/hosts.txt
+
 function run_unit_tests() {
     echo "Running unit tests.."
     python3.7 -m unittest discover -s tests.unit_tests
+    check_fail "Unit tests failed"
     echo "Unit tests done!"
 }
 
 function run_integration_tests() {
     echo "Running integration tests.."
     python3.7 -m unittest discover -s tests.integration_tests
+    check_fail "Integration tests failed"
     echo "Integration tests done!"
 }
 
 function run_test_by_pattern() {
+    echo "Running test by pattern"
     python3.7 -m unittest discover -s tests -p $1
+    check_fail "Test(s) failed"
+    echo "Test(s) done!"
 }
 
 if [ $# -eq 0 ]; then
@@ -26,9 +41,12 @@ elif [ $# -eq 1 ]; then
     # run either integration tests or unit tests
     if [ "$1" = "it" ]; then
         run_integration_tests
+        echo ?$
     elif [ "$1" = "unit" ]; then
         run_unit_tests
     else
         run_test_by_pattern $1
     fi
 fi
+
+exit 0
