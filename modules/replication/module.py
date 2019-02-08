@@ -6,7 +6,7 @@ from modules.algorithm_module import AlgorithmModule
 # from modules.enums import ReplicationEnums
 from modules.constants import (MAXINT, SIGMA,
                                REP_STATE, R_LOG, PEND_REQS, REQ_Q,
-                               LAST_REQ, CON_FLAG, VIEW_CHANGE,
+                               LAST_REQ, CON_FLAG, VIEW_CHANGE, X_SET,
                                REQUEST, STATUS, SEQUENCE_NO, CLIENT_REQ)
 # , X_SET, REPLY
 from copy import deepcopy
@@ -197,7 +197,12 @@ class ReplicationModule(AlgorithmModule):
 
     def stale_rep(self):
         """Returns true if double(), unsup_req or stale_req_seqn is true."""
-        raise NotImplementedError
+        x_set_less = False
+        for request_pair in self.rep[self.id][R_LOG]:
+            if(len(request_pair[X_SET]) <= (3 * self.number_of_byzantine + 1)):
+                x_set_less = True
+        return (self.stale_req_seqn() or self.unsup_req() or self.double() or
+                x_set_less)
 
     def known_pend_reqs(self):
         """Method description.
@@ -205,15 +210,47 @@ class ReplicationModule(AlgorithmModule):
         Returns the set of requests in request queue and in the message queue
         of 3f+1 other processors.
         """
-        raise NotImplementedError
+        request_set = []
+        for x in self.rep[self.id][PEND_REQS]:
+            processor_set = 0
+            for replica_structure in self.rep:
+                if x in replica_structure[PEND_REQS]:
+                    processor_set += 1
+                else:
+                    # Avoid searching this queue if already found in pending
+                    # requests
+                    for request_pair in replica_structure[REQ_Q]:
+                        if x == request_pair[REQUEST]:
+                            processor_set += 1
+
+            if(processor_set >= (3 * self.number_of_byzantine + 1)):
+                request_set.append(x)
+        return request_set
 
     def known_reqs(self, status):
         """Method description.
 
-        Returns the set of requests in request queue and in the message queue
+        Returns the set of requests in request queue and in the request queue
         of 3f+1 other processors with status.
+        Status is a set of statuses
         """
-        raise NotImplementedError
+        # If the input is only one element, and not as a set, convert to a set
+        if type(status) is not set:
+            status = {status}
+
+        request_set = []
+        for x in self.rep[self.id][REQ_Q]:
+            processor_set = 0
+            # TODO logic question for Ioannis, does the msg in other processors
+            # reqQ also need to have the "correct" status status
+            if x[STATUS] in status:
+                for replication_structure in self.rep:
+                    for request_pair in replication_structure[REQ_Q]:
+                        if(x[REQUEST] == request_pair[REQUEST]):
+                            processor_set += 1
+            if processor_set >= (3 * self.number_of_byzantine + 1):
+                request_set.append(x)
+        return request_set
 
     def delayed(self):
         """Method description.
