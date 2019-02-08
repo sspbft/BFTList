@@ -1,12 +1,14 @@
 """Contains code related to the Replication module."""
 
 import time
+import itertools
 from modules.algorithm_module import AlgorithmModule
 # from modules.enums import ReplicationEnums
 from modules.constants import (MAXINT, SIGMA,
                                REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE,
-                               REQUEST, STATUS, SEQUENCE_NO)  # , X_SET, REPLY
+                               REQUEST, STATUS, SEQUENCE_NO, CLIENT_REQ)
+# , X_SET, REPLY
 from copy import deepcopy
 
 
@@ -14,8 +16,9 @@ class ReplicationModule(AlgorithmModule):
     """Models the Replication module.
 
     Structure of variables:
-    q (request by client): <client c, timestamp t, operation o>
-    request (accepted request): < request q, view v, sequence number seq_n>
+    client_request (request by client): <client c, timestamp t, operation o>
+    request (accepted request): < request client_request, view v,
+                                                    sequence number seq_n>
     rep_state = UNDEFINED
     r_log (x_set is the set that claim to have executed/comitted request):
         [<request, x_set>]
@@ -154,10 +157,18 @@ class ReplicationModule(AlgorithmModule):
     def double(self):
         """Method description.
 
-        Returns true if request queue contains two copies of a request with
-        different sequence numbers or views.
+        Returns true if request queue contains two copies of a client request
+        with different sequence numbers or views.
         """
-        raise NotImplementedError
+        # Create all possible 2-combinations of the requests
+        for request_pair1, request_pair2 in itertools.combinations(
+                                                self.rep[self.id][REQ_Q], 2):
+            if(request_pair1[REQUEST][CLIENT_REQ] ==
+                request_pair2[REQUEST][CLIENT_REQ] and
+                # the sequence number or view number is different
+                    request_pair1[REQUEST] != request_pair2[REQUEST]):
+                return True
+        return False
 
     def stale_req_seqn(self):
         """Returns true if the sequence number has reached its limit."""
@@ -170,7 +181,19 @@ class ReplicationModule(AlgorithmModule):
         Returns true if a request exists in request queue less than
         2f+1 times (the request is unsupported).
         """
-        raise NotImplementedError
+        for request in self.rep[self.id][REQ_Q]:
+            processors_supporting = 0
+            my_request = request[REQUEST]
+            client_request = my_request[CLIENT_REQ]
+            # get replica states of all other processors
+            for replica_state in self.rep:
+                # for all request in their request queue
+                for req in replica_state[REQ_Q]:
+                    if(client_request == req[REQUEST][CLIENT_REQ]):
+                        processors_supporting += 1
+            if(processors_supporting < (2 * self.number_of_byzantine + 1)):
+                return True
+        return False
 
     def stale_rep(self):
         """Returns true if double(), unsup_req or stale_req_seqn is true."""
@@ -199,7 +222,8 @@ class ReplicationModule(AlgorithmModule):
         executed request plus
         3*cardinality size of the clients set*defined integer constant(3Ksigma)
         """
-        raise NotImplementedError
+        return (self.last_exec() <
+                (self.last_common_exec() - 3 * self.number_of_clients * SIGMA))
 
     def exists_preprep_msg(self, request, prim):
         """Method description.
