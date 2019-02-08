@@ -1,3 +1,10 @@
+"""
+Case 2
+
+Primary Monitoring module has required a view change at 3f+1 nodes,
+node 5 does not want to change view
+"""
+
 # standard
 import asyncio
 import logging

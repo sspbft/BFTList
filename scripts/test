@@ -9,6 +9,8 @@ function check_fail() {
     fi
 }
 
+# inject hosts file
+cp ./tests/fixtures/hosts.txt ./conf/hosts.txt
 
 function run_unit_tests() {
     echo "Running unit tests.."

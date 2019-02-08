@@ -1,4 +1,7 @@
-"""Figure 4 in report: A change of view for p_0. 
+"""
+Case 1
+
+Figure 4 in report: A change of view for p_0. 
 Enough processors are supporting the view change and will establish the view and then node 0 will follow.
 No one is acting Byzantine, but one node is not in the transition phase yet.
 

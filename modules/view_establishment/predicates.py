@@ -32,7 +32,7 @@ class PredicatesAndAction():
         self.resolver = resolver
         self.vChange = False
         # self.RST_PAIR = {CURRENT: enums.TEE, NEXT: enums.DF_VIEW}
-        self.RST_PAIR = {CURRENT: enums.DF_VIEW, NEXT: enums.DF_VIEW}
+        self.RST_PAIR = {CURRENT: enums.TEE, NEXT: enums.DF_VIEW}
 
     # Macros
     def stale_v(self, node_k):
