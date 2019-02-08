@@ -3,11 +3,11 @@
 import time
 from modules.algorithm_module import AlgorithmModule
 # from modules.enums import ReplicationEnums
-from modules.constants import (REP_STATE, R_LOG, PEND_REQS, REQ_Q,
+from modules.constants import (MAXINT, SIGMA,
+                               REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE,
                                REQUEST, STATUS, SEQUENCE_NO)  # , X_SET, REPLY
 from copy import deepcopy
-import sys
 
 
 class ReplicationModule(AlgorithmModule):
@@ -26,9 +26,6 @@ class ReplicationModule(AlgorithmModule):
     rep[N] (replica structure):
         [<rep_state, r_log, pend_req, req_q, last_req, con_flag, view_change>]
     """
-
-    MAXINT = sys.maxsize  # Sequence number limit
-    SIGMA = 10  # Threshold for assigning sequence numbers
 
     def __init__(self, id, resolver, n, f, k):
         """Initializes the module."""
@@ -164,8 +161,8 @@ class ReplicationModule(AlgorithmModule):
 
     def stale_req_seqn(self):
         """Returns true if the sequence number has reached its limit."""
-        return((self.last_exec() + self.number_of_clients * self.SIGMA) >
-               self.MAXINT)
+        return((self.last_exec() + self.number_of_clients * SIGMA) >
+               MAXINT)
 
     def unsup_req(self):
         """Method description.
