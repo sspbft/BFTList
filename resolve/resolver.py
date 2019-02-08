@@ -85,7 +85,6 @@ class Resolver:
             self.lock.release()
 
     # Methods to extract data
-
     def get_view_establishment_data(self):
         """Returns current values of variables.
 

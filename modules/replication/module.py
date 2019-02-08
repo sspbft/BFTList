@@ -3,9 +3,10 @@
 import time
 from modules.algorithm_module import AlgorithmModule
 # from modules.enums import ReplicationEnums
-from modules.constants import (REP_STATE, R_LOG, PEND_REQS, REQ_Q,
+from modules.constants import (MAXINT, SIGMA,
+                               REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE,
-                               REQUEST, STATUS)  # X_SET, REPLY, SEQUENCE_NO
+                               REQUEST, STATUS, SEQUENCE_NO)  # , X_SET, REPLY
 from copy import deepcopy
 
 
@@ -26,12 +27,13 @@ class ReplicationModule(AlgorithmModule):
         [<rep_state, r_log, pend_req, req_q, last_req, con_flag, view_change>]
     """
 
-    def __init__(self, id, resolver, n, f):
+    def __init__(self, id, resolver, n, f, k):
         """Initializes the module."""
         self.id = id
         self.resolver = resolver
         self.number_of_nodes = n
         self.number_of_byzantine = f
+        self.number_of_clients = k
         self.DEF_STATE = {REP_STATE: {},
                           R_LOG: [],
                           PEND_REQS: [],
@@ -81,20 +83,56 @@ class ReplicationModule(AlgorithmModule):
 
         Requests are always added with consecutive sequence number, the last
         element in the list is the last executed.
+        If no request executed, return None.
         """
-        return self.rep[self.id][R_LOG][len(self.rep[self.id][R_LOG]) - 1]
+        if(self.rep[self.id][R_LOG]):
+            return self.rep[self.id][R_LOG][-1][REQUEST][SEQUENCE_NO]
+        return None
 
     def last_common_exec(self):
         """Method description.
 
-        Returns last request sequence number executed by at least 3f+1
-        processors.
+        Returns last request (highest sequence number) executed by at
+        least 3f+1 processors. If no such request exist, returns None.
         """
-        raise NotImplementedError
+        # TODO Check if we can use x[X_SET] instead of having the
+        # nested for loop. Need to check the logic behind it.
+        # The Xset is never set anywhere in pseudo code.
+
+        # Dummy request to start with
+        last_common_exec_request = None
+        for replica_structure in self.rep:
+            # If R_LOG is empty, ignore that processor
+            if(replica_structure[R_LOG]):
+                # Get last excecuted request done by this processor
+                x = replica_structure[R_LOG][-1]
+                number_of_processor_to_agree = 0
+                # Check if 3f + 1 other processors has executed this request
+                for replica_structure2 in self.rep:
+                    if x in replica_structure2[R_LOG]:
+                        number_of_processor_to_agree += 1
+                # If so, compare sequence number
+                if (number_of_processor_to_agree >=
+                   (3 * self.number_of_byzantine + 1)):
+                        if (last_common_exec_request is None):
+                            last_common_exec_request = deepcopy(
+                                x[REQUEST][SEQUENCE_NO])
+                        elif (x[REQUEST][SEQUENCE_NO] >
+                              last_common_exec_request):
+                                last_common_exec_request = deepcopy(
+                                    x[REQUEST][SEQUENCE_NO])
+        return last_common_exec_request
 
     def conflict(self):
         """Returns true if 4f+1 processors has conFlag to true."""
-        raise NotImplementedError
+        processors_with_conflicts = 0
+        for replica_structure in self.rep:
+            if(replica_structure[CON_FLAG]):
+                processors_with_conflicts += 1
+
+        if processors_with_conflicts >= (4 * self.number_of_byzantine + 1):
+            return True
+        return False
 
     def com_pref_states(self, required_processors):
         """Method description.
@@ -123,7 +161,8 @@ class ReplicationModule(AlgorithmModule):
 
     def stale_req_seqn(self):
         """Returns true if the sequence number has reached its limit."""
-        raise NotImplementedError
+        return((self.last_exec() + self.number_of_clients * SIGMA) >
+               MAXINT)
 
     def unsup_req(self):
         """Method description.

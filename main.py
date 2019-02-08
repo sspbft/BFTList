@@ -34,17 +34,20 @@ def start_modules(resolver):
     """Starts all modules in separate threads."""
     n = int(os.getenv("NUMBER_OF_NODES", 0))
     f = int(os.getenv("NUMBER_OF_BYZANTINE", 0))
+    k = int(os.getenv("NUMBER_OF_CLIENTS", 0))
 
     if n == 0:
         logger.warning("Env var NUMBER_OF_NODES not set or set to 0")
     if f == 0:
         logger.warning("Env var NUMBER_OF_BYZANTINE not set or set to 0")
+    if k == 0:
+        logger.warning("Env var NUMBER_OF_CLIENTS not set or set to 0")
 
     modules = {
         Module.VIEW_ESTABLISHMENT_MODULE:
             ViewEstablishmentModule(id, resolver, n, f),
         Module.REPLICATION_MODULE:
-            ReplicationModule(id, resolver, n, f),
+            ReplicationModule(id, resolver, n, f, k),
         Module.PRIMARY_MONITORING_MODULE:
             PrimaryMonitoringModule(id, resolver)
     }
