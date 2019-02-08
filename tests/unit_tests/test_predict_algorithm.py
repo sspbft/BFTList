@@ -48,7 +48,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         self.assertTrue(pred_module.legit_phs_zero(vpair_to_test))
 
         # Reset vpair, also legit
-        vpair_to_test = {CURRENT: ViewEstablishmentEnums.TEE, NEXT: ViewEstablishmentEnums.DF_VIEW}
+        vpair_to_test = pred_module.RST_PAIR
         self.assertTrue(pred_module.legit_phs_zero(vpair_to_test))
 
         # In view change, not legit to be in phase 0
@@ -288,7 +288,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
         self.assertEqual(pred_module.reset_all(), ViewEstablishmentEnums.RESET)
         # The views has been reset to DEFAULT view pair
-        self.assertEqual(pred_module.views, [{CURRENT: ViewEstablishmentEnums.TEE, NEXT : ViewEstablishmentEnums.DF_VIEW}])
+        self.assertEqual(pred_module.views, [pred_module.RST_PAIR])
         # Assert that the init(reset) method at algorithm 1 and algorithm 3 are being called
         view_est_mod.init_module.assert_any_call()
         self.resolver.execute.assert_called_once_with(module=Module.REPLICATION_MODULE,
@@ -390,7 +390,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         # Case 2
         # There is a adoptable view in transit
         self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 2))
-        # Non of the condition is fulfilled
+        # None of the condition is fulfilled
         pred_module.transit_adopble = MagicMock(return_value = False)
         self.assertFalse(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 2))
         # Processor i view_pair is the default pair
@@ -438,9 +438,14 @@ class TestPredicatesAndAction(unittest.TestCase):
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
         
         # Case 0
-        pred_module.views = [{CURRENT: 0, NEXT : 0}, {CURRENT: 1, NEXT : 1}]
-        pred_module.transit_adopble = MagicMock(return_value = True)
-        self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 1, 0))
+        # TODO own next is faulty, should be able to adopt vp_next == vp_current
+        # when we are in phase 1 (other view pair is from phase 0)
+        # https://trello.com/c/9AViU3YO/75-figure-out-test-for-case-10
+
+        # pred_module.views = [{CURRENT: 0, NEXT : 4}, {CURRENT: 1, NEXT : 1}]
+        # pred_module.transit_adopble = MagicMock(return_value = True)
+        # self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 1, 0))
+        
         # Not a adoptable view in transit
         pred_module.transit_adopble = MagicMock(return_value = False)
         self.assertFalse(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 1, 0))

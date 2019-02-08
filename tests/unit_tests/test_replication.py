@@ -7,7 +7,8 @@ from resolve.enums import Function, Module
 from modules.enums import ReplicationEnums
 from modules.constants import (REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE,
-                               REQUEST, SEQUENCE_NO, STATUS, VIEW, X_SET, CLIENT_REQ) # REPLY
+                               REQUEST, SEQUENCE_NO, STATUS, VIEW, X_SET,
+                               CLIENT_REQ, SIGMA) # REPLY
 
 class TestReplicationModule(unittest.TestCase):
 
@@ -203,7 +204,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertFalse(replication.stale_req_seqn())
 
         # The replica has executed a request with sequence number outside the threshold
-        replication.last_exec = MagicMock(return_value = sys.maxsize - replication.SIGMA + 1)
+        replication.last_exec = MagicMock(return_value = sys.maxsize - SIGMA + 1)
         self.assertTrue(replication.stale_req_seqn())
 
     # Interface functions

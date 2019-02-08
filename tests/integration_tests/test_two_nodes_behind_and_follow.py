@@ -1,4 +1,6 @@
 """
+Case 1.1
+
 Two nodes are behind, there is not enough node to establish view 2.
 Node 0 and 1 will catch up to phase 1 for moving into view 2.
 Then all will establish view 2 and the system will be in a safe state in phase 0, view 2.

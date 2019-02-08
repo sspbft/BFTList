@@ -1,3 +1,7 @@
+"""
+Makes sure nodes start up correctly and serve the /data endpoint
+"""
+
 # standard
 import asyncio
 import logging

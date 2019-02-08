@@ -42,13 +42,14 @@
                     renderRepData(res.node_id, res.REPLICATION_MODULE)
                     renderPriMonData(res.node_id, res.PRIMARY_MONITORING_MODULE)
                 })
+                // TODO stop pinging if error, (or wait every 5 seconds)
                 .catch(err => console.error(err))
         })
     }
 
     // register listeners and handlers
     const onLoad = () => {
-        setInterval(refreshNodes, 500)
+        setInterval(refreshNodes, 100)
         document.getElementById("refreshButton").onclick = refreshNodes
     }
     window.onload = onLoad;

@@ -1,4 +1,7 @@
-"""Node 0 is behind and has a corrupt next view value. The others are stable in phase 0 and view 2
+"""
+Case 5
+
+Node 0 is behind and has a corrupt next view value. The others are stable in phase 0 and view 2
 Node 0 will eventually catch up.
 """
 

@@ -1,8 +1,8 @@
 """
-Case 2
+Case 3
 
-Primary Monitoring module has required a view change at 3f+1 nodes,
-node 5 does not want to change view
+Nodes are in different views and stable, should converge to the the reset view
+(stable) by resetAll since no predicate will be true for any of the nodes
 """
 
 # standard
@@ -19,21 +19,23 @@ F = 1
 N = 6
 logger = logging.getLogger(__name__)
 
-start_state = {
-    "0": {
+views = [{"current": 1, "next": 1}, {"current": 2, "next": 2},
+         {"current": 2, "next": 3}, {"current": 0, "next": 0},
+         {"current": 4, "next": 4}, {"current": 4, "next": 4}]
+phases = [0, 0, 1, 0, 0, 0]
+vChanges = [True, True, True, True, False, False]
+start_state = {}
+
+for i in range(N):
+    start_state[str(i)] = {
         "VIEW_ESTABLISHMENT_MODULE": {
-            "views": [{"current": 1, "next": 1} for i in range(N)],
-            "vChange": True,
-            "phs": [0 for i in range(N)]
+            "views": views,
+            "phs": phases,
+            "vChange": vChanges[i]
         }
     }
-}
 
-for i in range(1, N):
-    start_state[str(i)] = deepcopy(start_state["0"])
-start_state["5"]["VIEW_ESTABLISHMENT_MODULE"]["vChange"] = False
-
-class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
+class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
     """Performs health check on all nodes base endpoint (/)."""
 
     async def bootstrap(self):
@@ -49,15 +51,19 @@ class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
 
         for a in asyncio.as_completed(aws):
             result = await a
-            data = result["data"]
-            views = data["VIEW_ESTABLISHMENT_MODULE"]["views"]
-            vp_target = {"current": 2, "next": 2}
+            data = result["data"]["VIEW_ESTABLISHMENT_MODULE"]
+            views = data["views"]
+            phases = data["phs"]
+            vChange = data["vChange"]
+
+            vp_target = {"current": 0, "next": 0}
+            phases_target = [0 for i in range(N)]
 
             for i,vp in enumerate(views):
-                if i == 5:
-                    self.assertEqual(vp, vp_target)
-                else:
-                    self.assertIn(vp, [vp_target, {"current": 1, "next": 1}])
+                self.assertEqual(vp, vp_target)
+            self.assertEqual(phases, phases_target)
+            self.assertEqual(vChange, False)
+            
 
     def test(self):
         logger.info(f"{__name__} starting")

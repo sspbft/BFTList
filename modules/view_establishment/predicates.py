@@ -32,7 +32,7 @@ class PredicatesAndAction():
         self.resolver = resolver
         self.vChange = False
         # self.RST_PAIR = {CURRENT: enums.TEE, NEXT: enums.DF_VIEW}
-        self.RST_PAIR = {CURRENT: enums.DF_VIEW, NEXT: enums.DF_VIEW}
+        self.RST_PAIR = {CURRENT: enums.TEE, NEXT: enums.DF_VIEW}
 
     # Macros
     def stale_v(self, node_k):
@@ -161,9 +161,9 @@ class PredicatesAndAction():
                     self.views[node_j].get(NEXT)
                 )
             else:
-                raise ValueError('Not a valid phase: {}'.format(phase))
+                logger.error(f"Not a valid phase: {phase}")
         else:
-            raise ValueError('Not a valid mode: {}'.format(mode))
+            logger.error(f"Not a valid mode: {mode}")
 
     def adopt(self, vpair):
         """Adopt the view pair."""
@@ -262,7 +262,7 @@ class PredicatesAndAction():
 
         # Not a valid phase
         else:
-            raise ValueError('Not a valid phase: {}'.format(phase))
+            logger.error(f"Not a valid phase: {phase}")
 
     def automation_phase_0(self, type, case):
         """Perform the action corresponding to the current case of phase 0."""
@@ -306,7 +306,7 @@ class PredicatesAndAction():
 
             # Not a valid case
             else:
-                raise ValueError('Not a valid case: {}'.format(case))
+                logger.error(f"Not a valid case: {case}")
 
         # Actions
         elif(type == enums.ACTION):
@@ -341,11 +341,11 @@ class PredicatesAndAction():
 
             # Not a valid case
             else:
-                raise ValueError('Not a valid case: {}'.format(case))
+                logger.error(f"Not a valid case: {case}")
 
         # Not a valid type (act or pred)
         else:
-            raise ValueError('Not a valid type: {}'.format(type))
+            logger.error(f"Not a valid type: {type}")
 
     def automation_phase_1(self, type, case):
         """Perform the action corresponding to the current case of phase 1."""
@@ -385,7 +385,7 @@ class PredicatesAndAction():
 
             # Not a valid case
             else:
-                raise ValueError('Not a valid case: {}'.format(case))
+                logger.error(f"Not a valid case: {case}")
 
         # Actions
         elif(type == enums.ACTION):
@@ -398,7 +398,8 @@ class PredicatesAndAction():
                     self.reset_v_change()
                     return enums.NO_RETURN_VALUE
                 else:
-                    raise ValueError("Not a valid view pair to adopt")
+                    logger.error("Not a valid view pair to adopt:" +
+                                 f" {self.view_pair_to_adopt}")
 
             # Apply changes to view: establish the new view
             elif(case == 1):
@@ -423,11 +424,11 @@ class PredicatesAndAction():
 
             # Not a valid case
             else:
-                raise ValueError('Not a valid case: {}'.format(case))
+                logger.error(f"Not a valid case: {case}")
 
         # Not a valid type (act or pred)
         else:
-            raise ValueError('Not a valid type: {}'.format(type))
+            logger.error(f"Not a valid type: {type}")
 
     def auto_max_case(self, phase):
         """Returns the max case for the phase."""
