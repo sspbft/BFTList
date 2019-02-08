@@ -59,7 +59,6 @@ class ViewEstablishmentModule(AlgorithmModule):
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
-        # time.sleep(2)
         while True:
             self.resolver.lock.acquire()
             if(self.pred_and_action.need_reset()):
@@ -84,16 +83,13 @@ class ViewEstablishmentModule(AlgorithmModule):
                     logger.info(f"Phase: {self.phs[self.id]} Case: {case}")
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
+
             self.resolver.lock.release()
             # Send message to all other processors
             self.send_msg()
+            time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
 
-            if os.getenv("INTEGRATION_TEST"):
-                time.sleep(0.25)
-            else:
-                time.sleep(0.5)
-
-            # Stoping the while loop, used for testing purpose
+            # Stopping the while loop, used for testing purpose
             if(not self.run_forever):
                 break
 
