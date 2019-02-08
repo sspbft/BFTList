@@ -2,6 +2,7 @@
 
 export WERKZEUG_RUN_MAIN=true
 
+# kills script with failure code if last executed command was not successful
 function check_fail() {
     if [ $? -ne 0 ]; then
         echo $1
@@ -38,10 +39,9 @@ if [ $# -eq 0 ]; then
     run_unit_tests
     run_integration_tests
 elif [ $# -eq 1 ]; then
-    # run either integration tests or unit tests
+    # run either integration tests, unit tests or tests matching pattern $1
     if [ "$1" = "it" ]; then
         run_integration_tests
-        echo ?$
     elif [ "$1" = "unit" ]; then
         run_unit_tests
     else

@@ -2,6 +2,9 @@
     const nodes = JSON.parse('{{ data | tojson }}').map(el => el.node)
     const strongify = s => `<b><u>${s}</u></b>`
 
+    const defaultFetchInterval = 100
+    let interval, fetchInterval = defaultFetchInterval
+
     const renderViewEstData = (id, data) => {
         const dataNode = document.getElementById(`data-node-${id}`)
         let phases = 'Phases: ', views = 'Views: ', witnesses = 'Witnesses: '
@@ -41,15 +44,26 @@
                     renderViewEstData(res.node_id, res.VIEW_ESTABLISHMENT_MODULE)
                     renderRepData(res.node_id, res.REPLICATION_MODULE)
                     renderPriMonData(res.node_id, res.PRIMARY_MONITORING_MODULE)
+
+                    // back to full speed if speed was throttled
+                    if (fetchInterval > defaultFetchInterval) {
+                        fetchInterval = defaultFetchInterval
+                        interval = setInterval(refreshNodes, fetchInterval)
+                    }
                 })
-                // TODO stop pinging if error, (or wait every 5 seconds)
-                .catch(err => console.error(err))
+                .catch(err => {
+                    console.error(err)
+                    // new slower fetch interval when node is down
+                    clearInterval(interval)
+                    fetchInterval = 3000
+                    interval = setInterval(refreshNodes, fetchInterval)
+                })
         })
     }
 
     // register listeners and handlers
     const onLoad = () => {
-        setInterval(refreshNodes, 100)
+        interval = setInterval(refreshNodes, defaultFetchInterval)
         document.getElementById("refreshButton").onclick = refreshNodes
     }
     window.onload = onLoad;
