@@ -5,6 +5,7 @@ Node 0 will eventually catch up.
 # standard
 import asyncio
 import logging
+from copy import deepcopy
 
 # local
 from . import helpers
@@ -38,7 +39,7 @@ start_state = {
 }
 
 for i in range(2, N):
-    start_state[str(i)] = start_state["1"]
+    start_state[str(i)] = deepcopy(start_state["1"])
 
 class TestNodesFollow(AbstractIntegrationTest):
     async def bootstrap(self):
