@@ -1,4 +1,5 @@
 """Constant string values for the modules"""
+import sys
 
 # View Establishment module
 CURRENT = "current"
@@ -22,3 +23,7 @@ SEQUENCE_NO = "sequence_no"
 STATUS = "status"
 REPLY = "reply"
 VIEW = "view"
+
+
+MAXINT = sys.maxsize  # Sequence number limit
+SIGMA = 10  # Threshold for assigning sequence numbers
