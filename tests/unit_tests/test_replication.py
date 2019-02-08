@@ -7,14 +7,15 @@ from resolve.enums import Function, Module
 from modules.enums import ReplicationEnums
 from modules.constants import (REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE,
-                               REQUEST, SEQUENCE_NO, STATUS, VIEW, X_SET, CLIENT_REQ) # REPLY
+                               REQUEST, SEQUENCE_NO, STATUS, VIEW, X_SET, CLIENT_REQ,
+                               SIGMA) # REPLY
 
 class TestReplicationModule(unittest.TestCase):
 
     def setUp(self):
         self.resolver = Resolver()
-        self.dummyRequest1 = {CLIENT_REQ: {}, VIEW: 1, SEQUENCE_NO: 1}
-        self.dummyRequest2 = {CLIENT_REQ: {}, VIEW: 1, SEQUENCE_NO: 2}
+        self.dummyRequest1 = {CLIENT_REQ: {1}, VIEW: 1, SEQUENCE_NO: 1}
+        self.dummyRequest2 = {CLIENT_REQ: {2}, VIEW: 1, SEQUENCE_NO: 2}
     
     def test_resolver_can_be_initialized(self):
         replication = ReplicationModule(0, self.resolver, 2, 0, 1)
@@ -45,16 +46,9 @@ class TestReplicationModule(unittest.TestCase):
 
     def test_msg(self):
         replication = ReplicationModule(0, self.resolver, 2, 0, 1)
-        replication.rep[1] = {
-             REP_STATE: {},
-             R_LOG: [],
-             PEND_REQS: [],
-             REQ_Q: [
-                 {REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
-                 {REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.PREP}],
-             LAST_REQ: [],
-             CON_FLAG: False,
-            VIEW_CHANGE: False}
+        replication.rep[1][REQ_Q] = [
+                {REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
+                {REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.PREP}]
 
         self.assertEqual(replication.msg(ReplicationEnums.PRE_PREP, 1), [self.dummyRequest1])
         self.assertEqual(replication.msg(ReplicationEnums.PREP, 1), [self.dummyRequest2])
@@ -193,18 +187,79 @@ class TestReplicationModule(unittest.TestCase):
                 VIEW_CHANGE: False} for i in range(5,6)]
 
         self.assertFalse(replication.conflict())
-            
+
+    def test_double(self):
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
         
+        replication.rep[0][REQ_Q] = [{REQUEST: self.dummyRequest1, STATUS:{}},
+                    {REQUEST: self.dummyRequest2, STATUS:{}}]
+        self.assertFalse(replication.double())
+
+        # Adding a copy of message dummyRequest1 but with different sequence number,
+        double_message = {CLIENT_REQ: {1}, VIEW: 1, SEQUENCE_NO: 2}
+        replication.rep[replication.id][REQ_Q].append({REQUEST: double_message, STATUS:{}})
+        self.assertTrue(replication.double())
+
     def test_stale_req_seqn(self):
-        replication = ReplicationModule(0, self.resolver, 2, 1, 1)
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
 
         # The replica has executed a request with sequence number within the threshold
         replication.last_exec = MagicMock(return_value = 1)
         self.assertFalse(replication.stale_req_seqn())
 
         # The replica has executed a request with sequence number outside the threshold
-        replication.last_exec = MagicMock(return_value = sys.maxsize - replication.SIGMA + 1)
+        replication.last_exec = MagicMock(return_value = sys.maxsize - SIGMA + 1)
         self.assertTrue(replication.stale_req_seqn())
+
+    def test_unsup_req(self):
+        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+
+        # All processors have the same req_q, so there is no unsupported msg
+        replication.rep = [{
+             REP_STATE: {},
+             R_LOG: [],
+             PEND_REQS: [],
+             REQ_Q: [{REQUEST: self.dummyRequest1, STATUS:{}},
+                    {REQUEST: self.dummyRequest2, STATUS:{}}],
+             LAST_REQ: [],
+             CON_FLAG: False,
+            VIEW_CHANGE: False} for i in range(6)]
+
+        self.assertFalse(replication.unsup_req())
+
+        # Processor 0 has one unsupported request (dummyRequest2)
+        # The rest does not have dummyRequest2 in their REQ_Q
+        replication.rep = [{
+             REP_STATE: {},
+             R_LOG: [],
+             PEND_REQS: [],
+             REQ_Q: [{REQUEST: self.dummyRequest1, STATUS:{}},
+                    {REQUEST: self.dummyRequest2, STATUS:{}}],
+             LAST_REQ: [],
+             CON_FLAG: False,
+            VIEW_CHANGE: False} for i in range(1)] + [{
+                REP_STATE: {},
+                R_LOG: [],
+                PEND_REQS: [],
+                REQ_Q: [{REQUEST: self.dummyRequest1, STATUS:{}}],
+                LAST_REQ: [],
+                CON_FLAG: False,
+                VIEW_CHANGE: False} for i in range(1,6)]
+
+        self.assertTrue(replication.unsup_req())
+
+    def test_delay(self):
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        
+        # Last execution will be within the threshold
+        replication.last_common_exec = MagicMock(return_value = 3)
+        replication.last_exec = MagicMock(return_value = 3)
+        self.assertFalse(replication.delayed())
+
+        # Last execution will be smaller than the threshold 
+        replication.last_common_exec = MagicMock(return_value = 40)
+        replication.last_exec = MagicMock(return_value = 3)
+        self.assertTrue(replication.delayed())
 
     # Interface functions
 
