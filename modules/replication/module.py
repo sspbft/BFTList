@@ -98,10 +98,6 @@ class ReplicationModule(AlgorithmModule):
         Returns last request (highest sequence number) executed by at
         least 3f+1 processors. If no such request exist, returns None.
         """
-        # TODO Check if we can use x[X_SET] instead of having the
-        # nested for loop. Need to check the logic behind it.
-        # The Xset is never set anywhere in pseudo code.
-
         # Dummy request to start with
         last_common_exec_request = None
         for replica_structure in self.rep:
@@ -109,13 +105,8 @@ class ReplicationModule(AlgorithmModule):
             if(replica_structure[R_LOG]):
                 # Get last excecuted request done by this processor
                 x = replica_structure[R_LOG][-1]
-                number_of_processor_to_agree = 0
-                # Check if 3f + 1 other processors has executed this request
-                for replica_structure2 in self.rep:
-                    if x in replica_structure2[R_LOG]:
-                        number_of_processor_to_agree += 1
-                # If so, compare sequence number
-                if (number_of_processor_to_agree >=
+                # Get the maximal sequence number
+                if (len(x[X_SET]) >=
                    (3 * self.number_of_byzantine + 1)):
                         if (last_common_exec_request is None):
                             last_common_exec_request = deepcopy(
@@ -241,12 +232,11 @@ class ReplicationModule(AlgorithmModule):
         request_set = []
         for x in self.rep[self.id][REQ_Q]:
             processor_set = 0
-            # TODO logic question for Ioannis, does the msg in other processors
-            # reqQ also need to have the "correct" status status
             if x[STATUS] in status:
                 for replication_structure in self.rep:
                     for request_pair in replication_structure[REQ_Q]:
-                        if(x[REQUEST] == request_pair[REQUEST]):
+                        if(x[REQUEST] == request_pair[REQUEST] and
+                           request_pair[STATUS] in status):
                             processor_set += 1
             if processor_set >= (3 * self.number_of_byzantine + 1):
                 request_set.append(x)

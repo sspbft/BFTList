@@ -75,7 +75,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep = [{
              REP_STATE: {},
              R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}},
-                    {REQUEST: self.dummyRequest2, X_SET:{}}],
+                    {REQUEST: self.dummyRequest2, X_SET:{0,1,2,3,4,5}}],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
@@ -109,14 +109,14 @@ class TestReplicationModule(unittest.TestCase):
         # seeing request 2. But it checks the logic of the function.
         replication.rep = [{
              REP_STATE: {},
-             R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}}],
+             R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{0,1,2}}],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
             VIEW_CHANGE: False} for i in range(2)] + [{
                 REP_STATE: {},
-                R_LOG: [{REQUEST: self.dummyRequest2, X_SET:{}}],
+                R_LOG: [{REQUEST: self.dummyRequest2, X_SET:{3,4,5}}],
                 PEND_REQS: [],
                 REQ_Q: [],
                 LAST_REQ: [],
@@ -129,15 +129,15 @@ class TestReplicationModule(unittest.TestCase):
         # 3 nodes have only request 1 and 2 nodes request 1 and request 2
         replication.rep = [{
              REP_STATE: {},
-             R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}}],
+             R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{0,1,2,3,4,5}}],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
             VIEW_CHANGE: False} for i in range(2)] + [{
                 REP_STATE: {},
-                R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}},
-                        {REQUEST: self.dummyRequest2, X_SET:{}}],
+                R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{0,1,2,3,4,5}},
+                        {REQUEST: self.dummyRequest2, X_SET:{3,4,5}}],
                 PEND_REQS: [],
                 REQ_Q: [],
                 LAST_REQ: [],
@@ -327,7 +327,6 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.known_pend_reqs(), [])
 
     def test_known_reqs(self):
-        # TODO change this test when getting back answers from Ioannis
         replication = ReplicationModule(0, self.resolver, 6, 1, 1)
         # Node 0 has both requests in request queue, the others have only request 1 with 
         # same status, should therefore return dummyRequest1
@@ -381,6 +380,14 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(
             replication.known_reqs({ReplicationEnums.COMMIT}), 
             [])
+
+        # Should return dummyRequest1 eventhough they have different statuses,
+        # since the other processor has this request with a status in the 
+        # input stats (PRE_PREP, COMMIT)
+        self.assertEqual(
+            replication.known_reqs({ReplicationEnums.PRE_PREP, ReplicationEnums.COMMIT}),
+            [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP}]
+        )
 
     def test_delay(self):
         replication = ReplicationModule(0, self.resolver, 2, 0, 1)
