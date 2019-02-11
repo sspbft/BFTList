@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, call
 import sys
 from resolve.resolver import Resolver
 from modules.replication.module import ReplicationModule
@@ -75,7 +75,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep = [{
              REP_STATE: {},
              R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}},
-                    {REQUEST: self.dummyRequest2, X_SET:{}}],
+                    {REQUEST: self.dummyRequest2, X_SET:{0,1,2,3,4,5}}],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
@@ -109,14 +109,14 @@ class TestReplicationModule(unittest.TestCase):
         # seeing request 2. But it checks the logic of the function.
         replication.rep = [{
              REP_STATE: {},
-             R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}}],
+             R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{0,1,2}}],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
             VIEW_CHANGE: False} for i in range(2)] + [{
                 REP_STATE: {},
-                R_LOG: [{REQUEST: self.dummyRequest2, X_SET:{}}],
+                R_LOG: [{REQUEST: self.dummyRequest2, X_SET:{3,4,5}}],
                 PEND_REQS: [],
                 REQ_Q: [],
                 LAST_REQ: [],
@@ -129,15 +129,15 @@ class TestReplicationModule(unittest.TestCase):
         # 3 nodes have only request 1 and 2 nodes request 1 and request 2
         replication.rep = [{
              REP_STATE: {},
-             R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}}],
+             R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{0,1,2,3,4,5}}],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
             VIEW_CHANGE: False} for i in range(2)] + [{
                 REP_STATE: {},
-                R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}},
-                        {REQUEST: self.dummyRequest2, X_SET:{}}],
+                R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{0,1,2,3,4,5}},
+                        {REQUEST: self.dummyRequest2, X_SET:{3,4,5}}],
                 PEND_REQS: [],
                 REQ_Q: [],
                 LAST_REQ: [],
@@ -248,6 +248,147 @@ class TestReplicationModule(unittest.TestCase):
 
         self.assertTrue(replication.unsup_req())
 
+    def test_stale_rep(self):
+        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication.stale_req_seqn = MagicMock(return_value = False)
+        replication.double = MagicMock(return_value = False)
+        replication.unsup_req = MagicMock(return_value = False)
+
+        # Processor has a request in R_LOG that has enough processor in its X_SET
+        replication.rep[replication.id][R_LOG] = [{REQUEST: self.dummyRequest2, X_SET:{1,2,3,4,5}}]
+        self.assertFalse(replication.stale_rep())
+
+        # Processor has a request in R_LOG that doesn't have enough processor in its X_SET
+        replication.rep[replication.id][R_LOG] = [{REQUEST: self.dummyRequest2, X_SET:{3,4,5}}]
+        self.assertTrue(replication.stale_rep())
+
+        # The other methods should be called twice (calling the method twice in the test)
+        self.assertEqual(replication.stale_req_seqn.call_count, 2)
+        self.assertEqual(replication.double.call_count, 2)
+        self.assertEqual(replication.unsup_req.call_count, 2)
+
+    def test_known_pend_reqs(self):
+        replication = ReplicationModule(0, self.resolver, 4, 1, 1)
+        # Node 0 has both dummyRequests in pend queue
+        # Node 1-3 have dummyRequest1 in request queue
+        # Node 4-5 have dummyRequest1 in pend queue
+        # This means that known pending request are dummyRequest 1
+        replication.rep = [{
+             REP_STATE: {},
+             R_LOG: [],
+             PEND_REQS: [self.dummyRequest1,
+                    self.dummyRequest2],
+             REQ_Q: [],
+             LAST_REQ: [],
+             CON_FLAG: False,
+            VIEW_CHANGE: False} for i in range(1)] + [{
+                REP_STATE: {},
+                R_LOG: [],
+                PEND_REQS: [],
+                REQ_Q: [{REQUEST: self.dummyRequest1, STATUS:{}}],
+                LAST_REQ: [],
+                CON_FLAG: False,
+                VIEW_CHANGE: False} for i in range(1,4)] + [{
+                    REP_STATE: {},
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest1],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: False} for i in range(4,6)
+                ]
+        self.assertEqual(replication.known_pend_reqs(), [self.dummyRequest1])
+
+        # No known pending request found, only 3 processor has dummyRequest1
+        replication.rep = [{
+             REP_STATE: {},
+             R_LOG: [],
+             PEND_REQS: [self.dummyRequest1,
+                    self.dummyRequest2],
+             REQ_Q: [],
+             LAST_REQ: [],
+             CON_FLAG: False,
+            VIEW_CHANGE: False} for i in range(1)] + [{
+                REP_STATE: {},
+                R_LOG: [],
+                PEND_REQS: [],
+                REQ_Q: [{REQUEST: self.dummyRequest1, STATUS:{}}],
+                LAST_REQ: [],
+                CON_FLAG: False,
+                VIEW_CHANGE: False} for i in range(1,3)] + [{
+                    REP_STATE: {},
+                    R_LOG: [],
+                    PEND_REQS: [],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: False} for i in range(3,6)
+                ]
+        self.assertEqual(replication.known_pend_reqs(), [])
+
+    def test_known_reqs(self):
+        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        # Node 0 has both requests in request queue, the others have only request 1 with 
+        # same status, should therefore return dummyRequest1
+        replication.rep = [{
+             REP_STATE: {},
+             R_LOG: [],
+             PEND_REQS: [],
+             REQ_Q: [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
+                    {REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.PREP }],
+             LAST_REQ: [],
+             CON_FLAG: False,
+             VIEW_CHANGE: False} for i in range(1)] + [{
+                REP_STATE: {},
+                R_LOG: [],
+                PEND_REQS: [],
+                REQ_Q: [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP }],
+                LAST_REQ: [],
+                CON_FLAG: False,
+                VIEW_CHANGE: False} for i in range(1,6)
+                ]
+        
+        self.assertEqual(
+            replication.known_reqs({ReplicationEnums.PRE_PREP}), 
+            [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP}])
+
+        # Asserting that the convertion to a set of the status works
+        self.assertEqual(
+            replication.known_reqs(ReplicationEnums.PRE_PREP), 
+            [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP}])
+
+        # Node 0 has both requests in request queue, the others have only request 1 with 
+        # other status, should therefore return empty
+        replication.rep = [{
+             REP_STATE: {},
+             R_LOG: [],
+             PEND_REQS: [],
+             REQ_Q: [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
+                    {REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.PREP}],
+             LAST_REQ: [],
+             CON_FLAG: False,
+             VIEW_CHANGE: False} for i in range(1)] + [{
+                REP_STATE: {},
+                R_LOG: [],
+                PEND_REQS: [],
+                REQ_Q: [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.COMMIT}],
+                LAST_REQ: [],
+                CON_FLAG: False,
+                VIEW_CHANGE: False} for i in range(1,6)
+                ]
+        
+        self.assertEqual(
+            replication.known_reqs({ReplicationEnums.COMMIT}), 
+            [])
+
+        # Should return dummyRequest1 eventhough they have different statuses,
+        # since the other processor has this request with a status in the 
+        # input stats (PRE_PREP, COMMIT)
+        self.assertEqual(
+            replication.known_reqs({ReplicationEnums.PRE_PREP, ReplicationEnums.COMMIT}),
+            [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP}]
+        )
+
     def test_delay(self):
         replication = ReplicationModule(0, self.resolver, 2, 0, 1)
         
@@ -260,6 +401,55 @@ class TestReplicationModule(unittest.TestCase):
         replication.last_common_exec = MagicMock(return_value = 40)
         replication.last_exec = MagicMock(return_value = 3)
         self.assertTrue(replication.delayed())
+
+    def test_exists_preprep_msg(self):
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        # Primary is set to processor 1, with a PRE_PREP msg for dummyRequst 1
+        replication.prim = 1
+        replication.rep[1][REQ_Q] = [
+            {REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
+            {REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.PREP}]
+
+        self.assertTrue(replication.exists_preprep_msg(self.dummyRequest1[CLIENT_REQ], 1))
+        # No Pre_prep msg for dummyRequest2
+        self.assertFalse(replication.exists_preprep_msg(self.dummyRequest2[CLIENT_REQ], 1))
+        # Node 0 is not prim, and there exists no Pre_prep msg in rep[0]
+        self.assertFalse(replication.exists_preprep_msg(self.dummyRequest1[CLIENT_REQ], 0))
+
+    def test_unassigned_reqs(self):
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication.rep[0][PEND_REQS] = [self.dummyRequest1, self.dummyRequest2]
+
+        # Both requests are unassigned
+        replication.exists_preprep_msg = MagicMock(return_value = False)
+        replication.known_reqs = MagicMock(return_value = [])
+        self.assertEqual(replication.unassigned_reqs(), [self.dummyRequest1, self.dummyRequest2])
+        calls = [call(self.dummyRequest1, replication.prim), call(self.dummyRequest2, replication.prim)]
+        replication.exists_preprep_msg.assert_has_calls(calls)
+       
+        # Dummyrequest2 is in known_reqs with
+        replication.known_reqs = MagicMock(return_value = [self.dummyRequest2])
+        self.assertEqual(replication.unassigned_reqs(), [self.dummyRequest1])
+
+        # There exists PRE_PREP msg for both of the requests
+        replication.exists_preprep_msg = MagicMock(return_value = True)
+        self.assertEqual(replication.unassigned_reqs(), [])
+
+    def test_committed_set(self):
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+
+        # The other processor (1) has the dummyRequest2 in it's R_LOG but the msg-function does not
+        # return any
+        replication.rep[1][R_LOG] = [{REQUEST: self.dummyRequest2, X_SET: {5}}]
+        replication.msg = MagicMock(return_value = [])
+        self.assertEqual(replication.committed_set(self.dummyRequest2), {1})
+
+        # The msg will return dummyRequest1 for both processors but it is not in R_LOG for any of the processors
+        replication.rep[1][R_LOG] = []
+        replication.msg = MagicMock(return_value = [self.dummyRequest1])
+        self.assertEqual(replication.committed_set(self.dummyRequest1),{0, 1})
+        # No condition for dummyRequest2 will now be true
+        self.assertEqual(replication.committed_set(self.dummyRequest2),set())
 
     # Interface functions
 

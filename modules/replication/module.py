@@ -3,10 +3,10 @@
 import time
 import itertools
 from modules.algorithm_module import AlgorithmModule
-# from modules.enums import ReplicationEnums
+from modules.enums import ReplicationEnums
 from modules.constants import (MAXINT, SIGMA,
                                REP_STATE, R_LOG, PEND_REQS, REQ_Q,
-                               LAST_REQ, CON_FLAG, VIEW_CHANGE,
+                               LAST_REQ, CON_FLAG, VIEW_CHANGE, X_SET,
                                REQUEST, STATUS, SEQUENCE_NO, CLIENT_REQ)
 # , X_SET, REPLY
 from copy import deepcopy
@@ -76,9 +76,9 @@ class ReplicationModule(AlgorithmModule):
     def msg(self, status, processor_j):
         """Returns requests reported to p_i from processor_j with status."""
         request_set = []
-        for request_pair in self.rep[processor_j].get(REQ_Q):
-            if request_pair.get(STATUS) == status:
-                request_set.append(request_pair.get(REQUEST))
+        for request_pair in self.rep[processor_j][REQ_Q]:
+            if request_pair[STATUS] == status:
+                request_set.append(request_pair[REQUEST])
         return request_set
 
     def last_exec(self):
@@ -98,10 +98,6 @@ class ReplicationModule(AlgorithmModule):
         Returns last request (highest sequence number) executed by at
         least 3f+1 processors. If no such request exist, returns None.
         """
-        # TODO Check if we can use x[X_SET] instead of having the
-        # nested for loop. Need to check the logic behind it.
-        # The Xset is never set anywhere in pseudo code.
-
         # Dummy request to start with
         last_common_exec_request = None
         for replica_structure in self.rep:
@@ -109,13 +105,8 @@ class ReplicationModule(AlgorithmModule):
             if(replica_structure[R_LOG]):
                 # Get last excecuted request done by this processor
                 x = replica_structure[R_LOG][-1]
-                number_of_processor_to_agree = 0
-                # Check if 3f + 1 other processors has executed this request
-                for replica_structure2 in self.rep:
-                    if x in replica_structure2[R_LOG]:
-                        number_of_processor_to_agree += 1
-                # If so, compare sequence number
-                if (number_of_processor_to_agree >=
+                # Get the maximal sequence number
+                if (len(x[X_SET]) >=
                    (3 * self.number_of_byzantine + 1)):
                         if (last_common_exec_request is None):
                             last_common_exec_request = deepcopy(
@@ -196,8 +187,17 @@ class ReplicationModule(AlgorithmModule):
         return False
 
     def stale_rep(self):
-        """Returns true if double(), unsup_req or stale_req_seqn is true."""
-        raise NotImplementedError
+        """Returns true if
+
+        double(), unsup_req, stale_req_seqn is true or if there is a request
+        that does not have the support of at least 3f + 1 processors.
+        """
+        x_set_less = False
+        for request_pair in self.rep[self.id][R_LOG]:
+            if(len(request_pair[X_SET]) <= (3 * self.number_of_byzantine + 1)):
+                x_set_less = True
+        return (self.stale_req_seqn() or self.unsup_req() or self.double() or
+                x_set_less)
 
     def known_pend_reqs(self):
         """Method description.
@@ -205,15 +205,46 @@ class ReplicationModule(AlgorithmModule):
         Returns the set of requests in request queue and in the message queue
         of 3f+1 other processors.
         """
-        raise NotImplementedError
+        request_set = []
+        for x in self.rep[self.id][PEND_REQS]:
+            processor_set = 0
+            for replica_structure in self.rep:
+                if x in replica_structure[PEND_REQS]:
+                    processor_set += 1
+                else:
+                    # Avoid searching this queue if already found in pending
+                    # requests
+                    for request_pair in replica_structure[REQ_Q]:
+                        if x == request_pair[REQUEST]:
+                            processor_set += 1
+
+            if(processor_set >= (3 * self.number_of_byzantine + 1)):
+                request_set.append(x)
+        return request_set
 
     def known_reqs(self, status):
         """Method description.
 
-        Returns the set of requests in request queue and in the message queue
+        Returns the set of requests in request queue and in the request queue
         of 3f+1 other processors with status.
+        Status is a set of statuses
         """
-        raise NotImplementedError
+        # If the input is only one element, and not as a set, convert to a set
+        if type(status) is not set:
+            status = {status}
+
+        request_set = []
+        for x in self.rep[self.id][REQ_Q]:
+            processor_set = 0
+            if x[STATUS] in status:
+                for replication_structure in self.rep:
+                    for request_pair in replication_structure[REQ_Q]:
+                        if(x[REQUEST] == request_pair[REQUEST] and
+                           request_pair[STATUS] in status):
+                            processor_set += 1
+            if processor_set >= (3 * self.number_of_byzantine + 1):
+                request_set.append(x)
+        return request_set
 
     def delayed(self):
         """Method description.
@@ -231,7 +262,10 @@ class ReplicationModule(AlgorithmModule):
         Returns true if there exists a PRE_PREP msg from the primary
         for the request.
         """
-        raise NotImplementedError
+        for y in self.msg(ReplicationEnums.PRE_PREP, prim):
+            if y[CLIENT_REQ] == request:
+                return True
+        return False
 
     def unassigned_reqs(self):
         """Method description.
@@ -240,7 +274,13 @@ class ReplicationModule(AlgorithmModule):
         without having 3f+1 processors reported to have PREP msg
         for the requests.
         """
-        raise NotImplementedError
+        request_set = []
+        for request in self.rep[self.id][PEND_REQS]:
+            if (not self.exists_preprep_msg(request, self.prim) and
+                request not in self.known_reqs(
+                    {ReplicationEnums.PREP, ReplicationEnums.COMMIT})):
+                    request_set.append(request)
+        return request_set
 
     def accept_req_preprep(self, request, prim):
         """Method description.
@@ -253,10 +293,21 @@ class ReplicationModule(AlgorithmModule):
     def committed_set(self, request):
         """Method description.
 
-        Returns the set of processors that has reported to commit to the
-        request and has the request in their executed request log.
+        Returns the set of processors that have reported to commit to the
+        request or have the request in their executed request log.
         """
-        raise NotImplementedError
+        processor_set = set()
+        for processor_id, replica_structure in enumerate(self.rep):
+            # Checks if the processor has reported to commit the request
+            if request in self.msg(ReplicationEnums.COMMIT, processor_id):
+                processor_set.add(processor_id)
+                continue
+            # Checks if the request is in the processors executed request log
+            for request_pair in replica_structure[R_LOG]:
+                if request == request_pair[REQUEST]:
+                    processor_set.add(processor_id)
+                    break
+        return processor_set
 
     # Interface functions
     def get_pend_reqs(self):
