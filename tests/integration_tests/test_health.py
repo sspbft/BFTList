@@ -31,6 +31,7 @@ class TestHealth(AbstractIntegrationTest):
 
         self.assertTrue(all(res))
 
+    @helpers.suppress_warnings
     def test(self):
         logger.info(f"{__name__} starting")
         pids = helpers.run_coro(self.bootstrap())

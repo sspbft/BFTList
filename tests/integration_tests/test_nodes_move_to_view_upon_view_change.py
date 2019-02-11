@@ -59,6 +59,7 @@ class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
                 else:
                     self.assertIn(vp, [vp_target, {"current": 1, "next": 1}])
 
+    @helpers.suppress_warnings
     def test(self):
         logger.info(f"{__name__} starting")
         pids = helpers.run_coro(self.bootstrap())

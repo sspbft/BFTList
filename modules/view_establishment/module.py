@@ -181,7 +181,6 @@ class ViewEstablishmentModule(AlgorithmModule):
         if byz.is_byzantine() and byz.get_byz_behavior() == byz.UNRESPONSIVE:
             logger.info(f"Node is acting byzantine: {byz.UNRESPONSIVE}")
             return
-        logger.info("sending msg")
 
         nodes = conf.get_nodes()
         for node_j, _ in nodes.items():

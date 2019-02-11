@@ -68,6 +68,7 @@ class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
             self.assertEqual(vChange, False)
             
 
+    @helpers.suppress_warnings
     def test(self):
         logger.info(f"{__name__} starting")
         pids = helpers.run_coro(self.bootstrap())
