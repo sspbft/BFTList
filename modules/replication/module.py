@@ -7,7 +7,8 @@ from modules.enums import ReplicationEnums
 from modules.constants import (MAXINT, SIGMA,
                                REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE, X_SET,
-                               REQUEST, STATUS, SEQUENCE_NO, CLIENT_REQ)
+                               REQUEST, STATUS, SEQUENCE_NO, CLIENT_REQ,
+                               VIEW)
 # , X_SET, REPLY
 from copy import deepcopy
 
@@ -288,7 +289,28 @@ class ReplicationModule(AlgorithmModule):
         True if PRE_PREP msg from prim exists and the content is the same for
         3f+1 processors in the same view and sequence number.
         """
-        raise NotImplementedError
+        # TODO look over this logic, request_already_exists will always give
+        # back True, since we take requests form own REQ_Q and checks own_REQ_Q
+
+        # Processor i has the request
+        if request in self.known_pend_reqs():
+            # The request should be acknowledged by other processors
+            for y in self.rep[self.id][REQ_Q]:
+                y_req = y[REQUEST]
+
+                if (y_req[CLIENT_REQ] == request[CLIENT_REQ] and
+                   y_req[VIEW] == prim and
+                   self.exists_preprep_msg(y_req, prim) and
+                   self.last_exec() <= y_req[SEQUENCE_NO] <=
+                        (self.last_exec() + SIGMA * self.number_of_clients)):
+                        # A request should not already exist with the same
+                        # sequence number or same client request
+                        if (self.request_already_exists(y)):
+                            # Request y_req does not fulfill all conditions,
+                            # move on to next request in REQ_Q
+                            continue
+                        return True
+        return False
 
     def committed_set(self, request):
         """Method description.
@@ -308,6 +330,25 @@ class ReplicationModule(AlgorithmModule):
                     processor_set.add(processor_id)
                     break
         return processor_set
+
+    # Methods added
+    def request_already_exists(self, request_p):
+        """Checks if request is in REQ_Q or R_LOG.
+
+        Called by accept_req_preprep.
+        """
+        request = request_p[REQUEST]
+        for request_pair in self.rep[self.id][REQ_Q]:
+            if request_p == request_pair:
+                continue
+            if (request_pair[REQUEST][CLIENT_REQ] == request[CLIENT_REQ] and
+               request_pair[REQUEST][SEQUENCE_NO == request[SEQUENCE_NO]]):
+                return True
+        for request_pair in self.rep[self.id][R_LOG]:
+            if (request_pair[REQUEST][CLIENT_REQ] == request[CLIENT_REQ] and
+               request_pair[REQUEST][SEQUENCE_NO == request[SEQUENCE_NO]]):
+                return True
+        return False
 
     # Interface functions
     def get_pend_reqs(self):
