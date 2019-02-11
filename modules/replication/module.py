@@ -143,7 +143,16 @@ class ReplicationModule(AlgorithmModule):
         processors, and if there exists another set with the default
         replica state and these two sets adds up to at least 4f+1 processors.
         """
-        raise NotImplementedError
+        TEE = -1
+        processor_set_1 = 0
+        processor_set_2 = 0
+
+        if ((2 * self.number_of_byzantine + 1) <= processor_set_1 <
+                (3 * self.number_of_byzantine + 1) and
+           ((processor_set_1 + processor_set_2) >=
+                (4 * self.number_of_byzantine + 1))):
+            pass
+        return TEE
 
     def double(self):
         """Method description.
