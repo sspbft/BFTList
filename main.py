@@ -114,6 +114,9 @@ if __name__ == "__main__":
     resolver = Resolver()
 
     setup_logging()
+    if os.getenv("BYZANTINE"):
+        logger.warning("Node is acting Byzantine: " +
+                       f"{os.getenv('BYZANTINE_BEHAVIOR')}")
     setup_metrics()
     start_modules(resolver)
     start_api(resolver)

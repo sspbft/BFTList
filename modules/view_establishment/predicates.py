@@ -277,8 +277,6 @@ class PredicatesAndAction():
                                                  enums.FOLLOW) and
                                 view_pair[CURRENT] != enums.TEE):
                             own_current = self.views[self.id][CURRENT]
-                            logger.info(f"current view {self.views[self.id]}" +
-                                        f"view_pair {view_pair}")
                             if own_current != view_pair[CURRENT]:
                                 self.view_pair_to_adopt = deepcopy(view_pair)
                                 return True
