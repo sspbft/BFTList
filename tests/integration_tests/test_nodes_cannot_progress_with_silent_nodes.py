@@ -28,18 +28,18 @@ vChanges = [False for i in range(N)]
 witnesses = [False for i in range(N)]
 start_state = {}
 
-echo_1 = [{"current": 2, "next": 2} for i in range(N)]
-echo_2 = [{"current": 2, "next": 2} for i in range(3)] + \
-         [{"current": 1, "next": 1} for i in range(3)]
+views = [{"current": 2, "next": 2} for i in range(N)]
+views_2 = [{"current": 2, "next": 2} for i in range(3)] + \
+         [{"current": DF_VIEW, "next": 0} for i in range(2)] + \
+         [{"current": 1, "next": 1}]
 
 for i in range(N):
     start_state[str(i)] = {
         "VIEW_ESTABLISHMENT_MODULE": {
-            "views": views,
+            "views": views if i <= 2 else views_2,
             "phs": phases,
             "vChange": vChanges[i],
-            "witnesses": witnesses,
-            "echo": echo_1 if i <= 2 else echo_2
+            "witnesses": witnesses
         }
     }
 
@@ -59,25 +59,38 @@ class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
         return await helpers.launch_bftlist(args)
 
     async def validate(self):
-        """Validates response from / endpoint on all nodes"""
-        await asyncio.sleep(20)
-        aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
-        res = []
+        calls_left = helpers.MAX_NODE_CALLS
+        test_result = False
 
-        for a in asyncio.as_completed(aws):
-            result = await a
-            data = result["data"]["VIEW_ESTABLISHMENT_MODULE"]
-            views = data["views"]
-            phases = data["phs"]
-            vChange = data["vChange"]
+        # sleep for 10 seconds, then check if no progress has been made
+        await asyncio.sleep(10)
 
-            vp_target = {"current": 0, "next": 0}
-            phases_target = [0 for i in range(N)]
+        while calls_left > 0:
+            aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
+            checks = []
 
-            # for i,vp in enumerate(views):
-            #     self.assertEqual(vp, vp_target)
-            # self.assertEqual(phases, phases_target)
-            # self.assertEqual(vChange, False)
+            for a in asyncio.as_completed(aws):
+                result = await a
+                data = result["data"]["VIEW_ESTABLISHMENT_MODULE"]
+                views = data["views"]
+
+
+                for i,vp in enumerate(views):
+                    if i <= 2:
+                        checks.append(vp == {"current": 2, "next": 2})
+                    elif i <= 4:
+                        checks.append(vp == {"current": 0, "next": 0})
+
+            # if all checks passed, test passed
+            if all(checks):
+                test_result = True
+                break
+
+            # sleep for 2 seconds and re-try
+            await asyncio.sleep(2)
+            calls_left -= 1
+
+        self.assertTrue(test_result)
             
 
     @helpers.suppress_warnings
