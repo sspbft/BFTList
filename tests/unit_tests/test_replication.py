@@ -188,6 +188,21 @@ class TestReplicationModule(unittest.TestCase):
 
         self.assertFalse(replication.conflict())
 
+    def test_com_pref_states(self):
+        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication.rep[0][REP_STATE] = [{"op": "add", "val": 0}]
+        replication.rep[1][REP_STATE] = [{"op": "add", "val": 0}]
+        replication.rep[2][REP_STATE] = [{"op": "add", "val": 1}]
+        replication.rep[3][REP_STATE] = [{"op": "add", "val": 0}, {"op": "add", "val": 2}]
+        replication.rep[4][REP_STATE] = [{"op": "add", "val": 3}]
+        replication.rep[5][REP_STATE] = [{"op": "add", "val": 2}]
+
+        self.assertEqual(replication.com_pref_states(2), ([{"op": "add", "val": 0}], [{"op": "add", "val": 0}]))
+        self.assertEqual(replication.com_pref_states(3), ([{"op": "add", "val": 0}], [{"op": "add", "val": 0}],[{"op": "add", "val": 0}, {"op": "add", "val": 2}]))
+        # no more than 3 processors have a common prefix
+        self.assertEqual(replication.com_pref_states(4), set())
+
+
     def test_double(self):
         replication = ReplicationModule(0, self.resolver, 2, 0, 1)
         
@@ -481,3 +496,33 @@ class TestReplicationModule(unittest.TestCase):
         replication.flush = False
         replication.replica_flush()
         self.assertTrue(replication.flush)
+
+    # Added functions
+
+    def test_prefixes(self):
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+
+        # Basic examples
+        log_A = [1,2,3]
+        log_B = [1,2]
+        self.assertTrue(replication.prefixes(log_A, log_B))
+        self.assertTrue(replication.prefixes(log_B, log_A))
+
+        log_B = [1,2,5]
+        self.assertFalse(replication.prefixes(log_A, log_B))
+        
+        log_A = []
+        self.assertTrue(replication.prefixes(log_A, log_B))
+
+        # Examples with dcts
+        log_A = [{REQUEST: self.dummyRequest1, X_SET:{2}}]
+        log_B = [{REQUEST: self.dummyRequest1, X_SET:{2}}, 
+                {REQUEST: self.dummyRequest2, X_SET:{1,3}}, 
+                ]
+        self.assertTrue(replication.prefixes(log_A, log_B))
+        
+        log_A = [{REQUEST: self.dummyRequest1, X_SET:{2,4}}]
+        log_B = [{REQUEST: self.dummyRequest1, X_SET:{2}}, 
+                {REQUEST: self.dummyRequest2, X_SET:{1,3}}, 
+                ]
+        self.assertFalse(replication.prefixes(log_A, log_B))

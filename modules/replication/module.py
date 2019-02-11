@@ -134,7 +134,26 @@ class ReplicationModule(AlgorithmModule):
         Returns a set of replica states which has a prefix at at least
         required_processors. Returns empty if not.
         """
-        raise NotImplementedError
+        all_replica_states = []
+        # Get all replica states
+        for replica_structure in self.rep:
+            all_replica_states.append(replica_structure[REP_STATE])
+        # Find a set of replica states that all are prefixes of each other
+        # All possible combinations (of size required_processors) of replica
+        # states
+        for S in itertools.combinations(
+                        all_replica_states, required_processors):
+            all_states_are_prefixes = True
+            # Check if prefixes for all combinations in the set
+            for rep_state_A, rep_state_B in itertools.combinations(S, 2):
+                if not self.prefixes(rep_state_A, rep_state_B):
+                    # Move on to next combination of replica states
+                    all_states_are_prefixes = False
+                    break
+            # All replica states where prefixes to each other
+            if(all_states_are_prefixes):
+                return S
+        return set()
 
     def get_ds_state(self):
         """Method description.
@@ -317,6 +336,25 @@ class ReplicationModule(AlgorithmModule):
                     processor_set.add(processor_id)
                     break
         return processor_set
+
+    # Methods added
+    def prefixes(self, sq_log_A, sq_log_B):
+        """Returns true if sequence log A and sequence log B are prefixes."""
+        # Go throug sequence log A to see if A is a prefix or B
+        for index, item in enumerate(sq_log_A):
+            # We have reached the end of sq_log_B and therefore B is a prefix
+            # of A
+            if len(sq_log_B) <= index:
+                return True
+            # So far the items in the log are the same
+            if item == sq_log_B[index]:
+                continue
+            # The logs differs and are therefore not prefixes
+            else:
+                return False
+
+        # Log A has run out of items and is therefore a prefix of B
+        return True
 
     # Interface functions
     def get_pend_reqs(self):
