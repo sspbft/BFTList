@@ -23,6 +23,7 @@ SEQUENCE_NO = "sequence_no"
 STATUS = "status"
 REPLY = "reply"
 VIEW = "view"
+PRIM = "prim"
 
 
 MAXINT = sys.maxsize  # Sequence number limit

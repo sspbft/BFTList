@@ -14,7 +14,7 @@ class Function(Enum):
     """Represents an interface function in a module."""
 
     # View Establishment Module
-    get_current_view = 1
+    GET_CURRENT_VIEW = 1  # re-named from getView in the paper
     ALLOW_SERVICE = 2
 
     # Replication Module
@@ -23,6 +23,7 @@ class Function(Enum):
     REP_REQUEST_RESET = 5
 
     # Primary Monitoring Module
+    NO_VIEW_CHANGE = 6
 
 
 class MessageType(IntEnum):

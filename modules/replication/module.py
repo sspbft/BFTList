@@ -1,15 +1,19 @@
 """Contains code related to the Replication module."""
 
-import time
 import itertools
+import logging
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums
 from modules.constants import (MAXINT, SIGMA,
                                REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE, X_SET,
-                               REQUEST, STATUS, SEQUENCE_NO, CLIENT_REQ)
+                               REQUEST, STATUS, SEQUENCE_NO, CLIENT_REQ, PRIM,
+                               VIEW)
+from resolve.enums import Module, Function
 # , X_SET, REPLY
 from copy import deepcopy
+
+logger = logging.getLogger(__name__)
 
 
 class ReplicationModule(AlgorithmModule):
@@ -43,7 +47,9 @@ class ReplicationModule(AlgorithmModule):
                           REQ_Q: [],
                           LAST_REQ: [],
                           CON_FLAG: False,
-                          VIEW_CHANGE: False}
+                          VIEW_CHANGE: False,
+                          PRIM: -1}
+        self.TEE = deepcopy(self.DEF_STATE)
 
         self.flush = False
         self.need_flush = False
@@ -55,7 +61,8 @@ class ReplicationModule(AlgorithmModule):
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
-             VIEW_CHANGE: False}
+             VIEW_CHANGE: False,
+             PRIM: -1}
             for i in range(n)
         ]
         self.prim = -1
@@ -63,10 +70,154 @@ class ReplicationModule(AlgorithmModule):
     def run(self):
         """Called whenever the module is launched in a separate thread."""
         while True:
-            time.sleep(1.5)
+            # lines 1-3
+            if not self.rep[self.id][VIEW_CHANGE] and \
+                    self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
+                                          Function.ALLOW_SERVICE):
+                view_changed = self.rep[self.id] != self.TEE and \
+                    (self.resolver.execute(
+                        Module.VIEW_ESTABLISHMENT_MODULE,
+                        Function.GET_CURRENT_VIEW, self.id) != self.id)
+                self.rep[self.id][VIEW_CHANGE] = view_changed
+
+            self.prim = self.resolver.execute(
+                Module.VIEW_ESTABLISHMENT_MODULE,
+                Function.GET_CURRENT_VIEW, self.id)
+
+            # lines 4-6
+            if self.rep[self.id][VIEW_CHANGE] and self.prim == self.id:
+                # this node is acting as primary
+                processor_ids = []
+                for i, replica_structure in self.rep:
+                    if replica_structure[VIEW_CHANGE] and self.prim == i:
+                        processor_ids.add(i)
+
+                if len(processor_ids) > (3 * self.number_of_byzantine) + 1:
+                    self.renew_reqs(processor_ids)
+                    self.find_cons_state(self.com_pref_states(
+                        (3 * self.number_of_byzantine) + 1
+                    ))  # TODO assign return val from cons_state when impl.
+                    self.rep[self.id][VIEW_CHANGE] = False
+            # lines 7-8
+            elif self.rep[self.id][VIEW_CHANGE] and \
+                    (self.rep[self.prim][VIEW_CHANGE] is False and
+                     (self.rep[self.id][PRIM] == self.rep[self.prim][PRIM])):
+                processor_ids = []
+                for i in range(self.number_of_nodes):
+                    if self.resolver.execute(
+                        Module.VIEW_ESTABLISHMENT_MODULE,
+                            Function.GET_CURRENT_VIEW, i) \
+                            == self.prim:
+                        processor_ids.append(i)
+                if len(processor_ids) >= (4 * self.number_of_byzantine) + 1 \
+                   and self.check_new_v_state(self.prim):
+                    self.rep[self.id] = self.rep[self.prim]
+                    self.rep[self.id][VIEW_CHANGE] = False
+
+            # lines 9 - 10
+            X = self.find_cons_state(self.com_pref_states(
+                (3 * self.number_of_byzantine) + 1
+            ))
+            Y = self.get_ds_state()
+            if len(X) == 0 and len(Y) > 0:
+                X = Y
+
+            # lines 11 - 14
+            # TODO implement is_prefix_of(state, state2)
+            self.rep[self.id][CON_FLAG] = (len(X) > 0)
+            if not (self.rep[self.id][CON_FLAG]) and \
+               (not (self.is_prefix_of(self.rep[self.id][REP_STATE], X)) or
+               self.rep[self.id][REP_STATE] == self.DEF_STATE[REP_STATE] or
+                    self.delayed()):
+                self.rep[i][REP_STATE] = X
+            if self.stale_rep() or self.conflict():
+                self.flush_local()
+                self.rep[self.id]
+                self.need_flush = True
+            if self.flush:
+                self.flush_local()
+
+            self.rep[self.id][PEND_REQS].append(self.known_pend_reqs())
+
+            # line 15 - 25
+            if (self.resolver.execute(
+                    Module.VIEW_ESTABLISHMENT_MODULE,
+                    Function.ALLOW_SERVICE) and (self.need_flush is False)):
+                if self.resolver.execute(
+                    Module.PRIMARY_MONITORING_MODULE,
+                    Function.NO_VIEW_CHANGE) \
+                        and self.rep[self.id][VIEW_CHANGE] is False:
+                    if self.id == self.prim:
+                        # primary processes all pending reqs
+                        for req in self.get_pend_reqs():
+                            if self.seq_n < (self.last_exec() +
+                               (SIGMA * self.number_of_clients)):
+                                self.seq_n += 1
+                                req = {
+                                    CLIENT_REQ: req,
+                                    VIEW: self.prim,
+                                    SEQUENCE_NO: self.seq_n
+                                }
+                                self.rep[self.id][REQ_Q].append({
+                                    REQUEST: req,
+                                    STATUS: ReplicationEnums.PRE_PREP
+                                })
+                                self.rep[self.id][REQ_Q].append({
+                                    REQUEST: req,
+                                    STATUS: ReplicationEnums.PREP
+                                })
+
+                    else:
+                        # wait for prim or process reqs where 3f+1
+                        # agree on seqnum
+                        reqs = list(filter(
+                            self.reqs_to_prep, self.known_pend_reqs()))
+                        for r in reqs:
+                            self.rep[self.id][REQ_Q].append(
+                                {REQUEST: r, STATUS: ReplicationEnums.PREP}
+                            )
+
+                    # consider prepped msgs per request,
+                    # if 3f+1 agree then commit
+                    for req in self.known_reqs(ReplicationEnums.PREP):
+                        req[STATUS] = ReplicationEnums.COMMIT
+                        self.rep[self.id][PEND_REQS].remove(req)
+
+                    for req in self.known_reqs(
+                            set([ReplicationEnums.PREP,
+                                 ReplicationEnums.COMMIT])):
+                        x_set = self.committed_set(req)
+                        if (len(x_set) > (3 * self.number_of_byzantine) + 1) \
+                                and (req[SEQUENCE_NO] == self.last_exec() + 1):
+                            self.commit({REQUEST: req, X_SET: x_set})
+
+    def reqs_to_prep(self, req):
+        """Helper method to filter out requests to prepare."""
+        if req in self.unassigned_reqs():
+            return False
+        for replica_structure in self.rep:
+            if req in replica_structure[REQ_Q]:
+                return False
+        return self.accept_req_preprep(req, self.prim)
+
+    def commit(self, req_pair):
+        """Commits a request."""
+        # apply request and add to request log
+        self.apply(req_pair[REQUEST])
+        self.rep[self.id][R_LOG].append(req_pair)
+
+        # remove request from pend_reqs and req_q
+        self.rep[self.id][PEND_REQS].remove(req_pair[REQUEST])
+        req_q = self.rep[self.id][REQ_Q]
+        self.rep[self.id][REQ_Q] = \
+            [x for x in req_q if x[REQUEST] != req_pair[REQUEST]]
+
+    def apply(self, req):
+        """Applies a request."""
+        logger.info(f"Applying request {req}")
+        # TODO implement
 
     # Macros
-
     def flush_local(self):
         """Resets all local variables."""
         self.seq_n = 0
@@ -103,7 +254,7 @@ class ReplicationModule(AlgorithmModule):
         for replica_structure in self.rep:
             # If R_LOG is empty, ignore that processor
             if(replica_structure[R_LOG]):
-                # Get last excecuted request done by this processor
+                # Get last excecuted request pair done by this processor
                 x = replica_structure[R_LOG][-1]
                 # Get the maximal sequence number
                 if (len(x[X_SET]) >=

@@ -22,25 +22,25 @@ class Resolver:
         """Sets the modules dict of the resolver."""
         self.modules = modules
 
-    def execute(self, module, func):
+    def execute(self, module, func, *args):
         """API for executing a function on a given module."""
         if self.modules is None:
             return -1
 
         if module == Module.VIEW_ESTABLISHMENT_MODULE:
-            return self.view_establishment_exec(func)
+            return self.view_establishment_exec(func, *args)
         elif module == Module.REPLICATION_MODULE:
-            return self.replication_exec(func)
+            return self.replication_exec(func, *args)
         elif module == Module.PRIMARY_MONITORING_MODULE:
-            return self.primary_monitoring_exec(func)
+            return self.primary_monitoring_exec(func, *args)
         else:
             raise ValueError("Bad module parameter")
 
-    def view_establishment_exec(self, func):
+    def view_establishment_exec(self, func, *args):
         """Executes a function on the View Establishment module."""
         module = self.modules[Module.VIEW_ESTABLISHMENT_MODULE]
-        if func == Function.get_current_view:
-            return module.get_current_view()
+        if func == Function.GET_CURRENT_VIEW:
+            return module.get_current_view(args[0])
         elif func == Function.ALLOW_SERVICE:
             return module.allow_service()
         else:

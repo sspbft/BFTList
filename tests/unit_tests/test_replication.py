@@ -8,7 +8,7 @@ from modules.enums import ReplicationEnums
 from modules.constants import (REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE,
                                REQUEST, SEQUENCE_NO, STATUS, VIEW, X_SET, CLIENT_REQ,
-                               SIGMA) # REPLY
+                               SIGMA, PRIM) # REPLY
 
 class TestReplicationModule(unittest.TestCase):
 
@@ -33,14 +33,16 @@ class TestReplicationModule(unittest.TestCase):
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
-             VIEW_CHANGE: False},
+             VIEW_CHANGE: False,
+             PRIM: -1},
              {REP_STATE: {},
              R_LOG: [],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
-             VIEW_CHANGE: False}]
+             VIEW_CHANGE: False,
+             PRIM: -1}]
         self.assertEqual(replication.seq_n, 0)
         self.assertEqual(replication.rep, rep_default)
 
