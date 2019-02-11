@@ -187,7 +187,11 @@ class ReplicationModule(AlgorithmModule):
         return False
 
     def stale_rep(self):
-        """Returns true if double(), unsup_req or stale_req_seqn is true."""
+        """Returns true if
+
+        double(), unsup_req, stale_req_seqn is true or if there is a request
+        that does not have the support of at least 3f + 1 processors.
+        """
         x_set_less = False
         for request_pair in self.rep[self.id][R_LOG]:
             if(len(request_pair[X_SET]) <= (3 * self.number_of_byzantine + 1)):
