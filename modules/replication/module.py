@@ -3,7 +3,7 @@
 import time
 import itertools
 from modules.algorithm_module import AlgorithmModule
-# from modules.enums import ReplicationEnums
+from modules.enums import ReplicationEnums
 from modules.constants import (MAXINT, SIGMA,
                                REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE, X_SET,
@@ -76,9 +76,9 @@ class ReplicationModule(AlgorithmModule):
     def msg(self, status, processor_j):
         """Returns requests reported to p_i from processor_j with status."""
         request_set = []
-        for request_pair in self.rep[processor_j].get(REQ_Q):
-            if request_pair.get(STATUS) == status:
-                request_set.append(request_pair.get(REQUEST))
+        for request_pair in self.rep[processor_j][REQ_Q]:
+            if request_pair[STATUS] == status:
+                request_set.append(request_pair[REQUEST])
         return request_set
 
     def last_exec(self):
@@ -262,7 +262,10 @@ class ReplicationModule(AlgorithmModule):
         Returns true if there exists a PRE_PREP msg from the primary
         for the request.
         """
-        raise NotImplementedError
+        for y in self.msg(ReplicationEnums.PRE_PREP, prim):
+            if y[CLIENT_REQ] == request:
+                return True
+        return False
 
     def unassigned_reqs(self):
         """Method description.
@@ -271,7 +274,13 @@ class ReplicationModule(AlgorithmModule):
         without having 3f+1 processors reported to have PREP msg
         for the requests.
         """
-        raise NotImplementedError
+        request_set = []
+        for request in self.rep[self.id][PEND_REQS]:
+            if (not self.exists_preprep_msg(request, self.prim) and
+                request not in self.known_reqs(
+                    {ReplicationEnums.PREP, ReplicationEnums.COMMIT})):
+                    request_set.append(request)
+        return request_set
 
     def accept_req_preprep(self, request, prim):
         """Method description.
@@ -284,10 +293,21 @@ class ReplicationModule(AlgorithmModule):
     def committed_set(self, request):
         """Method description.
 
-        Returns the set of processors that has reported to commit to the
-        request and has the request in their executed request log.
+        Returns the set of processors that have reported to commit to the
+        request or have the request in their executed request log.
         """
-        raise NotImplementedError
+        processor_set = set()
+        for processor_id, replica_structure in enumerate(self.rep):
+            # Checks if the processor has reported to commit the request
+            if request in self.msg(ReplicationEnums.COMMIT, processor_id):
+                processor_set.add(processor_id)
+                continue
+            # Checks if the request is in the processors executed request log
+            for request_pair in replica_structure[R_LOG]:
+                if request == request_pair[REQUEST]:
+                    processor_set.add(processor_id)
+                    break
+        return processor_set
 
     # Interface functions
     def get_pend_reqs(self):

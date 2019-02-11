@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, call
 import sys
 from resolve.resolver import Resolver
 from modules.replication.module import ReplicationModule
@@ -401,6 +401,55 @@ class TestReplicationModule(unittest.TestCase):
         replication.last_common_exec = MagicMock(return_value = 40)
         replication.last_exec = MagicMock(return_value = 3)
         self.assertTrue(replication.delayed())
+
+    def test_exists_preprep_msg(self):
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        # Primary is set to processor 1, with a PRE_PREP msg for dummyRequst 1
+        replication.prim = 1
+        replication.rep[1][REQ_Q] = [
+            {REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
+            {REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.PREP}]
+
+        self.assertTrue(replication.exists_preprep_msg(self.dummyRequest1[CLIENT_REQ], 1))
+        # No Pre_prep msg for dummyRequest2
+        self.assertFalse(replication.exists_preprep_msg(self.dummyRequest2[CLIENT_REQ], 1))
+        # Node 0 is not prim, and there exists no Pre_prep msg in rep[0]
+        self.assertFalse(replication.exists_preprep_msg(self.dummyRequest1[CLIENT_REQ], 0))
+
+    def test_unassigned_reqs(self):
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication.rep[0][PEND_REQS] = [self.dummyRequest1, self.dummyRequest2]
+
+        # Both requests are unassigned
+        replication.exists_preprep_msg = MagicMock(return_value = False)
+        replication.known_reqs = MagicMock(return_value = [])
+        self.assertEqual(replication.unassigned_reqs(), [self.dummyRequest1, self.dummyRequest2])
+        calls = [call(self.dummyRequest1, replication.prim), call(self.dummyRequest2, replication.prim)]
+        replication.exists_preprep_msg.assert_has_calls(calls)
+       
+        # Dummyrequest2 is in known_reqs with
+        replication.known_reqs = MagicMock(return_value = [self.dummyRequest2])
+        self.assertEqual(replication.unassigned_reqs(), [self.dummyRequest1])
+
+        # There exists PRE_PREP msg for both of the requests
+        replication.exists_preprep_msg = MagicMock(return_value = True)
+        self.assertEqual(replication.unassigned_reqs(), [])
+
+    def test_committed_set(self):
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+
+        # The other processor (1) has the dummyRequest2 in it's R_LOG but the msg-function does not
+        # return any
+        replication.rep[1][R_LOG] = [{REQUEST: self.dummyRequest2, X_SET: {5}}]
+        replication.msg = MagicMock(return_value = [])
+        self.assertEqual(replication.committed_set(self.dummyRequest2), {1})
+
+        # The msg will return dummyRequest1 for both processors but it is not in R_LOG for any of the processors
+        replication.rep[1][R_LOG] = []
+        replication.msg = MagicMock(return_value = [self.dummyRequest1])
+        self.assertEqual(replication.committed_set(self.dummyRequest1),{0, 1})
+        # No condition for dummyRequest2 will now be true
+        self.assertEqual(replication.committed_set(self.dummyRequest2),set())
 
     # Interface functions
 
