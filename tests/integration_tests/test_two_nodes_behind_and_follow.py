@@ -58,18 +58,29 @@ class TestNodesFollow(AbstractIntegrationTest):
         return await helpers.launch_bftlist()
 
     async def validate(self):
-        """Validates response from / endpoint on all nodes"""
-        await asyncio.sleep(20)
-        aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
-        res = {}
-        target = {CURRENT: 2, NEXT: 2}
+        calls_left = helpers.MAX_NODE_CALLS
+        test_result = False
 
-        # waits for all health check calls to complete
-        for a in asyncio.as_completed(aws):
-            result = await a
-            views = result["data"]["VIEW_ESTABLISHMENT_MODULE"]["views"]
-            for vp in views:
-                self.assertEqual(vp, target)
+        while calls_left > 0:
+            aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
+            checks = []
+
+            for a in asyncio.as_completed(aws):
+                result = await a
+                views = result["data"]["VIEW_ESTABLISHMENT_MODULE"]["views"]
+                for vp in views:
+                    checks.append(vp == {CURRENT: 2, NEXT: 2})
+
+            # all checks passing means test has passed
+            if all(checks):
+                test_result = True
+                break
+
+            # wait 2 seconds and then re-try
+            await asyncio.sleep(2)
+            calls_left -= 1
+
+        self.assertTrue(test_result)
 
     @helpers.suppress_warnings
     def test(self):

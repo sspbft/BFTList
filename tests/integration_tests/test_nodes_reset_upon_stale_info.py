@@ -45,27 +45,38 @@ class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
         return await helpers.launch_bftlist()
 
     async def validate(self):
-        """Validates response from / endpoint on all nodes"""
-        await asyncio.sleep(20)
-        aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
-        res = []
+        calls_left = helpers.MAX_NODE_CALLS
+        test_result = False
 
-        for a in asyncio.as_completed(aws):
-            result = await a
-            data = result["data"]["VIEW_ESTABLISHMENT_MODULE"]
-            views = data["views"]
-            phases = data["phs"]
-            vChange = data["vChange"]
-            witnesses = data["witnesses"]
-            witnesses_set = data["witnesses_set"]
+        while calls_left > 0:
+            aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
+            checks = []
 
-            vp_target = {"current": 0, "next": 0}
-            phases_target = [0 for i in range(N)]
+            for a in asyncio.as_completed(aws):
+                result = await a
+                data = result["data"]["VIEW_ESTABLISHMENT_MODULE"]
+                views = data["views"]
+                phases = data["phs"]
+                vChange = data["vChange"]
+                witnesses = data["witnesses"]
+                witnesses_set = data["witnesses_set"]
 
-            for i,vp in enumerate(views):
-                self.assertEqual(vp, vp_target)
-            self.assertEqual(phases, phases_target)
-            self.assertEqual(vChange, False)
+                vp_target = {"current": 0, "next": 0}
+                phases_target = [0 for i in range(N)]
+
+                for i,vp in enumerate(views):
+                    checks.append(vp == vp_target)
+                checks.append(phases == phases_target)
+                checks.append(vChange == False)
+
+            # all checks passed means test passed
+            if all(checks):
+                test_result = True
+                break
+
+            # sleep for 2 seconds and the re-try
+            await asyncio.sleep(2)
+            calls_left -= 1
             
 
     @helpers.suppress_warnings

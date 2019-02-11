@@ -16,6 +16,7 @@ N = 6
 F = 1
 RELATIVE_PATH_FIXTURES_HOST = "./tests/fixtures/hosts.txt"
 start_state_file_path = os.path.abspath("./conf/start_state.json")
+MAX_NODE_CALLS = 10
 
 def suppress_warnings(test_func):
     def do_test(self, *args, **kwargs):

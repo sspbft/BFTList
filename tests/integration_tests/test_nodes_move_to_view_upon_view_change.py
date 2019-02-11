@@ -42,22 +42,35 @@ class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
         return await helpers.launch_bftlist()
 
     async def validate(self):
-        """Validates response from / endpoint on all nodes"""
-        await asyncio.sleep(20)
-        aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
-        res = []
+        calls_left = helpers.MAX_NODE_CALLS
+        test_result = False
 
-        for a in asyncio.as_completed(aws):
-            result = await a
-            data = result["data"]
-            views = data["VIEW_ESTABLISHMENT_MODULE"]["views"]
-            vp_target = {"current": 2, "next": 2}
+        while calls_left > 0:
+            aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
+            checks = []
 
-            for i,vp in enumerate(views):
-                if i == 5:
-                    self.assertEqual(vp, vp_target)
-                else:
-                    self.assertIn(vp, [vp_target, {"current": 1, "next": 1}])
+            for a in asyncio.as_completed(aws):
+                result = await a
+                data = result["data"]
+                views = data["VIEW_ESTABLISHMENT_MODULE"]["views"]
+                vp_target = {"current": 2, "next": 2}
+
+                for i,vp in enumerate(views):
+                    if i == 5:
+                        checks.append(vp == vp_target)
+                    else:
+                        checks.append(vp in [vp_target, {"current": 1, "next": 1}])
+
+            # test passed if all checks returned true
+            if all(checks):
+                test_result = True
+                break
+
+            # sleep for 2 seconds, then re-try
+            await asyncio.sleep(2)
+            calls_left -= 1
+
+        self.assertTrue(test_result)
 
     @helpers.suppress_warnings
     def test(self):
