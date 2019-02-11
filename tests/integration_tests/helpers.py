@@ -41,7 +41,7 @@ async def GET(node_id, path):
 
 
 # application runner helpers
-async def launch_bftlist():
+async def launch_bftlist(args):
     """Launches BFTList for integration testing."""
     nodes = get_nodes()
     cmd = "source env/bin/activate && python3.7 main.py"
@@ -56,7 +56,13 @@ async def launch_bftlist():
         env["NUMBER_OF_BYZANTINE"] = str(F)
         env["NUMBER_OF_CLIENTS"] = "1"
         env["HOSTS_PATH"] = os.path.abspath(RELATIVE_PATH_FIXTURES_HOST)
-        env["INTEGRATION_TEST"] = "1"
+        env["INTEGRATION_TEST"] = "true"
+
+        if "BYZANTINE" in args:
+            if node_id in args["BYZANTINE"]["NODES"]:
+                env["BYZANTINE"] = "true"
+                env["BYZANTINE_BEHAVIOR"] = args["BYZANTINE"]["BEHAVIOR"]
+
         p = subprocess.Popen(cmd, shell=True, cwd=cwd, env=env)
         pids.append(p.pid)
 
