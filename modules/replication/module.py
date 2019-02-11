@@ -123,7 +123,6 @@ class ReplicationModule(AlgorithmModule):
                 X = Y
 
             # lines 11 - 14
-            # TODO implement is_prefix_of(state, state2)
             self.rep[self.id][CON_FLAG] = (len(X) > 0)
             if not (self.rep[self.id][CON_FLAG]) and \
                (not (self.is_prefix_of(self.rep[self.id][REP_STATE], X)) or
@@ -254,7 +253,6 @@ class ReplicationModule(AlgorithmModule):
         for replica_structure in self.rep:
             # If R_LOG is empty, ignore that processor
             if(replica_structure[R_LOG]):
-                # Get last excecuted request pair done by this processor
                 x = replica_structure[R_LOG][-1]
                 # Get the maximal sequence number
                 if (len(x[X_SET]) >=
