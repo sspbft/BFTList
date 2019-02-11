@@ -1,8 +1,8 @@
 """
-Case 3
+Case 6
 
-Nodes are in different views and stable, should converge to the the reset view
-(stable) by resetAll since no predicate will be true for any of the nodes
+Node 0-2 have the same view v, nodes 3-4 have the same view DF_VIEW and
+node 5 is acting Byzantine, i.e. not responding.
 """
 
 # standard
@@ -17,23 +17,38 @@ from .abstract_integration_test import AbstractIntegrationTest
 # globals
 F = 1
 N = 6
+DF_VIEW = 0
 logger = logging.getLogger(__name__)
 
-views = [{"current": 1, "next": 1}, {"current": 2, "next": 2},
-         {"current": 2, "next": 3}, {"current": 0, "next": 0},
-         {"current": 4, "next": 4}, {"current": 4, "next": 4}]
-phases = [0, 0, 1, 0, 0, 0]
-vChanges = [True, True, True, True, False, False]
+views = [{"current": 2, "next": 2}, {"current": 2, "next": 2},
+         {"current": 2, "next": 2}, {"current": DF_VIEW, "next": 0},
+         {"current": DF_VIEW, "next": 0}, {"current": 1, "next": 1}]
+phases = [0 for i in range(N)]
+vChanges = [False for i in range(N)]
+witnesses = [False for i in range(N)]
 start_state = {}
+
+views = [{"current": 2, "next": 2} for i in range(N)]
+views_2 = [{"current": 2, "next": 2} for i in range(3)] + \
+         [{"current": DF_VIEW, "next": 0} for i in range(2)] + \
+         [{"current": 1, "next": 1}]
 
 for i in range(N):
     start_state[str(i)] = {
         "VIEW_ESTABLISHMENT_MODULE": {
-            "views": views,
+            "views": views if i <= 2 else views_2,
             "phs": phases,
-            "vChange": vChanges[i]
+            "vChange": vChanges[i],
+            "witnesses": witnesses
         }
     }
+
+args = {
+    "BYZANTINE": {
+        "NODES": [5],
+        "BEHAVIOR": "UNRESPONSIVE"
+    }
+}
 
 class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
     """Performs health check on all nodes base endpoint (/)."""
@@ -41,37 +56,37 @@ class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
     async def bootstrap(self):
         """Sets up BFTList for the test."""
         helpers.write_state_conf_file(start_state)
-        return await helpers.launch_bftlist()
+        return await helpers.launch_bftlist(args)
 
     async def validate(self):
         calls_left = helpers.MAX_NODE_CALLS
         test_result = False
 
+        # sleep for 10 seconds, then check if no progress has been made
+        await asyncio.sleep(10)
+
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
-
             checks = []
+
             for a in asyncio.as_completed(aws):
                 result = await a
                 data = result["data"]["VIEW_ESTABLISHMENT_MODULE"]
                 views = data["views"]
-                phases = data["phs"]
-                vChange = data["vChange"]
 
-                vp_target = {"current": 0, "next": 0}
-                phases_target = [0 for i in range(N)]
 
                 for i,vp in enumerate(views):
-                    checks.append(vp == vp_target)
-                checks.append(phases == phases_target)
-                checks.append(vChange == False)
+                    if i <= 2:
+                        checks.append(vp == {"current": 2, "next": 2})
+                    elif i <= 4:
+                        checks.append(vp == {"current": 0, "next": 0})
 
-            # if all checks were true, test passed
+            # if all checks passed, test passed
             if all(checks):
                 test_result = True
                 break
 
-            # sleep for 2 seconds and then re-try
+            # sleep for 2 seconds and re-try
             await asyncio.sleep(2)
             calls_left -= 1
 

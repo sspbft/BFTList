@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 import unittest
 import logging
+import warnings
 
 # setup logging for integration tests
 FORMAT = "\33[1mIntegrationTest ==> %(name)s : [%(levelname)s]" + \

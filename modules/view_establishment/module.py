@@ -14,6 +14,7 @@ from modules.enums import ViewEstablishmentEnums
 from resolve.enums import MessageType
 import conf.config as conf
 from modules.constants import VIEWS, PHASE, WITNESSES
+import modules.byzantine as byz
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +177,11 @@ class ViewEstablishmentModule(AlgorithmModule):
         witnesses of processor i and what processor wants to echo about
         processor j to processor_j
         """
+        # stay silent if node configured to be unresponsive
+        if byz.is_byzantine() and byz.get_byz_behavior() == byz.UNRESPONSIVE:
+            logger.info(f"Node is acting byzantine: {byz.UNRESPONSIVE}")
+            return
+
         nodes = conf.get_nodes()
         for node_j, _ in nodes.items():
             # update own echo instead of sending message
