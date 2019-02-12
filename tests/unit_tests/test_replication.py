@@ -27,14 +27,14 @@ class TestReplicationModule(unittest.TestCase):
         replication = ReplicationModule(0, self.resolver, 2, 0, 1)
         replication.flush_local()
         # The local variables should be the default values
-        rep_default = [{REP_STATE: {},
+        rep_default = [{REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
              VIEW_CHANGE: False},
-             {REP_STATE: {},
+             {REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [],
              REQ_Q: [],
@@ -73,7 +73,7 @@ class TestReplicationModule(unittest.TestCase):
 
         # The last common executed request has sequence number 2
         replication.rep = [{
-             REP_STATE: {},
+             REP_STATE: [],
              R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}},
                     {REQUEST: self.dummyRequest2, X_SET:{0,1,2,3,4,5}}],
              PEND_REQS: [],
@@ -87,14 +87,14 @@ class TestReplicationModule(unittest.TestCase):
         # There is no common last executed request, 3 nodes have
         # request 1 and 2 nodes have not executed anything.
         replication.rep = [{
-             REP_STATE: {},
+             REP_STATE: [],
              R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}}],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
             VIEW_CHANGE: False} for i in range(2)] + [{
-                REP_STATE: {},
+                REP_STATE: [],
                 R_LOG: [],
                 PEND_REQS: [],
                 REQ_Q: [],
@@ -108,14 +108,14 @@ class TestReplicationModule(unittest.TestCase):
         # This case should not happen, the last 2 nodes should not be able to add request 2 without
         # seeing request 2. But it checks the logic of the function.
         replication.rep = [{
-             REP_STATE: {},
+             REP_STATE: [],
              R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{0,1,2}}],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
             VIEW_CHANGE: False} for i in range(2)] + [{
-                REP_STATE: {},
+                REP_STATE: [],
                 R_LOG: [{REQUEST: self.dummyRequest2, X_SET:{3,4,5}}],
                 PEND_REQS: [],
                 REQ_Q: [],
@@ -128,14 +128,14 @@ class TestReplicationModule(unittest.TestCase):
         # The common last executed request is request 1 (sequence number 1)
         # 3 nodes have only request 1 and 2 nodes request 1 and request 2
         replication.rep = [{
-             REP_STATE: {},
+             REP_STATE: [],
              R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{0,1,2,3,4,5}}],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
             VIEW_CHANGE: False} for i in range(2)] + [{
-                REP_STATE: {},
+                REP_STATE: [],
                 R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{0,1,2,3,4,5}},
                         {REQUEST: self.dummyRequest2, X_SET:{3,4,5}}],
                 PEND_REQS: [],
@@ -152,14 +152,14 @@ class TestReplicationModule(unittest.TestCase):
 
         # All but one node have their conflict flag to True
         replication.rep = [{
-             REP_STATE: {},
+             REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: True,
             VIEW_CHANGE: False} for i in range(5)] + [{
-                REP_STATE: {},
+                REP_STATE: [],
                 R_LOG: [],
                 PEND_REQS: [],
                 REQ_Q: [],
@@ -171,14 +171,14 @@ class TestReplicationModule(unittest.TestCase):
         
         # All but two node have their conflict flag to True, meaning less than 4f+1
         replication.rep = [{
-             REP_STATE: {},
+             REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: True,
             VIEW_CHANGE: False} for i in range(4)] + [{
-                REP_STATE: {},
+                REP_STATE: [],
                 R_LOG: [],
                 PEND_REQS: [],
                 REQ_Q: [],
@@ -187,6 +187,37 @@ class TestReplicationModule(unittest.TestCase):
                 VIEW_CHANGE: False} for i in range(5,6)]
 
         self.assertFalse(replication.conflict())
+
+    def test_com_pref_states(self):
+        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication.rep[0][REP_STATE] = [{"op": "add", "val": 0}]
+        replication.rep[1][REP_STATE] = [{"op": "add", "val": 0}]
+        replication.rep[2][REP_STATE] = [{"op": "add", "val": 1}]
+        replication.rep[3][REP_STATE] = [{"op": "add", "val": 0}, {"op": "add", "val": 2}]
+        replication.rep[4][REP_STATE] = [{"op": "add", "val": 3}]
+        replication.rep[5][REP_STATE] = [{"op": "add", "val": 2}]
+
+        self.assertEqual(replication.com_pref_states(2), ([{"op": "add", "val": 0}], [{"op": "add", "val": 0}]))
+        self.assertEqual(replication.com_pref_states(3), ([{"op": "add", "val": 0}], [{"op": "add", "val": 0}],[{"op": "add", "val": 0}, {"op": "add", "val": 2}]))
+        # no more than 3 processors have a common prefix
+        self.assertEqual(replication.com_pref_states(4), set())
+
+    def test_get_ds_state(self):
+        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication.rep[0][REP_STATE] = [{"op": "add", "val": 0}]
+        replication.rep[1][REP_STATE] = [{"op": "add", "val": 0}]
+        replication.rep[2][REP_STATE] = [{"op": "add", "val": 1}]
+        replication.rep[3][REP_STATE] = [{"op": "add", "val": 0}, {"op": "add", "val": 2}]
+        replication.rep[4][REP_STATE] = []
+        replication.rep[5][REP_STATE] = []
+
+        replication.find_cons_state = MagicMock(return_value = [{"op": "add", "val": 0}])
+        self.assertEqual(replication.get_ds_state(), [{"op": "add", "val": 0}])
+        
+        # Not enough processors with the state found in find_cons_state
+        replication.rep[0][REP_STATE] = [{"op": "add", "val": 2}]
+        replication.rep[1][REP_STATE] = [{"op": "add", "val": 4}]
+        self.assertEqual(replication.get_ds_state(), -1)
 
     def test_double(self):
         replication = ReplicationModule(0, self.resolver, 2, 0, 1)
@@ -216,7 +247,7 @@ class TestReplicationModule(unittest.TestCase):
 
         # All processors have the same req_q, so there is no unsupported msg
         replication.rep = [{
-             REP_STATE: {},
+             REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [],
              REQ_Q: [{REQUEST: self.dummyRequest1, STATUS:{}},
@@ -230,7 +261,7 @@ class TestReplicationModule(unittest.TestCase):
         # Processor 0 has one unsupported request (dummyRequest2)
         # The rest does not have dummyRequest2 in their REQ_Q
         replication.rep = [{
-             REP_STATE: {},
+             REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [],
              REQ_Q: [{REQUEST: self.dummyRequest1, STATUS:{}},
@@ -238,7 +269,7 @@ class TestReplicationModule(unittest.TestCase):
              LAST_REQ: [],
              CON_FLAG: False,
             VIEW_CHANGE: False} for i in range(1)] + [{
-                REP_STATE: {},
+                REP_STATE: [],
                 R_LOG: [],
                 PEND_REQS: [],
                 REQ_Q: [{REQUEST: self.dummyRequest1, STATUS:{}}],
@@ -274,7 +305,7 @@ class TestReplicationModule(unittest.TestCase):
         # Node 4-5 have dummyRequest1 in pend queue
         # This means that known pending request are dummyRequest 1
         replication.rep = [{
-             REP_STATE: {},
+             REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [self.dummyRequest1,
                     self.dummyRequest2],
@@ -282,14 +313,14 @@ class TestReplicationModule(unittest.TestCase):
              LAST_REQ: [],
              CON_FLAG: False,
             VIEW_CHANGE: False} for i in range(1)] + [{
-                REP_STATE: {},
+                REP_STATE: [],
                 R_LOG: [],
                 PEND_REQS: [],
                 REQ_Q: [{REQUEST: self.dummyRequest1, STATUS:{}}],
                 LAST_REQ: [],
                 CON_FLAG: False,
                 VIEW_CHANGE: False} for i in range(1,4)] + [{
-                    REP_STATE: {},
+                    REP_STATE: [],
                     R_LOG: [],
                     PEND_REQS: [self.dummyRequest1],
                     REQ_Q: [],
@@ -301,7 +332,7 @@ class TestReplicationModule(unittest.TestCase):
 
         # No known pending request found, only 3 processor has dummyRequest1
         replication.rep = [{
-             REP_STATE: {},
+             REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [self.dummyRequest1,
                     self.dummyRequest2],
@@ -309,14 +340,14 @@ class TestReplicationModule(unittest.TestCase):
              LAST_REQ: [],
              CON_FLAG: False,
             VIEW_CHANGE: False} for i in range(1)] + [{
-                REP_STATE: {},
+                REP_STATE: [],
                 R_LOG: [],
                 PEND_REQS: [],
                 REQ_Q: [{REQUEST: self.dummyRequest1, STATUS:{}}],
                 LAST_REQ: [],
                 CON_FLAG: False,
                 VIEW_CHANGE: False} for i in range(1,3)] + [{
-                    REP_STATE: {},
+                    REP_STATE: [],
                     R_LOG: [],
                     PEND_REQS: [],
                     REQ_Q: [],
@@ -331,7 +362,7 @@ class TestReplicationModule(unittest.TestCase):
         # Node 0 has both requests in request queue, the others have only request 1 with 
         # same status, should therefore return dummyRequest1
         replication.rep = [{
-             REP_STATE: {},
+             REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [],
              REQ_Q: [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
@@ -339,7 +370,7 @@ class TestReplicationModule(unittest.TestCase):
              LAST_REQ: [],
              CON_FLAG: False,
              VIEW_CHANGE: False} for i in range(1)] + [{
-                REP_STATE: {},
+                REP_STATE: [],
                 R_LOG: [],
                 PEND_REQS: [],
                 REQ_Q: [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP }],
@@ -360,7 +391,7 @@ class TestReplicationModule(unittest.TestCase):
         # Node 0 has both requests in request queue, the others have only request 1 with 
         # other status, should therefore return empty
         replication.rep = [{
-             REP_STATE: {},
+             REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [],
              REQ_Q: [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
@@ -368,7 +399,7 @@ class TestReplicationModule(unittest.TestCase):
              LAST_REQ: [],
              CON_FLAG: False,
              VIEW_CHANGE: False} for i in range(1)] + [{
-                REP_STATE: {},
+                REP_STATE: [],
                 R_LOG: [],
                 PEND_REQS: [],
                 REQ_Q: [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.COMMIT}],
@@ -530,4 +561,30 @@ class TestReplicationModule(unittest.TestCase):
                                             {REQUEST: dummyRequest3, STATUS: ReplicationEnums.PREP}]
         self.assertTrue(replication.request_already_exists({REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PREP}))
 
-                            
+    def test_prefixes(self):
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+
+        # Basic examples
+        log_A = [1,2,3]
+        log_B = [1,2]
+        self.assertTrue(replication.prefixes(log_A, log_B))
+        self.assertTrue(replication.prefixes(log_B, log_A))
+
+        log_B = [1,2,5]
+        self.assertFalse(replication.prefixes(log_A, log_B))
+        
+        log_A = []
+        self.assertTrue(replication.prefixes(log_A, log_B))
+
+        # Examples with dcts
+        log_A = [{REQUEST: self.dummyRequest1, X_SET:{2}}]
+        log_B = [{REQUEST: self.dummyRequest1, X_SET:{2}}, 
+                {REQUEST: self.dummyRequest2, X_SET:{1,3}}, 
+                ]
+        self.assertTrue(replication.prefixes(log_A, log_B))
+        
+        log_A = [{REQUEST: self.dummyRequest1, X_SET:{2,4}}]
+        log_B = [{REQUEST: self.dummyRequest1, X_SET:{2}}, 
+                {REQUEST: self.dummyRequest2, X_SET:{1,3}}, 
+                ]
+        self.assertFalse(replication.prefixes(log_A, log_B))

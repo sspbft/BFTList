@@ -38,7 +38,7 @@ class ReplicationModule(AlgorithmModule):
         self.number_of_nodes = n
         self.number_of_byzantine = f
         self.number_of_clients = k
-        self.DEF_STATE = {REP_STATE: {},
+        self.DEF_STATE = {REP_STATE: [],
                           R_LOG: [],
                           PEND_REQS: [],
                           REQ_Q: [],
@@ -50,7 +50,7 @@ class ReplicationModule(AlgorithmModule):
         self.need_flush = False
         self.seq_n = 0
         self.rep = [
-            {REP_STATE: {},
+            {REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [],
              REQ_Q: [],
@@ -135,7 +135,26 @@ class ReplicationModule(AlgorithmModule):
         Returns a set of replica states which has a prefix at at least
         required_processors. Returns empty if not.
         """
-        raise NotImplementedError
+        all_replica_states = []
+        # Get all replica states
+        for replica_structure in self.rep:
+            all_replica_states.append(replica_structure[REP_STATE])
+        # Find a set of replica states that all are prefixes of each other
+        # All possible combinations (of size required_processors) of replica
+        # states
+        for S in itertools.combinations(
+                        all_replica_states, required_processors):
+            all_states_are_prefixes = True
+            # Check if prefixes for all combinations in the set
+            for rep_state_A, rep_state_B in itertools.combinations(S, 2):
+                if not self.prefixes(rep_state_A, rep_state_B):
+                    # Move on to next combination of replica states
+                    all_states_are_prefixes = False
+                    break
+            # All replica states where prefixes to each other
+            if(all_states_are_prefixes):
+                return S
+        return set()
 
     def get_ds_state(self):
         """Method description.
@@ -144,7 +163,27 @@ class ReplicationModule(AlgorithmModule):
         processors, and if there exists another set with the default
         replica state and these two sets adds up to at least 4f+1 processors.
         """
-        raise NotImplementedError
+        TEE = -1  # TODO: Remove when merged with while True-loop
+        processors_prefix_X = 0
+        processors_in_def_state = 0
+        X = self.find_cons_state(self.com_pref_states(
+                                2 * self.number_of_byzantine + 1))
+
+        # Find default replica structures and prefixes to/of X
+        for replica_structure in self.rep:
+            if(replica_structure == self.DEF_STATE):
+                processors_in_def_state += 1
+                continue
+            if self.prefixes(replica_structure[REP_STATE], X):
+                processors_prefix_X += 1
+
+        # Checks if the sets are in the correct size span
+        if ((2 * self.number_of_byzantine + 1) <= processors_prefix_X <
+                (3 * self.number_of_byzantine + 1) and
+            ((processors_prefix_X + processors_in_def_state) >=
+                (4 * self.number_of_byzantine + 1))):
+            return X
+        return TEE
 
     def double(self):
         """Method description.
@@ -347,6 +386,24 @@ class ReplicationModule(AlgorithmModule):
                request_pair[REQUEST][SEQUENCE_NO] == request[SEQUENCE_NO]):
                 return True
         return False
+
+    def prefixes(self, sq_log_A, sq_log_B):
+        """Returns true if sequence log A and sequence log B are prefixes."""
+        # Go throug sequence log A to see if A is a prefix or B
+        for index, item in enumerate(sq_log_A):
+            # We have reached the end of sq_log_B and therefore B is a prefix
+            # of A
+            if len(sq_log_B) <= index:
+                return True
+            # So far the items in the log are the same
+            if item == sq_log_B[index]:
+                continue
+            # The logs differs and are therefore not prefixes
+            else:
+                return False
+
+        # Log A has run out of items and is therefore a prefix of B
+        return True
 
     # Interface functions
     def get_pend_reqs(self):
