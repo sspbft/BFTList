@@ -31,7 +31,6 @@ class PredicatesAndAction():
         self.number_of_nodes = n
         self.resolver = resolver
         self.vChange = False
-        # self.RST_PAIR = {CURRENT: enums.TEE, NEXT: enums.DF_VIEW}
         self.RST_PAIR = {CURRENT: enums.TEE, NEXT: enums.DF_VIEW}
 
     # Macros
@@ -167,7 +166,7 @@ class PredicatesAndAction():
 
     def adopt(self, vpair):
         """Adopt the view pair."""
-        if self.legit_phs_zero(vpair):  # and vpair[CURRENT] != enums.TEE:
+        if self.legit_phs_zero(vpair):
             self.views[self.id][NEXT] = deepcopy(
                                         vpair.get(CURRENT))
         elif(self.legit_phs_one(vpair)):  # CHECK THAT NEXT IS CURRENT + 1
