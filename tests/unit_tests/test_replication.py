@@ -477,6 +477,20 @@ class TestReplicationModule(unittest.TestCase):
 
         # The dummyRequest1 should be accepted
         self.assertTrue(replication.accept_req_preprep(self.dummyRequest1, self.dummyRequest1[VIEW]))
+
+        # Request has a sequence number outside the threshold
+        dummyRequest3 = {CLIENT_REQ: {2}, VIEW: 1, SEQUENCE_NO: 10000}
+        replication.known_pend_reqs = MagicMock(return_value = [dummyRequest3])
+        replication.rep[replication.id][REQ_Q] = [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
+            {REQUEST: dummyRequest3, STATUS: ReplicationEnums.PREP}]
+        self.assertFalse(replication.accept_req_preprep(dummyRequest3, 1))
+
+        # The input prim does not match any of the requests
+        dummyRequest3 = {CLIENT_REQ: {2}, VIEW: 1, SEQUENCE_NO: 1}
+        replication.known_pend_reqs = MagicMock(return_value = [dummyRequest3])
+        replication.rep[replication.id][REQ_Q] = [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
+            {REQUEST: dummyRequest3, STATUS: ReplicationEnums.PREP}]
+        self.assertFalse(replication.accept_req_preprep(dummyRequest3, 2))
         
         # The dummyRequest1 (input) does not exists in known_pend_reqs
         replication.known_pend_reqs = MagicMock(return_value = [self.dummyRequest2])
@@ -491,7 +505,6 @@ class TestReplicationModule(unittest.TestCase):
         
         # The dummyRequest2 on the other hand should be accepted
         self.assertTrue(replication.accept_req_preprep(self.dummyRequest2, self.dummyRequest2[VIEW]))
-
 
     def test_committed_set(self):
         replication = ReplicationModule(0, self.resolver, 2, 0, 1)
