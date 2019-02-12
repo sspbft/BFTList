@@ -471,6 +471,46 @@ class TestReplicationModule(unittest.TestCase):
         replication.exists_preprep_msg = MagicMock(return_value = True)
         self.assertEqual(replication.unassigned_reqs(), [])
 
+    def test_accept_req_preprep(self):
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+
+        replication.known_pend_reqs = MagicMock(return_value = [self.dummyRequest1, self.dummyRequest2])
+        replication.exists_preprep_msg = MagicMock(return_value = True)
+        replication.last_exec = MagicMock(return_value = 0)
+        replication.rep[replication.id][REQ_Q] = [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
+                    {REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.PREP}]
+
+        # The dummyRequest1 should be accepted
+        self.assertTrue(replication.accept_req_preprep(self.dummyRequest1, self.dummyRequest1[VIEW]))
+
+        # Request has a sequence number outside the threshold
+        dummyRequest3 = {CLIENT_REQ: {2}, VIEW: 1, SEQUENCE_NO: 10000}
+        replication.known_pend_reqs = MagicMock(return_value = [dummyRequest3])
+        replication.rep[replication.id][REQ_Q] = [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
+            {REQUEST: dummyRequest3, STATUS: ReplicationEnums.PREP}]
+        self.assertFalse(replication.accept_req_preprep(dummyRequest3, 1))
+
+        # The input prim does not match any of the requests
+        dummyRequest3 = {CLIENT_REQ: {2}, VIEW: 1, SEQUENCE_NO: 1}
+        replication.known_pend_reqs = MagicMock(return_value = [dummyRequest3])
+        replication.rep[replication.id][REQ_Q] = [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
+            {REQUEST: dummyRequest3, STATUS: ReplicationEnums.PREP}]
+        self.assertFalse(replication.accept_req_preprep(dummyRequest3, 2))
+        
+        # The dummyRequest1 (input) does not exists in known_pend_reqs
+        replication.known_pend_reqs = MagicMock(return_value = [self.dummyRequest2])
+        self.assertFalse(replication.accept_req_preprep(self.dummyRequest1, self.dummyRequest1[VIEW]))
+
+        # Now the request already exists in REQ_Q (checks the logic of already_exists)
+        replication.known_pend_reqs = MagicMock(return_value = [self.dummyRequest1, self.dummyRequest2])
+        replication.rep[replication.id][REQ_Q] = [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PREP},
+            {REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.PREP},
+            {REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP}]
+        self.assertFalse(replication.accept_req_preprep(self.dummyRequest1, self.dummyRequest1[VIEW]))
+        
+        # The dummyRequest2 on the other hand should be accepted
+        self.assertTrue(replication.accept_req_preprep(self.dummyRequest2, self.dummyRequest2[VIEW]))
+
     def test_committed_set(self):
         replication = ReplicationModule(0, self.resolver, 2, 0, 1)
 
@@ -486,6 +526,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.committed_set(self.dummyRequest1),{0, 1})
         # No condition for dummyRequest2 will now be true
         self.assertEqual(replication.committed_set(self.dummyRequest2),set())
+
 
     # Interface functions
 
@@ -519,6 +560,24 @@ class TestReplicationModule(unittest.TestCase):
         self.assertTrue(replication.flush)
 
     # Added functions
+    def test_request_already_exists(self):
+        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        dummyRequest3 = {CLIENT_REQ: {1}, VIEW: 2, SEQUENCE_NO: 1}
+        # The request does not already exist with a different status
+        replication.rep[replication.id][REQ_Q] = [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP},
+                                                  {REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.PREP}]
+        self.assertFalse(replication.request_already_exists({REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP}))
+        
+        # dummyRequest1 already exists with a different status
+        replication.rep[replication.id][REQ_Q] = [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PREP},
+                                                  {REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.PREP}]
+        self.assertTrue(replication.request_already_exists({REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP}))
+
+        # dummyRequest3 is the same as dummyRequest2 beside the view -> found duplicate of sq_no and q
+        replication.rep[replication.id][REQ_Q] = [{REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PREP},
+                                            {REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.PREP},
+                                            {REQUEST: dummyRequest3, STATUS: ReplicationEnums.PREP}]
+        self.assertTrue(replication.request_already_exists({REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PREP}))
 
     def test_prefixes(self):
         replication = ReplicationModule(0, self.resolver, 2, 0, 1)
