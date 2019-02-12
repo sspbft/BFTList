@@ -447,6 +447,13 @@ class ReplicationModule(AlgorithmModule):
         Creates PRE_PREP msg for each request not being executed by
         4f+1 processors.
         """
+        # Operator renewReqs() creates a new pre-prepare message for each
+        # prepared requests and adds the commit message to the reqQ
+        # in order to issue a consistent set of pending requests messages
+        # for reqQ and pendReqs where these are now allocated for execution to
+        # the new view.
+        # it creates a pre-prepare message for every committed
+        # request that had not been executed by 4f + 1 processors
         raise NotImplementedError
 
     def find_cons_state(self, processors_set):
@@ -458,6 +465,10 @@ class ReplicationModule(AlgorithmModule):
         Produces a dummy request if 3f+1 processor have committed a number
         of request without the existence of the previous request.
         """
+        #  It also creates a consolidated state with a common repState prefix
+        # and rLog prefix.
+        # Operator findConsState() makes sure that the state is consistent
+        # with the contents of reqQ and rLog
         raise NotImplementedError
 
     def check_new_v_state(self, prim):
