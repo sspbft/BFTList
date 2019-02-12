@@ -289,25 +289,20 @@ class ReplicationModule(AlgorithmModule):
         True if PRE_PREP msg from prim exists and the content is the same for
         3f+1 processors in the same view and sequence number.
         """
-        # TODO look over this logic, request_already_exists will always give
-        # back True, since we take requests form own REQ_Q and checks own_REQ_Q
-
-        # Processor i has the request
+        # Processor i knows of the request
         if request in self.known_pend_reqs():
             # The request should be acknowledged by other processors
             for y in self.rep[self.id][REQ_Q]:
-                y_req = y[REQUEST]
-
-                if (y_req[CLIENT_REQ] == request[CLIENT_REQ] and
-                   y_req[VIEW] == prim and
-                   self.exists_preprep_msg(y_req, prim) and
-                   self.last_exec() <= y_req[SEQUENCE_NO] <=
+                if (y[REQUEST][CLIENT_REQ] == request[CLIENT_REQ] and
+                   y[REQUEST][VIEW] == prim and
+                   self.exists_preprep_msg(y[REQUEST], prim) and
+                   self.last_exec() <= y[REQUEST][SEQUENCE_NO] <=
                         (self.last_exec() + SIGMA * self.number_of_clients)):
                         # A request should not already exist with the same
                         # sequence number or same client request
                         if (self.request_already_exists(y)):
-                            # Request y_req does not fulfill all conditions,
-                            # move on to next request in REQ_Q
+                            # Request y[REQUEST] does not fulfill all
+                            # conditions, move on to next request in REQ_Q
                             continue
                         return True
         return False
@@ -339,14 +334,17 @@ class ReplicationModule(AlgorithmModule):
         """
         request = request_p[REQUEST]
         for request_pair in self.rep[self.id][REQ_Q]:
+            # If exactly the same, same request with same status.
+            # Ignore since it is the request we have as input.
+            # If not we will always return True.
             if request_p == request_pair:
                 continue
             if (request_pair[REQUEST][CLIENT_REQ] == request[CLIENT_REQ] and
-               request_pair[REQUEST][SEQUENCE_NO == request[SEQUENCE_NO]]):
+               request_pair[REQUEST][SEQUENCE_NO] == request[SEQUENCE_NO]):
                 return True
         for request_pair in self.rep[self.id][R_LOG]:
             if (request_pair[REQUEST][CLIENT_REQ] == request[CLIENT_REQ] and
-               request_pair[REQUEST][SEQUENCE_NO == request[SEQUENCE_NO]]):
+               request_pair[REQUEST][SEQUENCE_NO] == request[SEQUENCE_NO]):
                 return True
         return False
 
