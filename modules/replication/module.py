@@ -37,7 +37,7 @@ class ReplicationModule(AlgorithmModule):
         self.number_of_nodes = n
         self.number_of_byzantine = f
         self.number_of_clients = k
-        self.DEF_STATE = {REP_STATE: {},
+        self.DEF_STATE = {REP_STATE: [],
                           R_LOG: [],
                           PEND_REQS: [],
                           REQ_Q: [],
@@ -49,7 +49,7 @@ class ReplicationModule(AlgorithmModule):
         self.need_flush = False
         self.seq_n = 0
         self.rep = [
-            {REP_STATE: {},
+            {REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [],
              REQ_Q: [],
@@ -162,15 +162,26 @@ class ReplicationModule(AlgorithmModule):
         processors, and if there exists another set with the default
         replica state and these two sets adds up to at least 4f+1 processors.
         """
-        TEE = -1
-        processor_set_1 = 0
-        processor_set_2 = 0
+        TEE = -1  # TODO: Remove when merged with while True-loop
+        processors_prefix_X = 0
+        processors_in_def_state = 0
+        X = self.find_cons_state(self.com_pref_states(
+                                2 * self.number_of_byzantine + 1))
 
-        if ((2 * self.number_of_byzantine + 1) <= processor_set_1 <
+        # Find default replica structures and prefixes to/of X
+        for replica_structure in self.rep:
+            if(replica_structure == self.DEF_STATE):
+                processors_in_def_state += 1
+                continue
+            if self.prefixes(replica_structure[REP_STATE], X):
+                processors_prefix_X += 1
+
+        # Checks if the sets are in the correct size span
+        if ((2 * self.number_of_byzantine + 1) <= processors_prefix_X <
                 (3 * self.number_of_byzantine + 1) and
-           ((processor_set_1 + processor_set_2) >=
+            ((processors_prefix_X + processors_in_def_state) >=
                 (4 * self.number_of_byzantine + 1))):
-            pass
+            return X
         return TEE
 
     def double(self):
