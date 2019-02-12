@@ -31,7 +31,6 @@ class PredicatesAndAction():
         self.number_of_nodes = n
         self.resolver = resolver
         self.vChange = False
-        # self.RST_PAIR = {CURRENT: enums.TEE, NEXT: enums.DF_VIEW}
         self.RST_PAIR = {CURRENT: enums.TEE, NEXT: enums.DF_VIEW}
 
     # Macros
@@ -290,7 +289,11 @@ class PredicatesAndAction():
 
             # True if a view change was instructed by Primary Monitoring
             elif(case == 1):
-                return (self.vChange and self.establishable(0, enums.FOLLOW))
+                return(
+                    (self.vChange and self.establishable(0, enums.FOLLOW)) or
+                    (self.views[self.id] == self.RST_PAIR and
+                     self.establishable(0, enums.FOLLOW))
+                )
 
             # Monitoring/Waiting for more processors acknowledgement
             elif(case == 2):
@@ -321,12 +324,19 @@ class PredicatesAndAction():
                     logger.error(f"Not a valid view pair to adopt: \
                         {self.view_pair_to_adopt}")
 
-            # Increment view (next view)
+            # Two subcases
             elif(case == 1):
-                self.next_view()
-                self.view_module.next_phs()
-                self.reset_v_change()
-                return enums.NO_RETURN_VALUE
+                # Case 1a (increment view and move to next face
+                if(self.vChange):
+                    self.next_view()
+                    self.view_module.next_phs()
+                    self.reset_v_change()
+                    return enums.NO_RETURN_VALUE
+                # Case 1b (do NOT increment view, stay in RST_PAIR but move to
+                #  next phase)
+                elif(self.views[self.id] == self.RST_PAIR):
+                    self.view_module.next_phs()
+                    return enums.NO_RETURN_VALUE
 
             # No action and reset the v_change-variable
             elif(case == 2):
@@ -361,8 +371,9 @@ class PredicatesAndAction():
                         own_next = self.views[self.id][NEXT]
                         if self.transit_adopble(processor_id, 1, enums.FOLLOW):
                             if own_next != view_pair[NEXT]:
-                                if own_next != (view_pair[NEXT] + 1) % \
-                                        self.number_of_nodes:
+                                if (own_next != (view_pair[CURRENT] + 1) %
+                                        self.number_of_nodes and
+                                        view_pair[CURRENT] != enums.TEE):
                                     self.view_pair_to_adopt = view_pair
                                     return True
                                 else:

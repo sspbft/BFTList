@@ -359,6 +359,15 @@ class TestPredicatesAndAction(unittest.TestCase):
         pred_module.set_info({CURRENT: 1, NEXT : 1}, 1)
         self.assertEqual(pred_module.views[1], {CURRENT: 1, NEXT : 1})
 
+    def test_added_logic_phase_0_case_1_b(self):
+        # No mocking needed, establishable should return true
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
+        pred_module.vChange = False
+        pred_module.views = [pred_module.RST_PAIR, pred_module.RST_PAIR]
+        view_est_mod.phs = [0, 0]
+        self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 1))
+
     def test_automaton_phase_0_predicates(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
@@ -374,8 +383,15 @@ class TestPredicatesAndAction(unittest.TestCase):
         pred_module.views = [{CURRENT: 0, NEXT : 0}, {CURRENT: 0, NEXT : 0}]
         pred_module.transit_adopble = MagicMock(return_value = True)
         self.assertFalse(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 0))
+        
+        # Case 1b
+        pred_module.vChange = False
+        pred_module.establishable = MagicMock(return_value = True)
+        pred_module.views[pred_module.id] = pred_module.RST_PAIR
+        self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 1))
 
-        # Case 1
+        # Case 1a
+        pred_module.views[pred_module.id] = {"current": 1, "next": 1}  # NOT the RST_PAIR
         pred_module.establishable = MagicMock(return_value = True)
         pred_module.vChange = True
         self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 1))
@@ -386,6 +402,8 @@ class TestPredicatesAndAction(unittest.TestCase):
         pred_module.establishable = MagicMock(return_value = False)
         pred_module.vChange = True
         self.assertFalse(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 1))
+
+
 
         # Case 2
         # There is a adoptable view in transit
@@ -414,11 +432,19 @@ class TestPredicatesAndAction(unittest.TestCase):
         pred_module.reset_v_change.assert_any_call()
         pred_module.adopt.assert_called_once_with(pred_module.RST_PAIR)
 
-        # Case 1 should call next_view and next_phs in view Establishment module
+        # Case 1a should call next_view and next_phs in view Establishment module
         pred_module.next_view = Mock()
         view_est_mod.next_phs = Mock()
+        pred_module.vChange = True
         self.assertEqual(pred_module.automation(ViewEstablishmentEnums.ACTION, 0, 1), ViewEstablishmentEnums.NO_RETURN_VALUE)
         pred_module.next_view.assert_any_call()
+        view_est_mod.next_phs.assert_any_call()
+
+        # Case 1b should call next_phs in View Establishment module
+        pred_module.vChange = False
+        view_est_mod.next_phs = Mock()
+        pred_module.views[pred_module.id] = pred_module.RST_PAIR
+        self.assertEqual(pred_module.automation(ViewEstablishmentEnums.ACTION, 0, 1), ViewEstablishmentEnums.NO_RETURN_VALUE)
         view_est_mod.next_phs.assert_any_call()
 
         # Case 2 should return "No action" and call reset_v_change
