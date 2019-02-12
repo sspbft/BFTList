@@ -325,6 +325,7 @@ class PredicatesAndAction():
             elif(case == 1):
                 self.next_view()
                 self.view_module.next_phs()
+                self.reset_v_change()
                 return enums.NO_RETURN_VALUE
 
             # No action and reset the v_change-variable
@@ -418,6 +419,7 @@ class PredicatesAndAction():
 
             # Reset all
             elif(case == 3):
+                self.reset_v_change()
                 return self.reset_all()
 
             # Not a valid case
