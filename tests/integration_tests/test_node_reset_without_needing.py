@@ -1,9 +1,5 @@
 """
-Case 4
-
-All nodes have stale information (in different variation) except nodes
-4, 5 which is up-to-date. All nodes should identify stale information
-and move to reset view pair.
+Node 0 has gone through a reset without needing it and ended up in phase 1 with RST_PAIR.
 """
 
 # standard
