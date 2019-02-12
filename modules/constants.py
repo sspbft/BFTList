@@ -24,6 +24,8 @@ STATUS = "status"
 REPLY = "reply"
 VIEW = "view"
 PRIM = "prim"
+CLIENT = "client"
+REPLY = "reply"
 
 
 MAXINT = sys.maxsize  # Sequence number limit
