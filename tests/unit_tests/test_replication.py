@@ -8,7 +8,7 @@ from modules.enums import ReplicationEnums
 from modules.constants import (REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE,
                                REQUEST, SEQUENCE_NO, STATUS, VIEW, X_SET, CLIENT_REQ,
-                               SIGMA) # REPLY
+                               SIGMA, PRIM) # REPLY
 
 class TestReplicationModule(unittest.TestCase):
 
@@ -33,14 +33,16 @@ class TestReplicationModule(unittest.TestCase):
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
-             VIEW_CHANGE: False},
+             VIEW_CHANGE: False,
+             PRIM: -1},
              {REP_STATE: [],
              R_LOG: [],
              PEND_REQS: [],
              REQ_Q: [],
              LAST_REQ: [],
              CON_FLAG: False,
-             VIEW_CHANGE: False}]
+             VIEW_CHANGE: False,
+             PRIM: -1}]
         self.assertEqual(replication.seq_n, 0)
         self.assertEqual(replication.rep, rep_default)
 
@@ -455,11 +457,14 @@ class TestReplicationModule(unittest.TestCase):
         replication.exists_preprep_msg = MagicMock(return_value = False)
         replication.known_reqs = MagicMock(return_value = [])
         self.assertEqual(replication.unassigned_reqs(), [self.dummyRequest1, self.dummyRequest2])
-        calls = [call(self.dummyRequest1, replication.prim), call(self.dummyRequest2, replication.prim)]
+        calls = [
+            call(self.dummyRequest1, replication.rep[replication.id][PRIM]),
+            call(self.dummyRequest2, replication.rep[replication.id][PRIM])
+        ]
         replication.exists_preprep_msg.assert_has_calls(calls)
        
         # Dummyrequest2 is in known_reqs with
-        replication.known_reqs = MagicMock(return_value = [self.dummyRequest2])
+        replication.known_reqs = MagicMock(return_value = [{REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.COMMIT}])
         self.assertEqual(replication.unassigned_reqs(), [self.dummyRequest1])
 
         # There exists PRE_PREP msg for both of the requests
