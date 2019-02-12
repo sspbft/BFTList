@@ -1,7 +1,13 @@
 """Contains code related to the Replication module."""
 
+# standard
 import itertools
 import logging
+from copy import deepcopy
+import time
+import os
+
+# local
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums
 from modules.constants import (MAXINT, SIGMA,
@@ -9,10 +15,10 @@ from modules.constants import (MAXINT, SIGMA,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE, X_SET,
                                REQUEST, STATUS, SEQUENCE_NO, CLIENT_REQ, PRIM,
                                VIEW, CLIENT, REPLY)
-from resolve.enums import Module, Function
-# , X_SET, REPLY
-from copy import deepcopy
+from resolve.enums import Module, Function, MessageType
+import conf.config as conf
 
+# globals
 logger = logging.getLogger(__name__)
 
 
@@ -201,6 +207,48 @@ class ReplicationModule(AlgorithmModule):
                                 (req_status[REQUEST][SEQUENCE_NO] ==
                                     self.last_exec() + 1)):
                             self.commit({REQUEST: req_status, X_SET: x_set})
+
+            self.send_msg()
+            time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
+
+    def send_msg(self):
+        """Broadcasts its own replica_structure to other nodes."""
+        for j, in conf.get_other_nodes().keys():
+            msg = {
+                "type": MessageType.REPLICATION_MESSAGE,
+                "sender": self.id,
+                "data": {"own_replica_structure": self.rep[self.id]}
+            }
+            self.resolver.send_to_node(j, msg)
+
+    def receive_rep_msg(self, msg):
+        """Logic for receiving a replication message from another node
+
+        The resolver calls this function when a REPLICATION_MESSAGE arrives
+        and this function updates the information about the sending node's
+        state if allowed.
+        """
+        if (self.resolver.execute(
+                Module.VIEW_ESTABLISHMENT_MODULE,
+                Function.ALLOW_SERVICE)):
+            j = msg["sender"]                           # id of sender
+            rep = msg["data"]["own_replica_structure"]  # rep data
+            if (self.resolver.execute(
+                    Module.PRIMARY_MONITORING_MODULE,
+                    Function.NO_VIEW_CHANGE)):
+                self.rep[j] = rep
+            else:
+                self.rep[j][REP_STATE] = rep[REP_STATE]
+
+    def receive_msg_from_client(self, msg):
+        """Logic for receiving a message from a client."""
+        # TODO
+        pass
+
+    def send_last_exec_req_to_client(self):
+        """Replying with last exec req to client."""
+        # TODO implement
+        pass
 
     def reqs_to_prep(self, req):
         """Helper method to filter out requests to prepare."""

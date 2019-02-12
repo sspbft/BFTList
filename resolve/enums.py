@@ -30,3 +30,4 @@ class MessageType(IntEnum):
     """Represents a message type sent between nodes."""
 
     VIEW_ESTABLISHMENT_MESSAGE = 1
+    REPLICATION_MESSAGE = 2

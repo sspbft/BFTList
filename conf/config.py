@@ -32,6 +32,13 @@ def get_nodes(hosts_path="conf/hosts.txt"):
         logger.error(e)
 
 
+def get_other_nodes():
+    """Helper that returns all other nodes in the system."""
+    all_nodes = get_nodes()
+    own_id = os.getenv("ID")
+    return all_nodes.pop(own_id)
+
+
 def get_start_state():
     """Gets start state for this node."""
     path = os.path.abspath("./conf/start_state.json")

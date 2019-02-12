@@ -77,8 +77,11 @@ class Resolver:
         """Routes received message to the correct module."""
         self.lock.acquire()
         try:
-            if msg["type"] == MessageType.VIEW_ESTABLISHMENT_MESSAGE:
+            msg_type = msg["type"]
+            if msg_type == MessageType.VIEW_ESTABLISHMENT_MESSAGE:
                 self.modules[Module.VIEW_ESTABLISHMENT_MODULE].receive_msg(msg)
+            elif msg_type == MessageType.REPLICATION_MESSAGE:
+                self.modules[Module.REPLICATION_MODULE].receive_rep_msg(msg)
             else:
                 raise NotImplementedError
         finally:
