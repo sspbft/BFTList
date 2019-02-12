@@ -464,7 +464,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.exists_preprep_msg.assert_has_calls(calls)
        
         # Dummyrequest2 is in known_reqs with
-        replication.known_reqs = MagicMock(return_value = [self.dummyRequest2])
+        replication.known_reqs = MagicMock(return_value = [{REQUEST: self.dummyRequest2, STATUS: ReplicationEnums.COMMIT}])
         self.assertEqual(replication.unassigned_reqs(), [self.dummyRequest1])
 
         # There exists PRE_PREP msg for both of the requests
