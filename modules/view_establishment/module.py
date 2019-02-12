@@ -135,7 +135,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.witnesses = [False for i in range(self.number_of_nodes)]
         self.witnesses_set = set()
         # TODO temporary
-        self.pred_and_action.set_info({"current": 0, "next": 0}, self.id)
+        # self.pred_and_action.set_info({"current": 0, "next": 0}, self.id)
 
     # Help methods for the while true loop
     def noticed_recent_value(self):

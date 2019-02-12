@@ -73,13 +73,14 @@ class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
                 result = await a
                 data = result["data"]["VIEW_ESTABLISHMENT_MODULE"]
                 views = data["views"]
+                id = data["id"]
 
-
-                for i,vp in enumerate(views):
-                    if i <= 2:
-                        checks.append(vp == {"current": 2, "next": 2})
-                    elif i <= 4:
-                        checks.append(vp == {"current": 0, "next": 0})
+                if id != 5:
+                    for i,vp in enumerate(views):
+                        if i <= 2:
+                            checks.append(vp == {"current": 2, "next": 2})
+                        elif i <= 4:
+                            checks.append(vp == {"current": -1, "next": 0})
 
             # if all checks passed, test passed
             if all(checks):
