@@ -13,7 +13,6 @@ from modules.enums import ReplicationEnums
 from modules.constants import (MAXINT, SIGMA,
                                REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE, X_SET,
-<<<<<<< HEAD
                                REQUEST, STATUS, SEQUENCE_NO, CLIENT_REQ, PRIM,
                                VIEW, CLIENT, REPLY)
 from resolve.enums import Module, Function, MessageType
@@ -21,12 +20,6 @@ import conf.config as conf
 
 # globals
 logger = logging.getLogger(__name__)
-=======
-                               REQUEST, STATUS, SEQUENCE_NO, CLIENT_REQ,
-                               VIEW)
-# , X_SET, REPLY
-from copy import deepcopy
->>>>>>> master
 
 
 class ReplicationModule(AlgorithmModule):
