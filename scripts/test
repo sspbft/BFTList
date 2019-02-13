@@ -41,7 +41,7 @@ if [ $# -eq 0 ]; then
     run_unit_tests
     run_integration_tests
 elif [ $# -ge 1 ]; then
-    # if 2nd argument supplied, export ENV VAR with $2 seconds to sleep when starting modules
+    # if 2nd argument supplied, export env var INTEGRATION_TEST_SLEEP with $2 seconds to sleep when starting modules
     if [ $# -eq 2 ]; then
         export INTEGRATION_TEST_SLEEP=$2
     fi
