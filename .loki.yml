@@ -6,4 +6,4 @@ bootstrap:
   - chmod +x ./scripts/*
 cmd: 
   - source ./env/bin/activate
-  - ./scripts/test unit # only run unit tests for now
+  - ./scripts/test
