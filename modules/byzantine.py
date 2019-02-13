@@ -18,6 +18,6 @@ def is_byzantine():
 def get_byz_behavior():
     """Returns the configured Byzantine behavior for this node."""
     behavior = os.getenv("BYZANTINE_BEHAVIOR")
-    if behavior is None or behavior not in BYZ_BEHAVIORS:
+    if is_byzantine() and (behavior is None or behavior not in BYZ_BEHAVIORS):
         logger.error("Node not configured correctly for Byzantine behavior")
     return behavior
