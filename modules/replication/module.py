@@ -174,13 +174,13 @@ class ReplicationModule(AlgorithmModule):
                                     VIEW: prim_id,
                                     SEQUENCE_NO: self.seq_n
                                 }
+
                                 self.rep[self.id][REQ_Q].append({
                                     REQUEST: req,
-                                    STATUS: ReplicationEnums.PRE_PREP
-                                })
-                                self.rep[self.id][REQ_Q].append({
-                                    REQUEST: req,
-                                    STATUS: ReplicationEnums.PREP
+                                    STATUS: [
+                                        ReplicationEnums.PRE_PREP,
+                                        ReplicationEnums.PREP
+                                    ]
                                 })
 
                     else:
@@ -189,15 +189,15 @@ class ReplicationModule(AlgorithmModule):
                         reqs = list(filter(
                             self.reqs_to_prep, self.known_pend_reqs()))
                         for r in reqs:
-                            self.rep[self.id][REQ_Q].append(
-                                {REQUEST: deepcopy(r),
-                                 STATUS: ReplicationEnums.PREP}
-                            )
+                            for t in self.rep[self.id][REQ_Q]:
+                                # status list will always be [PRE_PREP]
+                                if r == t[REQUEST]:
+                                    t[STATUS].append(ReplicationEnums.PREP)
 
                     # consider prepped msgs per request,
                     # if 3f+1 agree then commit
                     for req_status in self.known_reqs(ReplicationEnums.PREP):
-                        req_status[STATUS] = ReplicationEnums.COMMIT
+                        req_status[STATUS].append(ReplicationEnums.COMMIT)
                         self.rep[self.id][PEND_REQS].remove(
                                 req_status[REQUEST])
 
@@ -296,8 +296,10 @@ class ReplicationModule(AlgorithmModule):
     def msg(self, status, processor_j):
         """Returns requests reported to p_i from processor_j with status."""
         request_set = []
+        if type(status) != set:
+            status = set(status)
         for request_pair in self.rep[processor_j][REQ_Q]:
-            if request_pair[STATUS] == status:
+            if status <= set(request_pair[STATUS]):
                 request_set.append(request_pair[REQUEST])
         return request_set
 
@@ -494,11 +496,11 @@ class ReplicationModule(AlgorithmModule):
         request_set = []
         for x in self.rep[self.id][REQ_Q]:
             processor_set = 0
-            if x[STATUS] in status:
+            if set(x[STATUS]) <= status:
                 for replication_structure in self.rep:
                     for request_pair in replication_structure[REQ_Q]:
                         if(x[REQUEST] == request_pair[REQUEST] and
-                           request_pair[STATUS] in status):
+                           set(request_pair[STATUS]) <= status):
                             processor_set += 1
             if processor_set >= (3 * self.number_of_byzantine + 1):
                 request_set.append(x)
@@ -666,7 +668,45 @@ class ReplicationModule(AlgorithmModule):
         Creates PRE_PREP msg for each request not being executed by
         4f+1 processors.
         """
-        raise NotImplementedError
+        reqs_need_pre_prep = list(filter(
+            lambda r: r[STATUS] == [ReplicationEnums.PRE_PREP]),
+            self.rep[self.id][REQ_Q]
+        )
+
+        # temp_req_q = list(map(lambda s: s[REQUEST],
+        # self.rep[self.id][REQ_Q]))
+        # pending_reqs_need_pre_prep = list(filter(
+        #     lambda r: r not in temp_req_q,
+        #     self.rep[self.id][PEND_REQS]
+        # ))
+
+        for j in processors_set:
+            j_req_q = self.rep[j][REQ_Q]
+            j_reqs_need_pre_prep = list(filter(
+                lambda r: (r[STATUS] == [ReplicationEnums.PRE_PREP] and
+                           r in reqs_need_pre_prep)),
+                j_req_q)
+
+            # filter out all pre_prep reqs that are not in j's req q
+            reqs_need_pre_prep = list(filter(
+                lambda r: r in j_reqs_need_pre_prep,
+                reqs_need_pre_prep
+            ))
+
+            # j_pend_reqs = self.rep[j][PEND_REQS]
+            # filter out all pending reqs that are not in j's pending reqs
+            # pending_reqs_need_pre_prep = list(filter(
+            #     lambda r: r in j_pend_reqs,
+            #     pending_reqs_need_pre_prep
+            # ))
+
+        for req in self.rep[self.id][REQ_Q]:
+            if req in reqs_need_pre_prep:
+                # current view is equal to self.id since we are primary
+                req[REQUEST][VIEW] = self.id
+
+        # dont modify pending_reqs for now
+        # self.rep[self.id][PEND_REQS] = pending_reqs_need_pre_prep
 
     def find_cons_state(self, processors_set):
         """Method description.
@@ -686,7 +726,39 @@ class ReplicationModule(AlgorithmModule):
         Checks if the PRE_PREP messages are verified by 3f+1 processors and
         that the new state has a correct prefix.
         """
-        raise NotImplementedError
+        req_exists_count = {}
+        for j, replica_structure in self.rep:
+            pre_prep_reqs = list(filter(
+                lambda r: r[STATUS] == [ReplicationEnums.PRE_PREP],
+                replica_structure[REQ_Q])
+            )
+            for req_pair in pre_prep_reqs:
+                key = {
+                    CLIENT_REQ: req_pair[REQUEST][CLIENT_REQ],
+                    SEQUENCE_NO: req_pair[REQUEST][SEQUENCE_NO]
+                }
+                if key in req_exists_count:
+                    req_exists_count[key] += 1
+                else:
+                    req_exists_count[key] = 1
+
+        # find all PRE_PREP msgs with view == prim and check that they exist
+        # for 3f + 1 nodes
+        for req_pair in self.rep[prim][REQ_Q]:
+            if req_pair[REQUEST][VIEW] == prim:
+                key = {
+                    CLIENT_REQ: req_pair[REQUEST][CLIENT_REQ],
+                    SEQUENCE_NO: req_pair[REQUEST][SEQUENCE_NO]
+                }
+                if (not(key in req_exists_count and
+                        req_exists_count[key] >=
+                        (3 * self.number_of_byzantine + 1))):
+                    # msg is valid
+                    return False
+        return True
+
+        # TODO implement check that prefix is correct when find_cons_state
+        # is implemented
 
     # Function to extract data
     def get_data(self):
