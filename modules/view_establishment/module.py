@@ -27,6 +27,7 @@ class ViewEstablishmentModule(AlgorithmModule):
     def __init__(self, id, resolver, n, f):
         """Initializes the module."""
         self.resolver = resolver
+        self.lock = resolver.view_est_lock
         self.phs = [0 for i in range(n)]
         self.witnesses = [False for i in range(n)]
         self.pred_and_action = PredicatesAndAction(self, id, self.resolver,
@@ -61,7 +62,7 @@ class ViewEstablishmentModule(AlgorithmModule):
     def run(self):
         """Called whenever the module is launched in a separate thread."""
         while True:
-            self.resolver.lock.acquire()
+            self.lock.acquire()
             if(self.pred_and_action.need_reset()):
                 self.pred_and_action.reset_all()
             self.witnesses[self.id] = self.noticed_recent_value()
@@ -85,7 +86,7 @@ class ViewEstablishmentModule(AlgorithmModule):
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
 
-            self.resolver.lock.release()
+            self.lock.release()
             # Send message to all other processors
             self.send_msg()
             time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)

@@ -44,6 +44,7 @@ class ReplicationModule(AlgorithmModule):
         """Initializes the module."""
         self.id = id
         self.resolver = resolver
+        self.lock = resolver.replication_lock
         self.number_of_nodes = n
         self.number_of_byzantine = f
         self.number_of_clients = k
@@ -76,6 +77,7 @@ class ReplicationModule(AlgorithmModule):
         """Called whenever the module is launched in a separate thread."""
         while True:
             # lines 1-3
+            self.lock.acquire()
             if (not self.rep[self.id][VIEW_CHANGE] and
                     self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
                                           Function.ALLOW_SERVICE)):
@@ -208,7 +210,7 @@ class ReplicationModule(AlgorithmModule):
                                 (req_status[REQUEST][SEQUENCE_NO] ==
                                     self.last_exec() + 1)):
                             self.commit({REQUEST: req_status, X_SET: x_set})
-
+            self.lock.release()
             self.send_msg()
             time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
 

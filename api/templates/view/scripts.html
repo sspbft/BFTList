@@ -1,12 +1,34 @@
 <script>
-    const nodes = JSON.parse('{{ data | tojson }}').map(el => el.node)
-    const strongify = s => `<b><u>${s}</u></b>`
+    const BYZ_CLASSNAME = 'byzantine'
 
+    nodeElements = {}
+    const nodes = JSON.parse('{{ data.nodes_data | tojson }}').map(el => {
+        // pre-get all dom nodes on mount, this won't change
+        id = el.data.node_id
+        nodeElements[id] = {
+            node: document.getElementById(`node-${id}`),
+            data: document.getElementById(`data-node-${id}`),
+            byzBehaviorSpan: document.getElementById(`byz-behavior-${id}`)
+        }
+        return el.node
+    })
     const defaultFetchInterval = 100
+    const testName = document.getElementById('test-name')
     let interval, fetchInterval = defaultFetchInterval
 
+    const strongify = s => `<b><u>${s}</u></b>`
+
+    const renderByzantineNode = (id, behavior) => {
+        nodeElements[id].node.classList.add(BYZ_CLASSNAME)
+        nodeElements[id].byzBehaviorSpan.innerHTML = behavior
+    }
+
+    const renderNormalNode = (id) => {
+        nodeElements[id].node.classList.remove(BYZ_CLASSNAME)
+        nodeElements[id].byzBehaviorSpan.innerHTML = ''
+    }
+
     const renderViewEstData = (id, data) => {
-        const dataNode = document.getElementById(`data-node-${id}`)
         let phases = 'Phases: ', views = 'Views: ', witnesses = 'Witnesses: '
 
         // build phases string
@@ -25,11 +47,11 @@
         })
 
         vChange = data.vChange ? 'True' : 'False'
-
-        dataNode.children[0].innerHTML = phases
-        dataNode.children[1].innerHTML = views
-        dataNode.children[2].innerHTML = `vChange: ${vChange}`
-        dataNode.children[3].innerHTML = witnesses
+        
+        nodeElements[id].data.children[0].innerHTML = phases
+        nodeElements[id].data.children[1].innerHTML = views
+        nodeElements[id].data.children[2].innerHTML = `vChange: ${vChange}`
+        nodeElements[id].data.children[3].innerHTML = witnesses
     }
 
     const renderRepData = (id, data) => {}
@@ -41,9 +63,14 @@
             fetch(`http://${n.ip}:400${n.id}/data`)
                 .then(res => res.json())
                 .then(res => {
+                    res.byzantine
+                        ? renderByzantineNode(res.node_id, res.byzantine_behavior)
+                        : renderNormalNode(res.node_id)
                     renderViewEstData(res.node_id, res.VIEW_ESTABLISHMENT_MODULE)
                     renderRepData(res.node_id, res.REPLICATION_MODULE)
                     renderPriMonData(res.node_id, res.PRIMARY_MONITORING_MODULE)
+
+                    testName.innerHTML = res.test_data.test_name || 'unknown test'
 
                     // back to full speed if speed was throttled
                     if (fetchInterval > defaultFetchInterval) {
@@ -55,7 +82,7 @@
                     console.error(err)
                     // new slower fetch interval when node is down
                     clearInterval(interval)
-                    fetchInterval = 3000
+                    fetchInterval = defaultFetchInterval * 10
                     interval = setInterval(refreshNodes, fetchInterval)
                 })
         })
@@ -64,7 +91,7 @@
     // register listeners and handlers
     const onLoad = () => {
         interval = setInterval(refreshNodes, defaultFetchInterval)
-        document.getElementById("refreshButton").onclick = refreshNodes
+        // document.getElementById("refreshButton").onclick = refreshNodes
     }
     window.onload = onLoad;
 </script>

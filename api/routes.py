@@ -1,15 +1,17 @@
 """Contains all API routes for the external REST API."""
 
-# import current_app as app and access resolver through app.resolver
+# standard
 import os
 import json
-
 from flask import Blueprint, jsonify, render_template, current_app as app
 from flask_cors import cross_origin
 import requests
 
+# local
 import conf.config as conf
+import modules.byzantine as byz
 
+# globals
 routes = Blueprint("routes", __name__)
 
 
@@ -49,7 +51,10 @@ def get_modules_data():
             app.resolver.get_replication_data(),
             "PRIMARY_MONITORING_MODULE":
             app.resolver.get_primary_monitoring_data(),
-            "node_id": int(os.getenv("ID"))
+            "node_id": int(os.getenv("ID")),
+            "test_data": {"test_name": os.getenv("INTEGRATION_TEST")},
+            "byzantine": byz.is_byzantine(),
+            "byzantine_behavior": byz.get_byz_behavior()
             }
     return json.dumps(data, cls=CustomEncoder)
 
@@ -67,7 +72,12 @@ def fetch_data_for_all_nodes():
 @routes.route("/view", methods=["GET"])
 def render_view():
     """Renders the global view page."""
-    data = fetch_data_for_all_nodes()
-    # for _, node in conf.get_nodes().items():
-    #     data.append(node)
-    return render_template("view/main.html", data=data)
+    nodes_data = fetch_data_for_all_nodes()
+
+    test_name = os.getenv("INTEGRATION_TEST")
+    test_data = {"test_name": test_name} if test_name is not None else {}
+
+    return render_template("view/main.html", data={
+        "nodes_data": nodes_data,
+        "test_data": test_data
+    })

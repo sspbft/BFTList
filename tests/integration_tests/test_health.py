@@ -17,7 +17,7 @@ class TestHealth(AbstractIntegrationTest):
 
     async def bootstrap(self):
         """Sets up BFTList for the test."""
-        return await helpers.launch_bftlist()
+        return await helpers.launch_bftlist(__name__)
 
     async def validate(self):
         """Validates response from / endpoint on all nodes

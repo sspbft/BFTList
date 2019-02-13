@@ -1,9 +1,17 @@
 """Contains code related to the module resolver."""
+
+# standard
+import json
+import logging
+from threading import Lock
+
+# local
 from resolve.enums import Function, Module, MessageType
 from conf.config import get_nodes
 from communication.pack_helper import PackHelper
-import json
-from threading import Lock
+
+# globals
+logger = logging.getLogger(__name__)
 
 
 class Resolver:
@@ -16,7 +24,10 @@ class Resolver:
         self.receiver = None
         self.pack_helper = PackHelper()
         self.nodes = get_nodes()
-        self.lock = Lock()
+
+        # locks used to avoid race conditions with modules
+        self.view_est_lock = Lock()
+        self.replication_lock = Lock()
 
     def set_modules(self, modules):
         """Sets the modules dict of the resolver."""
@@ -73,19 +84,24 @@ class Resolver:
         for node_id, _ in self.senders.items():
             self.send_to_node(node_id, msg_dct)
 
-    def dispatch_msg(self, msg, sender_id):
+    def dispatch_msg(self, msg):
         """Routes received message to the correct module."""
-        self.lock.acquire()
-        try:
-            msg_type = msg["type"]
-            if msg_type == MessageType.VIEW_ESTABLISHMENT_MESSAGE:
+        msg_type = msg["type"]
+        if msg_type == MessageType.VIEW_ESTABLISHMENT_MESSAGE:
+            try:
+                self.view_est_lock.acquire()
                 self.modules[Module.VIEW_ESTABLISHMENT_MODULE].receive_msg(msg)
-            elif msg_type == MessageType.REPLICATION_MESSAGE:
+            finally:
+                self.view_est_lock.release()
+        elif msg_type == MessageType.REPLICATION_MESSAGE:
+            try:
+                self.replication_lock.acquire()
                 self.modules[Module.REPLICATION_MODULE].receive_rep_msg(msg)
-            else:
-                raise NotImplementedError
-        finally:
-            self.lock.release()
+            finally:
+                self.replication_lock.release()
+        else:
+            logger.warning(f"Message with invalid type {msg_type} cannot be" +
+                           "dispatched")
 
     # Methods to extract data
     def get_view_establishment_data(self):
