@@ -7,6 +7,7 @@ class TestResolver(unittest.TestCase):
         resolver = Resolver()
         self.assertIsNotNone(resolver)
         self.assertIsNone(resolver.modules)
+        self.assertIsNotNone(None)
 
 if __name__ == '__main__':
     unittest.main()
