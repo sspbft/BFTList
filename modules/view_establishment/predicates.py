@@ -143,21 +143,21 @@ class PredicatesAndAction():
         """
         if(mode == enums.REMAIN):
             return(
-                vpair.get(NEXT) == self.views[node_j].get(CURRENT)
+                vpair.get(NEXT) == self.views[node_j][CURRENT]
             )
         elif(mode == enums.FOLLOW):
             if(phase == 0):
-                if self.views[node_j].get(CURRENT) != enums.TEE:
+                if self.views[node_j][CURRENT] != enums.TEE:
                     return(
                         vpair.get(NEXT) ==
-                        ((self.views[node_j].get(CURRENT) + 1) %
+                        ((self.views[node_j][CURRENT] + 1) %
                             self.number_of_nodes)
                     )
                 return (vpair.get(NEXT) == enums.DF_VIEW)
             elif(phase == 1):
                 return(
                     vpair.get(CURRENT) ==
-                    self.views[node_j].get(NEXT)
+                    self.views[node_j][NEXT]
                 )
             else:
                 logger.error(f"Not a valid phase: {phase}")
@@ -166,6 +166,7 @@ class PredicatesAndAction():
 
     def adopt(self, vpair):
         """Adopt the view pair."""
+        logger.info(f"own views: {self.views[self.id]} adoptable view: {vpair}")
         if self.legit_phs_zero(vpair):
             self.views[self.id][NEXT] = deepcopy(
                                         vpair.get(CURRENT))
@@ -276,7 +277,12 @@ class PredicatesAndAction():
                                                  enums.FOLLOW) and
                                 view_pair[CURRENT] != enums.TEE):
                             own_current = self.views[self.id][CURRENT]
-                            if own_current != view_pair[CURRENT]:
+                            own_next = self.views[self.id][NEXT]
+                            if (own_current != view_pair[CURRENT] and
+                               own_next != view_pair[CURRENT]):
+                                if ((self.legit_phs_one(view_pair) and
+                                    own_current == view_pair[NEXT])):
+                                    return False
                                 self.view_pair_to_adopt = deepcopy(view_pair)
                                 return True
                             else:
@@ -364,20 +370,18 @@ class PredicatesAndAction():
             # processor i
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
-                    if view_pair[CURRENT] == view_pair[NEXT]:
-                        return False
                     if processor_id != self.id:
-                        # own_current = self.views[self.id][CURRENT]
                         own_next = self.views[self.id][NEXT]
+                        own_current = self.views[self.id][CURRENT]
                         if self.transit_adopble(processor_id, 1, enums.FOLLOW):
-                            if own_next != view_pair[NEXT]:
+                            if own_next != view_pair[NEXT] and own_current != view_pair[NEXT]:
                                 if (own_next != (view_pair[CURRENT] + 1) %
                                         self.number_of_nodes and
                                         view_pair[CURRENT] != enums.TEE):
                                     self.view_pair_to_adopt = view_pair
                                     return True
-                                else:
-                                    return False
+                                # else:
+                                #     return False
                 return False
 
             # True if the view intended to be install is establishable
