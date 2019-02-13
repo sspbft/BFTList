@@ -45,6 +45,9 @@ def handle_client_message():
 @cross_origin()
 def get_modules_data():
     """Returns current values of variables in the modules."""
+    test_name = os.getenv("INTEGRATION_TEST")
+    test_data = {"test_name": test_name} if test_name else None
+
     data = {"VIEW_ESTABLISHMENT_MODULE":
             app.resolver.get_view_establishment_data(),
             "REPLICATION_MODULE":
@@ -52,7 +55,7 @@ def get_modules_data():
             "PRIMARY_MONITORING_MODULE":
             app.resolver.get_primary_monitoring_data(),
             "node_id": int(os.getenv("ID")),
-            "test_data": {"test_name": os.getenv("INTEGRATION_TEST")},
+            "test_data": test_data,
             "byzantine": byz.is_byzantine(),
             "byzantine_behavior": byz.get_byz_behavior()
             }

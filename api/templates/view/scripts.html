@@ -1,10 +1,13 @@
 <script>
     const BYZ_CLASSNAME = 'byzantine'
 
-    nodeElements = {}
+    let nodeElements = {}
+    let fetchIntervals = [], failedReqs = []
     const nodes = JSON.parse('{{ data.nodes_data | tojson }}').map(el => {
         // pre-get all dom nodes on mount, this won't change
         id = el.data.node_id
+        fetchIntervals[id] = null
+        failedReqs[id] = 0
         nodeElements[id] = {
             node: document.getElementById(`node-${id}`),
             data: document.getElementById(`data-node-${id}`),
@@ -13,8 +16,8 @@
         return el.node
     })
     const defaultFetchInterval = 100
-    const testName = document.getElementById('test-name')
-    let interval, fetchInterval = defaultFetchInterval
+    let fetchInterval = defaultFetchInterval
+    let testName = document.getElementById('test-name')
 
     const strongify = s => `<b><u>${s}</u></b>`
 
@@ -57,41 +60,53 @@
     const renderRepData = (id, data) => {}
     const renderPriMonData = (id, data) => {}
 
-    // fetches data for all nodes and updates the view
-    const refreshNodes = () => {
-        nodes.forEach(n => {
-            fetch(`http://${n.ip}:400${n.id}/data`)
-                .then(res => res.json())
-                .then(res => {
-                    res.byzantine
-                        ? renderByzantineNode(res.node_id, res.byzantine_behavior)
-                        : renderNormalNode(res.node_id)
-                    renderViewEstData(res.node_id, res.VIEW_ESTABLISHMENT_MODULE)
-                    renderRepData(res.node_id, res.REPLICATION_MODULE)
-                    renderPriMonData(res.node_id, res.PRIMARY_MONITORING_MODULE)
+    // fetches data for a nodes and updates its view
+    const refreshNode = n => {
+        fetch(`http://${n.ip}:400${n.id}/data`)
+            .then(res => res.json())
+            .then(res => {
+                failedReqs[n.id] = 0
+                res.byzantine
+                    ? renderByzantineNode(res.node_id, res.byzantine_behavior)
+                    : renderNormalNode(res.node_id)
+                renderViewEstData(res.node_id, res.VIEW_ESTABLISHMENT_MODULE)
+                renderRepData(res.node_id, res.REPLICATION_MODULE)
+                renderPriMonData(res.node_id, res.PRIMARY_MONITORING_MODULE)
 
+                if (res.test_data) {
+                    // testName might not have been rendered on mount
+                    if (!testName) testName = document.getElementById('test-name')
                     testName.innerHTML = res.test_data.test_name || 'unknown test'
+                }
 
-                    // back to full speed if speed was throttled
-                    if (fetchInterval > defaultFetchInterval) {
-                        fetchInterval = defaultFetchInterval
-                        interval = setInterval(refreshNodes, fetchInterval)
-                    }
-                })
-                .catch(err => {
-                    console.error(err)
-                    // new slower fetch interval when node is down
-                    clearInterval(interval)
-                    fetchInterval = defaultFetchInterval * 10
-                    interval = setInterval(refreshNodes, fetchInterval)
-                })
-        })
+                // back to full speed if speed was throttled
+                if (fetchInterval > defaultFetchInterval) {
+                    fetchInterval = defaultFetchInterval
+                    clearInterval(fetchIntervals[n.id])
+                    fetchIntervals[n.id] = setInterval(() => refreshNode(n), fetchInterval)
+                }
+            })
+            .catch(err => {
+                console.error(err)
+                failedReqs[n.id]++
+                clearInterval(fetchIntervals[n.id])
+
+                // increase fetch time to 2s when node is non-responsive
+                if (failedReqs[n.id] < 5) {
+                    fetchInterval = 2000
+                    fetchIntervals[n.id] = setInterval(() => refreshNode(n), fetchInterval)
+                } else {
+                    console.log(`Node ${n.id} has not been responding for ${failedReqs[n.id]} requests, won't try again`)
+                }
+
+            })
     }
 
     // register listeners and handlers
     const onLoad = () => {
-        interval = setInterval(refreshNodes, defaultFetchInterval)
-        // document.getElementById("refreshButton").onclick = refreshNodes
+        nodes.forEach(n => {
+            fetchIntervals[n.id] = setInterval(() => refreshNode(n), defaultFetchInterval)
+        })
     }
     window.onload = onLoad;
 </script>
