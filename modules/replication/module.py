@@ -75,6 +75,9 @@ class ReplicationModule(AlgorithmModule):
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
+        sec = os.getenv("INTEGRATION_TEST_SLEEP")
+        time.sleep(int(sec) if sec is not None else 0)
+
         while True:
             # lines 1-3
             self.lock.acquire()
