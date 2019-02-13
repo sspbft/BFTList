@@ -1,9 +1,16 @@
 """Server that provides the BFTList API."""
 
+# standard
 from flask import Flask
-from api.routes import routes
 from flask_cors import CORS
 import os
+import logging
+
+# local
+from api.routes import routes
+
+# global
+logger = logging.getLogger(__name__)
 
 
 def create_app(resolver):
@@ -16,7 +23,8 @@ def create_app(resolver):
 
 
 def start_server(resolver):
-    """Foo bar baz."""
+    """Starts the Flask server."""
     app = create_app(resolver)
     port = int(os.getenv("API_PORT", 4000))
+    logger.info(f"Starting the FLASK server on port {port}")
     app.run(port=port)
