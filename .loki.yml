@@ -8,4 +8,4 @@ bootstrap:
   - chmod +x ./scripts/*
 cmd: 
   - . ./env/bin/activate
-  - ./scripts/test unit
+  - ./scripts/test
