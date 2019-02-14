@@ -5,6 +5,7 @@
     <style>
         :root {
             --blue: #326273;
+            --red: #c42f2f;
             --white: white;
             --light: #EEEEEE;
             --node-side: 300px;
@@ -27,6 +28,10 @@
             font-size: 1.25em;
         }
 
+        #test-data {
+            margin-top: 20px;
+        }
+
         .nodes-container {
             display: flex;
             flex-wrap: wrap;
@@ -42,7 +47,7 @@
             width: var(--node-side);
             height: var(--node-side);
             margin: auto;
-            background: var(--blue);
+            background-color: var(--blue);
             color: var(--white);
             border-radius: 50%;
             display: flex;
@@ -52,9 +57,16 @@
             text-align: center;
         }
 
+        .node.byzantine {
+            background-color: var(--red)
+        }
+
         .node > p:first-child { font-size: 1.5em; }
         p { margin: 0; }
-        .node span { opacity: 0; margin-top: 10px; }
+        .node span {
+            margin-top: 10px;
+            font-size: 1.3em;
+        }
 
         .data {
             font-size: 1.2em;

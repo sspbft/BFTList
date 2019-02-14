@@ -84,7 +84,10 @@ class Receiver():
         try:
             msg_json = self.pack_helper.unpack(payload)[0][0]
             msg = json.loads(msg_json.decode())
-            self.resolver.dispatch_msg(msg, sender)
+
+            # dispatch message to correct module through resolver
+            self.resolver.dispatch_msg(msg)
+
             logger.debug(f"Received msg {msg} from node {sender}")
         except struct.error:
             logger.debug(f"Error: Could not unpack {payload}")

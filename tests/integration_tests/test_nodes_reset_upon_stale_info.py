@@ -42,7 +42,7 @@ class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
     async def bootstrap(self):
         """Sets up BFTList for the test."""
         helpers.write_state_conf_file(start_state)
-        return await helpers.launch_bftlist()
+        return await helpers.launch_bftlist(__name__)
 
     async def validate(self):
         calls_left = helpers.MAX_NODE_CALLS
