@@ -668,6 +668,12 @@ class ReplicationModule(AlgorithmModule):
         Creates PRE_PREP msg for each request not being executed by
         4f+1 processors.
         """
+        # TODO
+        # Find a consistent set of request in PendReqs
+        # Loop thrpugh all pend_reqs and find all reqs that exist in
+        # pend_reqs of all processors in processors_set
+        # Assign self.rep[self.id][PEND_REQS] = new_pend_req
+
         reqs_need_pre_prep = list(filter(
             lambda r: r[STATUS] == [ReplicationEnums.PRE_PREP]),
             self.rep[self.id][REQ_Q]
@@ -717,6 +723,8 @@ class ReplicationModule(AlgorithmModule):
         Produces a dummy request if 3f+1 processor have committed a number
         of request without the existence of the previous request.
         """
+        # TODO This should return REP_STATE and R_LOG,
+        # which the prim can "adopt"  after a view Change has occured.
         raise NotImplementedError
 
     def check_new_v_state(self, prim):
@@ -756,6 +764,9 @@ class ReplicationModule(AlgorithmModule):
                     # msg is valid
                     return False
         return True
+        # TODO also double check the pendReqs of the prim to make sure that all
+        # request in PEND_REQS of prim exists in at least 3f+1 processors
+        # PEND_REQS
 
         # TODO implement check that prefix is correct when find_cons_state
         # is implemented
