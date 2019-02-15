@@ -175,14 +175,14 @@ class ReplicationModule(AlgorithmModule):
 
                     # consider prepped msgs per request,
                     # if 3f+1 agree then commit
-                    for req_status in self.known_reqs(ReplicationEnums.PREP):
+                    for req_status in self.known_reqs({ReplicationEnums.PREP}):
                         req_status[STATUS].add(ReplicationEnums.COMMIT)
                         self.rep[self.id][PEND_REQS].remove(
                                 req_status[REQUEST])
 
                     for req_status in self.known_reqs(
-                            set([ReplicationEnums.PREP,
-                                 ReplicationEnums.COMMIT])):
+                            {ReplicationEnums.PREP,
+                             ReplicationEnums.COMMIT}):
                         x_set = self.committed_set(req_status)
                         if ((len(x_set) >=
                                 (3 * self.number_of_byzantine) + 1) and
