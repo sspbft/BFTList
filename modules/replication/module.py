@@ -177,10 +177,10 @@ class ReplicationModule(AlgorithmModule):
 
                                 self.rep[self.id][REQ_Q].append({
                                     REQUEST: req,
-                                    STATUS: [
+                                    STATUS: {
                                         ReplicationEnums.PRE_PREP,
                                         ReplicationEnums.PREP
-                                    ]
+                                    }
                                 })
 
                     else:
@@ -192,12 +192,12 @@ class ReplicationModule(AlgorithmModule):
                             for t in self.rep[self.id][REQ_Q]:
                                 # status list will always be [PRE_PREP]
                                 if r == t[REQUEST]:
-                                    t[STATUS].append(ReplicationEnums.PREP)
+                                    t[STATUS].add(ReplicationEnums.PREP)
 
                     # consider prepped msgs per request,
                     # if 3f+1 agree then commit
                     for req_status in self.known_reqs(ReplicationEnums.PREP):
-                        req_status[STATUS].append(ReplicationEnums.COMMIT)
+                        req_status[STATUS].add(ReplicationEnums.COMMIT)
                         self.rep[self.id][PEND_REQS].remove(
                                 req_status[REQUEST])
 
@@ -296,10 +296,12 @@ class ReplicationModule(AlgorithmModule):
     def msg(self, status, processor_j):
         """Returns requests reported to p_i from processor_j with status."""
         request_set = []
-        if type(status) != set:
-            status = set(status)
+
+        if type(status) is not set:
+            raise ValueError("Argument status must be a set")
+
         for request_pair in self.rep[processor_j][REQ_Q]:
-            if status <= set(request_pair[STATUS]):
+            if status <= request_pair[STATUS]:
                 request_set.append(request_pair[REQUEST])
         return request_set
 
@@ -494,16 +496,16 @@ class ReplicationModule(AlgorithmModule):
         """
         # If the input is only one element, and not as a set, convert to a set
         if type(status) is not set:
-            status = {status}
+            raise ValueError("status arg must be a set")
 
         request_set = []
         for x in self.rep[self.id][REQ_Q]:
             processor_set = 0
-            if set(x[STATUS]) <= status:
+            if x[STATUS] <= status:
                 for replication_structure in self.rep:
                     for request_pair in replication_structure[REQ_Q]:
                         if(x[REQUEST] == request_pair[REQUEST] and
-                           set(request_pair[STATUS]) <= status):
+                           request_pair[STATUS] <= status):
                             processor_set += 1
             if processor_set >= (3 * self.number_of_byzantine + 1):
                 request_set.append(x)
@@ -525,7 +527,7 @@ class ReplicationModule(AlgorithmModule):
         Returns true if there exists a PRE_PREP msg from the primary
         for the request.
         """
-        for y in self.msg(ReplicationEnums.PRE_PREP, prim):
+        for y in self.msg({ReplicationEnums.PRE_PREP}, prim):
             if y[CLIENT_REQ] == request:
                 return True
         return False
@@ -688,14 +690,14 @@ class ReplicationModule(AlgorithmModule):
 
         # find all reqs that only have pre-prep message, need to create new
         reqs_need_pre_prep = list(filter(
-            lambda r: r[STATUS] == [ReplicationEnums.PRE_PREP]),
+            lambda r: r[STATUS] == {ReplicationEnums.PRE_PREP}),
             self.rep[self.id][REQ_Q]
         )
 
         for j in processors_set:
             j_req_q = self.rep[j][REQ_Q]
             j_reqs_need_pre_prep = list(filter(
-                lambda r: (r[STATUS] == [ReplicationEnums.PRE_PREP] and
+                lambda r: (r[STATUS] == {ReplicationEnums.PRE_PREP} and
                            r in reqs_need_pre_prep)),
                 j_req_q)
 
@@ -733,7 +735,7 @@ class ReplicationModule(AlgorithmModule):
         req_exists_count = {}
         for j, replica_structure in self.rep:
             pre_prep_reqs = list(filter(
-                lambda r: r[STATUS] == [ReplicationEnums.PRE_PREP],
+                lambda r: r[STATUS] == {ReplicationEnums.PRE_PREP},
                 replica_structure[REQ_Q])
             )
             for req_pair in pre_prep_reqs:
