@@ -21,7 +21,7 @@ Instructions for how to run this application without using [Thor](https://github
 The code base is linted using [flake8](https://pypi.org/project/flake8/) with [pydocstyle](https://github.com/PyCQA/pydocstyle), so make sure to lint the code by running `flake8` before pushing any code.
 
 ### Testing
-[unittest](https://docs.python.org/2/library/unittest.html) is setup so add appropriate unit tests in the `tests` folder (make sure the file starts with `test_`) and tests are executed as seen below.
+[unittest](https://docs.python.org/2/library/unittest.html) is setup so add appropriate unit tests in the `tests/unit_tests` folder (make sure the file starts with `test_`) and appropriate integration tests in the `tests/integration_tests` folder. Tests can run as seen below.
 
 ```
 ./scripts/test              # runs all tests
