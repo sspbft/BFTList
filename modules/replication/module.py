@@ -40,6 +40,8 @@ class ReplicationModule(AlgorithmModule):
         [<rep_state, r_log, pend_req, req_q, last_req, con_flag, view_change>]
     """
 
+    run_forever = True
+
     def __init__(self, id, resolver, n, f, k):
         """Initializes the module."""
         self.id = id
@@ -104,7 +106,7 @@ class ReplicationModule(AlgorithmModule):
             elif(self.rep[self.id][VIEW_CHANGE] and
                  (self.rep[prim_id][VIEW_CHANGE] is False and
                  prim_id == self.rep[prim_id][PRIM])):
-                self.act_as_nonprime_when_view_changed(prim_id)
+                self.act_as_nonprim_when_view_changed(prim_id)
 
             # lines 9 - 10
             X = self.find_cons_state(self.com_pref_states(
@@ -120,15 +122,15 @@ class ReplicationModule(AlgorithmModule):
                (not (self.prefixes(self.rep[self.id][REP_STATE], X)) or
                self.rep[self.id][REP_STATE] == self.DEF_STATE[REP_STATE] or
                     self.delayed())):
-                self.rep[self.id][REP_STATE] = X
+                self.rep[self.id][REP_STATE] = deepcopy(X)
             if self.stale_rep() or self.conflict():
                 self.flush_local()
-                self.rep[self.id] = self.DEF_STATE
+                self.rep[self.id] = deepcopy(self.DEF_STATE)
                 self.need_flush = True
             if self.flush:
                 self.flush_local()
 
-            self.rep[self.id][PEND_REQS].append(self.known_pend_reqs())
+            self.rep[self.id][PEND_REQS].extend(self.known_pend_reqs())
 
             # line 15 - 25
             if (self.resolver.execute(
@@ -191,6 +193,10 @@ class ReplicationModule(AlgorithmModule):
             self.send_msg()
             time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
 
+            # Stopping the while loop, used for testing purpose
+            if(not self.run_forever):
+                break
+
     def send_msg(self):
         """Broadcasts its own replica_structure to other nodes."""
         for j, in conf.get_other_nodes().keys():
@@ -244,7 +250,6 @@ class ReplicationModule(AlgorithmModule):
         request = req_status[REQUEST]
         reply = self.apply(request)
         client_id = request[CLIENT_REQ][CLIENT]
-
         # update last executed request
         self.rep[self.id][LAST_REQ][client_id] = {
             REQUEST: request, REPLY: reply
@@ -627,7 +632,7 @@ class ReplicationModule(AlgorithmModule):
             # from cons_state when impl.
             self.rep[self.id][VIEW_CHANGE] = False
 
-    def act_as_nonprime_when_view_changed(self, prim_id):
+    def act_as_nonprim_when_view_changed(self, prim_id):
         """Actions to perform when a view change has ocurred.
 
         Processor is not the new primary.
