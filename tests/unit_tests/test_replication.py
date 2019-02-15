@@ -606,3 +606,184 @@ class TestReplicationModule(unittest.TestCase):
                 {REQUEST: self.dummyRequest2, X_SET:{1,3}}, 
                 ]
         self.assertFalse(replication.prefixes(log_A, log_B))
+
+    # Tests for while true-loop
+
+    def test_act_as_prim_when_view_changed(self):
+        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication.rep = [{
+                    REP_STATE: [],
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest1],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: True} for i in range(6)
+                ]
+        # Pretend prim == replication.id (0)
+        replication.resolver.execute = MagicMock(return_value = replication.id)
+        replication.renew_reqs = Mock()
+        replication.find_cons_state = Mock()
+        # All nodes are in the processor set, because all has the same rep
+        replication.act_as_prim_when_view_changed(replication.id)
+        replication.find_cons_state.assert_called_once()
+        replication.renew_reqs.assert_called_once_with({0,1,2,3,4,5})
+        self.assertFalse(replication.rep[replication.id][VIEW_CHANGE])
+
+        # Half of nodes has declared a view change, half has not
+        replication.rep = [{
+                    REP_STATE: [],
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest1],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: True} for i in range(3)
+                ] + [{
+                    REP_STATE: [],
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest1],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: False} for i in range(3,6)
+                ]
+
+        # Pretend prim == replication.id (0)
+        replication.resolver.execute = MagicMock(return_value = replication.id)
+        replication.renew_reqs = Mock()
+        replication.find_cons_state = Mock()
+        # Half of the nodes are in the set so it's less than 4f+1,
+        #  methods should not be called and view_change = True
+        replication.act_as_prim_when_view_changed(replication.id)
+        replication.renew_reqs.assert_not_called()
+        replication.find_cons_state.assert_not_called()
+        self.assertTrue(replication.rep[replication.id][VIEW_CHANGE])
+
+        # All has declared a view change but not all has 0 as prim
+        replication.rep = [{
+                    REP_STATE: [],
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest1],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: True} for i in range(6)
+                ]
+        # Pretend prim == replication.id % 2 => half will say 0, half will say 1
+        replication.resolver.execute = MagicMock(side_effect = lambda y, z, x: x % 2)
+        replication.renew_reqs = Mock()
+        replication.find_cons_state = Mock()
+        # All nodes are in the processor set, because all has the same rep
+        replication.act_as_prim_when_view_changed(replication.id)
+        replication.find_cons_state.assert_not_called()
+        replication.renew_reqs.assert_not_called()
+        self.assertTrue(replication.rep[replication.id][VIEW_CHANGE])
+
+    def test_act_as_nonprime_when_view_changed(self):
+        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+
+        # Prim will be node 5, has a different replica strucutre
+        replication.rep = [{
+                    REP_STATE: [],
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest1],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: True} for i in range(5)
+                ] + [{
+                    REP_STATE: [],
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest2],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: False}
+                ]
+        # Everybody has 5 as prim and check_new_v_state returns True
+        replication.resolver.execute = MagicMock(return_value = 5)
+        replication.check_new_v_state = MagicMock(return_vale = True)
+        replication.act_as_nonprime_when_view_changed(5)
+
+        self.assertFalse(replication.rep[replication.id][VIEW_CHANGE])
+        self.assertEqual(replication.rep[replication.id], {
+                    REP_STATE: [],
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest2],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: False})
+
+        # The replica should not accept node 5's rep state
+        replication.rep = [{
+            REP_STATE: [],
+            R_LOG: [],
+            PEND_REQS: [self.dummyRequest1],
+            REQ_Q: [],
+            LAST_REQ: [],
+            CON_FLAG: False,
+            VIEW_CHANGE: True} for i in range(5)
+        ] + [{
+            REP_STATE: [],
+            R_LOG: [],
+            PEND_REQS: [self.dummyRequest2],
+            REQ_Q: [],
+            LAST_REQ: [],
+            CON_FLAG: False,
+            VIEW_CHANGE: False}
+        ]
+        # Should not accept node 5's rep and view Change should stay true
+        replication.check_new_v_state = MagicMock(return_value = False)
+        replication.act_as_nonprime_when_view_changed(5)
+        self.assertTrue(replication.rep[replication.id][VIEW_CHANGE])
+        self.assertNotEqual(replication.rep[replication.id], {
+                    REP_STATE: [],
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest2],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: False})
+
+        # Prim will be node 1, has a different replica structure
+        replication.rep = [{
+                    REP_STATE: [],
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest2],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: True}
+                ] + [{
+                    REP_STATE: [],
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest1],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: False}
+                ] + [{
+                    REP_STATE: [],
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest2],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: True} for i in range(2,6)
+                ]
+        # less than 4f+1 has 0 as prim but check_new_v_state returns True
+        replication.resolver.execute = MagicMock(side_effect = lambda y, z, x: x % 2)
+        replication.check_new_v_state = MagicMock(return_vale = True)
+        replication.act_as_nonprime_when_view_changed(1)
+
+        self.assertTrue(replication.rep[replication.id][VIEW_CHANGE])
+        self.assertNotEqual(replication.rep[replication.id], {
+                    REP_STATE: [],
+                    R_LOG: [],
+                    PEND_REQS: [self.dummyRequest1],
+                    REQ_Q: [],
+                    LAST_REQ: [],
+                    CON_FLAG: False,
+                    VIEW_CHANGE: False})

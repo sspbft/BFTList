@@ -61,6 +61,9 @@ class ViewEstablishmentModule(AlgorithmModule):
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
+        sec = os.getenv("INTEGRATION_TEST_SLEEP")
+        time.sleep(int(sec) if sec is not None else 0)
+
         while True:
             self.lock.acquire()
             if(self.pred_and_action.need_reset()):

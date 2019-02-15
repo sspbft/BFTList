@@ -1,9 +1,17 @@
 """Contains code related to the Primary Monitoring module."""
 
+# standard
 import time
+import os
+import logging
+
+# local
 from modules.algorithm_module import AlgorithmModule
 # from resolve.enums import Function, Module
 # from modules.enums import PrimaryMonitoringEnums
+
+# global
+logger = logging.getLogger(__name__)
 
 
 class PrimaryMonitoringModule(AlgorithmModule):
@@ -15,6 +23,9 @@ class PrimaryMonitoringModule(AlgorithmModule):
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
+        sec = os.getenv("INTEGRATION_TEST_SLEEP")
+        time.sleep(int(sec) if sec is not None else 0)
+
         while True:
             time.sleep(1)
 

@@ -1,3 +1,4 @@
+# standard
 import asyncio
 import os
 import json
@@ -7,8 +8,13 @@ import time
 import warnings
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
-import conf.config
 import subprocess
+import logging
+
+# local
+import conf.config
+
+logger = logging.getLogger(__name__)
 
 HOST = "http://localhost"
 BASE_PORT = 4000
@@ -45,7 +51,8 @@ async def GET(node_id, path):
     """GETs data from a nodes and returns the result to the caller."""
     r = session().get(f"{HOST}:{BASE_PORT + node_id}{path}")
     if r.status_code != 200:
-        raise ValueError(f"Got bad response {r.status_code} from url {url}.")
+        raise ValueError(f"Got bad response {r.status_code} from " +
+                         f"node {node_id} on {path}.")
     return {"status_code": r.status_code, "data": r.json()}
 
 
@@ -75,7 +82,10 @@ async def launch_bftlist(test_name="unknown test", args={}):
         p = subprocess.Popen(cmd, shell=True, cwd=cwd, env=env)
         pids.append(p.pid)
 
-    await asyncio.sleep(2)  # give nodes time to start before returning
+    sec = os.getenv("INTEGRATION_TEST_SLEEP")
+    logger.info("Test suite sleeping, awaiting node startup")
+    await asyncio.sleep(int(sec) if sec is not None else 2)
+    logger.info("Sleeping done, now resuming tests")
     return pids
 
 
