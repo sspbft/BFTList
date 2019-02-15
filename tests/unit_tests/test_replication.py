@@ -683,11 +683,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.renew_reqs.assert_not_called()
         self.assertTrue(replication.rep[replication.id][VIEW_CHANGE])
 
-<<<<<<< HEAD
     def test_act_as_nonprim_when_view_changed(self):
-=======
-    def test_act_as_nonprime_when_view_changed(self):
->>>>>>> master
         replication = ReplicationModule(0, self.resolver, 6, 1, 1)
 
         # Prim will be node 5, has a different replica strucutre
@@ -711,11 +707,7 @@ class TestReplicationModule(unittest.TestCase):
         # Everybody has 5 as prim and check_new_v_state returns True
         replication.resolver.execute = MagicMock(return_value = 5)
         replication.check_new_v_state = MagicMock(return_vale = True)
-<<<<<<< HEAD
         replication.act_as_nonprim_when_view_changed(5)
-=======
-        replication.act_as_nonprime_when_view_changed(5)
->>>>>>> master
 
         self.assertFalse(replication.rep[replication.id][VIEW_CHANGE])
         self.assertEqual(replication.rep[replication.id], {
@@ -747,11 +739,7 @@ class TestReplicationModule(unittest.TestCase):
         ]
         # Should not accept node 5's rep and view Change should stay true
         replication.check_new_v_state = MagicMock(return_value = False)
-<<<<<<< HEAD
         replication.act_as_nonprim_when_view_changed(5)
-=======
-        replication.act_as_nonprime_when_view_changed(5)
->>>>>>> master
         self.assertTrue(replication.rep[replication.id][VIEW_CHANGE])
         self.assertNotEqual(replication.rep[replication.id], {
                     REP_STATE: [],
