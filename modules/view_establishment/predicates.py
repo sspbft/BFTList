@@ -17,7 +17,7 @@ class PredicatesAndAction():
     """Models the View Establishment predicates and actions."""
 
     # Added variables
-    # In automation (*, 0, 0) the found view pair in predicates need to
+    # In automation (*, *, 0) the found view pair in predicates need to
     # be store until the action (adopting the view pair) has been carried out.
     view_pair_to_adopt = -1
 
@@ -143,21 +143,21 @@ class PredicatesAndAction():
         """
         if(mode == enums.REMAIN):
             return(
-                vpair.get(NEXT) == self.views[node_j].get(CURRENT)
+                vpair.get(NEXT) == self.views[node_j][CURRENT]
             )
         elif(mode == enums.FOLLOW):
             if(phase == 0):
-                if self.views[node_j].get(CURRENT) != enums.TEE:
+                if self.views[node_j][CURRENT] != enums.TEE:
                     return(
                         vpair.get(NEXT) ==
-                        ((self.views[node_j].get(CURRENT) + 1) %
+                        ((self.views[node_j][CURRENT] + 1) %
                             self.number_of_nodes)
                     )
                 return (vpair.get(NEXT) == enums.DF_VIEW)
             elif(phase == 1):
                 return(
                     vpair.get(CURRENT) ==
-                    self.views[node_j].get(NEXT)
+                    self.views[node_j][NEXT]
                 )
             else:
                 logger.error(f"Not a valid phase: {phase}")
@@ -166,15 +166,8 @@ class PredicatesAndAction():
 
     def adopt(self, vpair):
         """Adopt the view pair."""
-        if self.legit_phs_zero(vpair):
-            self.views[self.id][NEXT] = deepcopy(
-                                        vpair.get(CURRENT))
-        elif(self.legit_phs_one(vpair)):  # CHECK THAT NEXT IS CURRENT + 1
-            self.views[self.id][NEXT] = deepcopy(vpair[NEXT])
+        self.views[self.id][NEXT] = deepcopy(vpair[NEXT])
 
-    # In the code, sometimes view of self.id is used as input and sometimes
-    # not. I choose to remove it because it always uses the current
-    # processors view as input to transit_set.
     def establishable(self, phase, mode):
         """Method description.
 
@@ -272,19 +265,15 @@ class PredicatesAndAction():
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
                     if processor_id != self.id:
-                        if (self.transit_adopble(processor_id, 0,
-                                                 enums.FOLLOW) and
-                                view_pair[CURRENT] != enums.TEE):
-                            own_current = self.views[self.id][CURRENT]
-                            if own_current != view_pair[CURRENT]:
+                        # Assert that the processor doesn't end up in
+                        # phase 1 with CURRENT = NEXT
+                        if (self.views[self.id][CURRENT] != view_pair[NEXT] and
+                           self.views[self.id][NEXT] != view_pair[NEXT]):
+                            # Assert that the view_pair is transit adoptable
+                            if self.transit_adopble(
+                               processor_id, 0, enums.FOLLOW):
                                 self.view_pair_to_adopt = deepcopy(view_pair)
                                 return True
-                            else:
-                                # Same current view, need different next
-                                if own_current != view_pair[NEXT]:
-                                    self.view_pair_to_adopt = \
-                                        deepcopy(view_pair)
-                                    return True
                 return False
 
             # True if a view change was instructed by Primary Monitoring
@@ -364,20 +353,17 @@ class PredicatesAndAction():
             # processor i
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
-                    if view_pair[CURRENT] == view_pair[NEXT]:
-                        return False
                     if processor_id != self.id:
-                        # own_current = self.views[self.id][CURRENT]
-                        own_next = self.views[self.id][NEXT]
-                        if self.transit_adopble(processor_id, 1, enums.FOLLOW):
-                            if own_next != view_pair[NEXT]:
-                                if (own_next != (view_pair[CURRENT] + 1) %
-                                        self.number_of_nodes and
-                                        view_pair[CURRENT] != enums.TEE):
-                                    self.view_pair_to_adopt = view_pair
-                                    return True
-                                else:
-                                    return False
+                        # Assert that the processor doesn't end up in
+                        # phase 1 with CURRENT = NEXT
+                        if (self.views[self.id][CURRENT] != view_pair[NEXT] and
+                           self.views[self.id][NEXT] != view_pair[NEXT]):
+                            # Assert that the view_pair is transit adoptable
+                            if self.transit_adopble(
+                               processor_id, 1, enums.FOLLOW):
+                                self.view_pair_to_adopt = deepcopy(
+                                    view_pair)
+                                return True
                 return False
 
             # True if the view intended to be install is establishable

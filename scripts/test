@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# run as ./test unit|it|pattern [time to sleep on module startup]
+
 export WERKZEUG_RUN_MAIN=true
 
 # kills script with failure code if last executed command was not successful
@@ -38,7 +40,12 @@ if [ $# -eq 0 ]; then
     # run all tests
     run_unit_tests
     run_integration_tests
-elif [ $# -eq 1 ]; then
+elif [ $# -ge 1 ]; then
+    # if 2nd argument supplied, export env var INTEGRATION_TEST_SLEEP with $2 seconds to sleep when starting modules
+    if [ $# -eq 2 ]; then
+        export INTEGRATION_TEST_SLEEP=$2
+    fi
+
     # run either integration tests, unit tests or tests matching pattern $1
     if [ "$1" = "it" ]; then
         run_integration_tests
