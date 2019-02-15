@@ -120,4 +120,5 @@ if __name__ == "__main__":
     setup_metrics()
     start_modules(resolver)
     start_api(resolver)
+    # always run last, due to asyncio loop run_forever
     setup_communication(resolver)
