@@ -98,39 +98,13 @@ class ReplicationModule(AlgorithmModule):
 
             # lines 4-6
             if (self.rep[self.id][VIEW_CHANGE] and prim_id == self.id):
-                # this node is acting as primary
-                processor_ids = set()
-                for j, replica_structure in enumerate(self.rep):
-                    j_prim = self.resolver.execute(
-                        Module.VIEW_ESTABLISHMENT_MODULE,
-                        Function.GET_CURRENT_VIEW,
-                        j
-                    )
-                    if (replica_structure[VIEW_CHANGE] and
-                            j_prim == self.id):
-                        processor_ids.add(j)
+                self.act_as_prim_when_view_changed(prim_id)
 
-                if len(processor_ids) > (4 * self.number_of_byzantine) + 1:
-                    self.renew_reqs(processor_ids)
-                    self.find_cons_state(self.com_pref_states(
-                        (3 * self.number_of_byzantine) + 1
-                    ))  # TODO assign return val from cons_state when impl.
-                    self.rep[self.id][VIEW_CHANGE] = False
             # lines 7-8
-            elif (self.rep[self.id][VIEW_CHANGE] and
-                    (self.rep[prim_id][VIEW_CHANGE] is False and
-                     prim_id == self.rep[prim_id][PRIM])):
-                processor_ids = []
-                for i in range(self.number_of_nodes):
-                    if (self.resolver.execute(
-                            Module.VIEW_ESTABLISHMENT_MODULE,
-                            Function.GET_CURRENT_VIEW, i) == prim_id):
-                        processor_ids.append(i)
-                if (len(processor_ids) >=
-                        (4 * self.number_of_byzantine) + 1 and
-                        self.check_new_v_state(prim_id)):
-                    self.rep[self.id] = deepcopy(self.rep[prim_id])
-                    self.rep[self.id][VIEW_CHANGE] = False
+            elif(self.rep[self.id][VIEW_CHANGE] and
+                 (self.rep[prim_id][VIEW_CHANGE] is False and
+                 prim_id == self.rep[prim_id][PRIM])):
+                self.act_as_nonprime_when_view_changed(prim_id)
 
             # lines 9 - 10
             X = self.find_cons_state(self.com_pref_states(
@@ -626,6 +600,50 @@ class ReplicationModule(AlgorithmModule):
 
         # Log A has run out of items and is therefore a prefix of B
         return True
+
+    def act_as_prim_when_view_changed(self, prim_id):
+        """Actions to perform when a view change has ocurred.
+
+        Processor is the new primary.
+        """
+        # this node is acting as primary
+        processor_ids = set()
+        for j, replica_structure in enumerate(self.rep):
+            j_prim = self.resolver.execute(
+                Module.VIEW_ESTABLISHMENT_MODULE,
+                Function.GET_CURRENT_VIEW,
+                j
+            )
+            if (replica_structure[VIEW_CHANGE] and
+                    j_prim == self.id):
+                processor_ids.add(j)
+
+        if len(processor_ids) >= (4 * self.number_of_byzantine) + 1:
+            self.renew_reqs(processor_ids)
+            self.find_cons_state(self.com_pref_states(
+                (3 * self.number_of_byzantine) + 1
+            ))
+            # TODO assign REP_STATE and R_LOG to the return val
+            # from cons_state when impl.
+            self.rep[self.id][VIEW_CHANGE] = False
+
+    def act_as_nonprime_when_view_changed(self, prim_id):
+        """Actions to perform when a view change has ocurred.
+
+        Processor is not the new primary.
+        """
+        processor_ids = []
+        for i in range(self.number_of_nodes):
+            if (self.resolver.execute(
+                    Module.VIEW_ESTABLISHMENT_MODULE,
+                    Function.GET_CURRENT_VIEW, i) == prim_id):
+                processor_ids.append(i)
+
+        if (len(processor_ids) >=
+                (4 * self.number_of_byzantine + 1) and
+                self.check_new_v_state(prim_id)):
+            self.rep[self.id] = deepcopy(self.rep[prim_id])
+            self.rep[self.id][VIEW_CHANGE] = False
 
     # Interface functions
     def get_pend_reqs(self):
