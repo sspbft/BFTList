@@ -1,0 +1,11 @@
+dir: .
+bootstrap:
+  - /usr/local/bin/python3.7 -m venv env
+  - . ./env/bin/activate
+  - pip install --upgrade pip  
+  - pip install -r requirements.txt 
+  - deactivate
+  - chmod +x ./scripts/*
+cmd: 
+  - . ./env/bin/activate
+  - ./scripts/test
