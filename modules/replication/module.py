@@ -464,6 +464,9 @@ class ReplicationModule(AlgorithmModule):
 
         Returns the set of requests in request queue and in the message queue
         of 3f+1 other processors.
+
+        TODO look into if we should change logic of known_pend_reqs to avoid
+        duplicate requests in own pendReqs.
         """
         request_set = []
         for x in self.rep[self.id][PEND_REQS]:
@@ -668,23 +671,26 @@ class ReplicationModule(AlgorithmModule):
         Creates PRE_PREP msg for each request not being executed by
         4f+1 processors.
         """
-        # TODO
-        # Find a consistent set of request in PendReqs
-        # Loop thrpugh all pend_reqs and find all reqs that exist in
-        # pend_reqs of all processors in processors_set
-        # Assign self.rep[self.id][PEND_REQS] = new_pend_req
+        # remove requests that does not exist for all
+        # processors in processors_set
+        seen_reqs = {}
+        for processor_id in processors_set:
+            for req in self.rep[processor_id][PEND_REQS]:
+                if req not in seen_reqs:
+                    seen_reqs[req] = 1
+                else:
+                    seen_reqs[req] = seen_reqs[req] + 1
 
+        # assume no duplicate requests in pendReqs
+        seen_reqs = {k: v for (k, v) in seen_reqs.items()
+                     if v == len(processors_set)}
+        self.rep[self.id][PEND_REQS] = list(seen_reqs.keys())
+
+        # find all reqs that only have pre-prep message, need to create new
         reqs_need_pre_prep = list(filter(
             lambda r: r[STATUS] == [ReplicationEnums.PRE_PREP]),
             self.rep[self.id][REQ_Q]
         )
-
-        # temp_req_q = list(map(lambda s: s[REQUEST],
-        # self.rep[self.id][REQ_Q]))
-        # pending_reqs_need_pre_prep = list(filter(
-        #     lambda r: r not in temp_req_q,
-        #     self.rep[self.id][PEND_REQS]
-        # ))
 
         for j in processors_set:
             j_req_q = self.rep[j][REQ_Q]
@@ -699,20 +705,10 @@ class ReplicationModule(AlgorithmModule):
                 reqs_need_pre_prep
             ))
 
-            # j_pend_reqs = self.rep[j][PEND_REQS]
-            # filter out all pending reqs that are not in j's pending reqs
-            # pending_reqs_need_pre_prep = list(filter(
-            #     lambda r: r in j_pend_reqs,
-            #     pending_reqs_need_pre_prep
-            # ))
-
         for req in self.rep[self.id][REQ_Q]:
             if req in reqs_need_pre_prep:
                 # current view is equal to self.id since we are primary
                 req[REQUEST][VIEW] = self.id
-
-        # dont modify pending_reqs for now
-        # self.rep[self.id][PEND_REQS] = pending_reqs_need_pre_prep
 
     def find_cons_state(self, processors_set):
         """Method description.
@@ -751,25 +747,35 @@ class ReplicationModule(AlgorithmModule):
                     req_exists_count[key] = 1
 
         # find all PRE_PREP msgs with view == prim and check that they exist
-        # for 3f + 1 nodes
+        # for 3f + 1 processors
         for req_pair in self.rep[prim][REQ_Q]:
             if req_pair[REQUEST][VIEW] == prim:
                 key = {
                     CLIENT_REQ: req_pair[REQUEST][CLIENT_REQ],
                     SEQUENCE_NO: req_pair[REQUEST][SEQUENCE_NO]
                 }
-                if (not(key in req_exists_count and
-                        req_exists_count[key] >=
-                        (3 * self.number_of_byzantine + 1))):
-                    # msg is valid
+                if (key not in req_exists_count or
+                        req_exists_count[key] <
+                        (3 * self.number_of_byzantine + 1)):
                     return False
-        return True
-        # TODO also double check the pendReqs of the prim to make sure that all
-        # request in PEND_REQS of prim exists in at least 3f+1 processors
-        # PEND_REQS
+
+        seen_reqs = {}
+        for replica_structure in self.rep:
+            for req in replica_structure[PEND_REQS]:
+                if req not in seen_reqs:
+                    seen_reqs[req] = 1
+                else:
+                    seen_reqs[req] = seen_reqs[req] + 1
+        for req in self.rep[prim][PEND_REQS]:
+            # check that req exists in >= 3f+1 pendReqs
+            if (req not in seen_reqs or
+                    seen_reqs[req] < (3 * self.number_of_byzantine + 1)):
+                return False
 
         # TODO implement check that prefix is correct when find_cons_state
         # is implemented
+
+        return True
 
     # Function to extract data
     def get_data(self):
