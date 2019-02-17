@@ -1323,4 +1323,3 @@ class TestReplicationModule(unittest.TestCase):
             return True
         else:
             return 0
-
