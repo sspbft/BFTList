@@ -890,8 +890,8 @@ class TestReplicationModule(unittest.TestCase):
 
         replication.com_pref_states = Mock()
         replication.delayed = Mock()
-        replication.stale_rep = Mock()
-        replication.conflict = Mock()
+        replication.stale_rep = MagicMock(return_value = False)
+        replication.conflict = MagicMock(return_value = False)
         replication.last_exec = Mock()
         replication.unassigned_reqs = Mock()
         replication.committed_set = Mock()
@@ -989,12 +989,12 @@ class TestReplicationModule(unittest.TestCase):
             LAST_REQ: [],
             CON_FLAG: False,
             VIEW_CHANGE: False,
-            PRIM: 4} for i in range(6)
-        ] 
+            PRIM: 4} for i in range(5)
+        ]
+
         replication.run()
         self.assertEqual(replication.rep[replication.id][REP_STATE], [mock_rep_state])
 
-    
     def test_while_reset_cases(self):
         # Lines 12-13
         replication = ReplicationModule(0, self.resolver, 6, 1, 1)
@@ -1075,6 +1075,123 @@ class TestReplicationModule(unittest.TestCase):
         # Being called twice, once on line 12 and once in line 13
         self.assertEqual(replication.flush_local.call_count, 2)
 
+    def test_while_assigning_pre_prep_as_prim(self):
+        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication.run_forever = False
+        # All functions called in while must be mocked:
+
+        replication.com_pref_states = Mock()
+        replication.delayed = MagicMock(return_value = False)
+        replication.stale_rep = MagicMock(return_value = False)
+        replication.conflict = MagicMock(return_value = False)
+        replication.known_pend_reqs = Mock()
+        replication.unassigned_reqs = Mock()
+        replication.committed_set = Mock()
+        replication.reqs_to_prep = Mock()
+        replication.commit = Mock()
+        replication.act_as_nonprim_when_view_changed = Mock()
+        replication.act_as_prim_when_view_changed = Mock()
+        replication.send_msg = Mock()
+
+        # If not returning arrays, it returns an Mock-object and tests don't pass at all
+        replication.find_cons_state = MagicMock(return_value = [])
+        replication.get_ds_state = MagicMock(return_value = [])
+        replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
+        replication.known_pend_reqs = MagicMock(return_value = [])
+        replication.last_exec = MagicMock(return_value = 2)
+        replication.seq_n = 2
+
+        unassigned_req1 = {CLIENT_REQ: {CLIENT: 0}, VIEW: -1, SEQUENCE_NO: -1}
+        unassigned_req2 = {CLIENT_REQ: {CLIENT: 1}, VIEW: -1, SEQUENCE_NO: -1}
+        replication.rep[replication.id] = {
+            REP_STATE: [],
+            R_LOG: [],
+            PEND_REQS: [unassigned_req1, unassigned_req2],
+            REQ_Q: [],
+            LAST_REQ: [],
+            CON_FLAG: False,
+            VIEW_CHANGE: False,
+            PRIM: 0}
+
+        replication.run()
+
+        assigned_req1 = {CLIENT_REQ: {CLIENT: 0}, VIEW: 0, SEQUENCE_NO: 3}
+        assigned_req2 = {CLIENT_REQ: {CLIENT: 1}, VIEW: 0, SEQUENCE_NO: 4}
+
+        # Pending request: create dummy "real" requests of the client request in pend-reqs
+
+        # The pending requests are being assigned sequencial sequence numbers and
+        # added to REQ_QUEUE
+        self.assertEqual(replication.rep[replication.id][REQ_Q],
+        [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}, 
+        {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}])
+
+    def test_while_assigning_prep_as_non_prim(self):
+        replication = ReplicationModule(1, self.resolver, 6, 1, 1)
+        replication.run_forever = False
+        # All functions called in while must be mocked:
+
+        replication.com_pref_states = Mock()
+        replication.delayed = MagicMock(return_value = False)
+        replication.stale_rep = MagicMock(return_value = False)
+        replication.conflict = MagicMock(return_value = False)
+        replication.unassigned_reqs = MagicMock(return_value = [])
+        replication.committed_set = Mock()
+        #replication.reqs_to_prep = Mock()
+        replication.commit = Mock()
+        replication.act_as_nonprim_when_view_changed = Mock()
+        replication.act_as_prim_when_view_changed = Mock()
+        replication.send_msg = Mock()
+        replication.accept_req_preprep = MagicMock(return_value = True)
+
+
+        # If not returning arrays, it returns an Mock-object and tests don't pass at all
+        replication.find_cons_state = MagicMock(return_value = [])
+        replication.get_ds_state = MagicMock(return_value = [])
+        replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
+        replication.known_pend_reqs = MagicMock(return_value = [])
+        replication.last_exec = MagicMock(return_value = 2)
+        replication.seq_n = 2
+
+        unassigned_req1 = {CLIENT_REQ: {CLIENT: 0}, VIEW: -1, SEQUENCE_NO: -1}
+        unassigned_req2 = {CLIENT_REQ: {CLIENT: 1}, VIEW: -1, SEQUENCE_NO: -1}
+    
+        replication.known_pend_reqs = MagicMock(return_value =[unassigned_req1, unassigned_req2])
+
+        # Request that the prim has send with PRE_prep and Prep
+        assigned_req1 = {CLIENT_REQ: {CLIENT: 0}, VIEW: 0, SEQUENCE_NO: 3}
+        assigned_req2 = {CLIENT_REQ: {CLIENT: 1}, VIEW: 0, SEQUENCE_NO: 4}
+        replication.rep = [{
+            REP_STATE: [],
+            R_LOG: [],
+            PEND_REQS: [],
+            REQ_Q: [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+                    {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}],
+            LAST_REQ: [],
+            CON_FLAG: False,
+            VIEW_CHANGE: False,
+            PRIM: 0}] + [{
+                REP_STATE: [],
+                R_LOG: [],
+                PEND_REQS: [unassigned_req1, unassigned_req1],
+                REQ_Q: [],
+                LAST_REQ: [],
+                CON_FLAG: False,
+                VIEW_CHANGE: False,
+                PRIM: 0} for i in range(1,6)
+            ]
+
+        replication.run()
+
+
+        # Pending request: create dummy "real" requests of the client request in pend-reqs
+
+        # The pending requests are being assigned sequencial sequence numbers and
+        # added to REQ_QUEUE
+        self.assertEqual(replication.rep[replication.id][REQ_Q],
+        [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}, 
+        {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}])
+
     def template_for_while_true(self):
         replication = ReplicationModule(0, self.resolver, 6, 1, 1)
         replication.run_forever = False
@@ -1082,8 +1199,8 @@ class TestReplicationModule(unittest.TestCase):
 
         replication.com_pref_states = Mock()
         replication.delayed = Mock()
-        replication.stale_rep = Mock()
-        replication.conflict = Mock()
+        replication.stale_rep = MagicMock(return_value = False)
+        replication.conflict = MagicMock(return_value = False)
         replication.known_pend_reqs = Mock()
         replication.last_exec = Mock()
         replication.unassigned_reqs = Mock()
@@ -1106,13 +1223,15 @@ class TestReplicationModule(unittest.TestCase):
             REQ_Q: [],
             LAST_REQ: [],
             CON_FLAG: False,
-            VIEW_CHANGE: True,
+            VIEW_CHANGE: False,
             PRIM: 0} for i in range(6)
         ] 
 
     # Functions used to mock execute at resolver
     def get_0_as_view(self, func):
         if (func == Function.ALLOW_SERVICE):
+            return True
+        elif (func == Function.NO_VIEW_CHANGE):
             return True
         else:
             return 0

@@ -131,7 +131,6 @@ class ReplicationModule(AlgorithmModule):
                 self.flush_local()
 
             self.rep[self.id][PEND_REQS].extend(self.known_pend_reqs())
-
             # line 15 - 25
             if (self.resolver.execute(
                     Module.VIEW_ESTABLISHMENT_MODULE,
@@ -149,11 +148,10 @@ class ReplicationModule(AlgorithmModule):
                                (SIGMA * self.number_of_clients)):
                                 self.seq_n += 1
                                 req = {
-                                    CLIENT_REQ: req,
+                                    CLIENT_REQ: req[CLIENT_REQ],
                                     VIEW: prim_id,
                                     SEQUENCE_NO: self.seq_n
                                 }
-
                                 self.rep[self.id][REQ_Q].append({
                                     REQUEST: req,
                                     STATUS: {
@@ -161,13 +159,13 @@ class ReplicationModule(AlgorithmModule):
                                         ReplicationEnums.PREP
                                     }
                                 })
-
                     else:
                         # wait for prim or process reqs where 3f+1
                         # agree on seqnum
                         reqs = list(filter(
                             self.reqs_to_prep, self.known_pend_reqs()))
                         for r in reqs:
+                            print(r)
                             for t in self.rep[self.id][REQ_Q]:
                                 # status list will always be [PRE_PREP]
                                 if r == t[REQUEST]:
@@ -238,11 +236,14 @@ class ReplicationModule(AlgorithmModule):
 
     def reqs_to_prep(self, req):
         """Helper method to filter out requests to prepare."""
+        print(req)
         if req in self.unassigned_reqs():
             return False
-        for replica_structure in self.rep:
-            if req in replica_structure[REQ_Q]:
-                return False
+        # TODO req will always be in replica_structure of prim...
+        for processor_id, replica_structure in enumerate(self.rep):
+            if(processor_id != self.rep[self.id][PRIM]):
+                if req in replica_structure[REQ_Q]:
+                    return False
         return self.accept_req_preprep(req, self.rep[self.id][PRIM])
 
     def commit(self, req_status):
