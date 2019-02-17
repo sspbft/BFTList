@@ -60,7 +60,7 @@ async def GET(node_id, path):
 async def launch_bftlist(test_name="unknown test", args={}):
     """Launches BFTList for integration testing."""
     nodes = get_nodes()
-    cmd = "source env/bin/activate && python3.7 main.py"
+    cmd = ". env/bin/activate && python3.7 main.py"
     cwd = os.path.abspath(".")
     pids = []
 
