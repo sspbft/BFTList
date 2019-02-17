@@ -165,7 +165,6 @@ class ReplicationModule(AlgorithmModule):
                         reqs = list(filter(
                             self.reqs_to_prep, self.known_pend_reqs()))
                         for r in reqs:
-                            print(r)
                             for t in self.rep[self.id][REQ_Q]:
                                 # status list will always be [PRE_PREP]
                                 if r == t[REQUEST]:
@@ -236,7 +235,6 @@ class ReplicationModule(AlgorithmModule):
 
     def reqs_to_prep(self, req):
         """Helper method to filter out requests to prepare."""
-        print(req)
         if req in self.unassigned_reqs():
             return False
         # TODO req will always be in replica_structure of prim...
@@ -368,7 +366,6 @@ class ReplicationModule(AlgorithmModule):
         processors, and if there exists another set with the default
         replica state and these two sets adds up to at least 4f+1 processors.
         """
-        TEE = -1  # TODO: Remove when merged with while True-loop
         processors_prefix_X = 0
         processors_in_def_state = 0
         X = self.find_cons_state(self.com_pref_states(
@@ -388,7 +385,7 @@ class ReplicationModule(AlgorithmModule):
             ((processors_prefix_X + processors_in_def_state) >=
                 (4 * self.number_of_byzantine + 1))):
             return X
-        return TEE
+        return self.TEE
 
     def double(self):
         """Method description.
@@ -484,11 +481,12 @@ class ReplicationModule(AlgorithmModule):
         request_set = []
         for x in self.rep[self.id][REQ_Q]:
             processor_set = 0
-            if x[STATUS] <= status:
+            if x[STATUS] <= status or status <= x[STATUS]:
                 for replication_structure in self.rep:
                     for request_pair in replication_structure[REQ_Q]:
                         if(x[REQUEST] == request_pair[REQUEST] and
-                           request_pair[STATUS] <= status):
+                           (request_pair[STATUS] <= status or
+                           status <= request_pair[STATUS])):
                             processor_set += 1
             if processor_set >= (3 * self.number_of_byzantine + 1):
                 request_set.append(x)

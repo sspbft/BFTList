@@ -219,7 +219,7 @@ class TestReplicationModule(unittest.TestCase):
         # Not enough processors with the state found in find_cons_state
         replication.rep[0][REP_STATE] = [{"op": "add", "val": 2}]
         replication.rep[1][REP_STATE] = [{"op": "add", "val": 4}]
-        self.assertEqual(replication.get_ds_state(), -1)
+        self.assertEqual(replication.get_ds_state(), replication.TEE)
 
     def test_double(self):
         replication = ReplicationModule(0, self.resolver, 2, 0, 1)
@@ -1137,34 +1137,28 @@ class TestReplicationModule(unittest.TestCase):
         replication.conflict = MagicMock(return_value = False)
         replication.unassigned_reqs = MagicMock(return_value = [])
         replication.committed_set = Mock()
-        #replication.reqs_to_prep = Mock()
         replication.commit = Mock()
         replication.act_as_nonprim_when_view_changed = Mock()
         replication.act_as_prim_when_view_changed = Mock()
         replication.send_msg = Mock()
         replication.accept_req_preprep = MagicMock(return_value = True)
 
-
         # If not returning arrays, it returns an Mock-object and tests don't pass at all
         replication.find_cons_state = MagicMock(return_value = [])
         replication.get_ds_state = MagicMock(return_value = [])
         replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
-        replication.known_pend_reqs = MagicMock(return_value = [])
         replication.last_exec = MagicMock(return_value = 2)
         replication.seq_n = 2
-
-        unassigned_req1 = {CLIENT_REQ: {CLIENT: 0}, VIEW: -1, SEQUENCE_NO: -1}
-        unassigned_req2 = {CLIENT_REQ: {CLIENT: 1}, VIEW: -1, SEQUENCE_NO: -1}
-    
-        replication.known_pend_reqs = MagicMock(return_value =[unassigned_req1, unassigned_req2])
 
         # Request that the prim has send with PRE_prep and Prep
         assigned_req1 = {CLIENT_REQ: {CLIENT: 0}, VIEW: 0, SEQUENCE_NO: 3}
         assigned_req2 = {CLIENT_REQ: {CLIENT: 1}, VIEW: 0, SEQUENCE_NO: 4}
+
+        replication.known_pend_reqs = MagicMock(return_value =[assigned_req1, assigned_req2])
         replication.rep = [{
             REP_STATE: [],
             R_LOG: [],
-            PEND_REQS: [],
+            PEND_REQS: [assigned_req1, assigned_req2],
             REQ_Q: [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
                     {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}],
             LAST_REQ: [],
@@ -1173,16 +1167,15 @@ class TestReplicationModule(unittest.TestCase):
             PRIM: 0}] + [{
                 REP_STATE: [],
                 R_LOG: [],
-                PEND_REQS: [unassigned_req1, unassigned_req1],
-                REQ_Q: [],
+                PEND_REQS: [assigned_req1, assigned_req1],
+                REQ_Q: [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP}},
+                        {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP}}],
                 LAST_REQ: [],
                 CON_FLAG: False,
                 VIEW_CHANGE: False,
                 PRIM: 0} for i in range(1,6)
             ]
-
         replication.run()
-
 
         # Pending request: create dummy "real" requests of the client request in pend-reqs
 
@@ -1191,6 +1184,101 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.rep[replication.id][REQ_Q],
         [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}, 
         {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}])
+
+    def test_while_committing_to_request(self):
+        # line 22
+        replication = ReplicationModule(1, self.resolver, 6, 1, 1)
+        replication.run_forever = False
+        # All functions called in while must be mocked:
+
+        replication.com_pref_states = Mock()
+        replication.delayed = MagicMock(return_value = False)
+        replication.stale_rep = MagicMock(return_value = False)
+        replication.conflict = MagicMock(return_value = False)
+        replication.unassigned_reqs = MagicMock(return_value = [])
+        replication.commit = Mock()
+        replication.act_as_nonprim_when_view_changed = Mock()
+        replication.act_as_prim_when_view_changed = Mock()
+        replication.send_msg = Mock()
+        replication.accept_req_preprep = MagicMock(return_value = True)
+        replication.known_pend_reqs = MagicMock(return_value =[])
+
+        # If not returning arrays, it returns an Mock-object and tests don't pass at all
+        replication.find_cons_state = MagicMock(return_value = [])
+        replication.get_ds_state = MagicMock(return_value = [])
+        replication.committed_set = MagicMock(return_value = {0,1,2,3,4,5})
+        replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
+        replication.last_exec = MagicMock(return_value = 2)
+        replication.seq_n = 2
+        assigned_req1 = {CLIENT_REQ: {CLIENT: 0}, VIEW: 0, SEQUENCE_NO: 3}
+        assigned_req2 = {CLIENT_REQ: {CLIENT: 1}, VIEW: 0, SEQUENCE_NO: 4}
+
+        replication.rep = [{
+                REP_STATE: [],
+                R_LOG: [],
+                PEND_REQS: [assigned_req1, assigned_req2],
+                REQ_Q: [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+                        {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}],
+                LAST_REQ: [],
+                CON_FLAG: False,
+                VIEW_CHANGE: False,
+                PRIM: 0} for i in range(6)
+            ]
+
+        replication.run()
+
+        # The pending assignment should be removed from pend_reqs
+        self.assertEqual(replication.rep[replication.id][PEND_REQS], [])
+        # Commit should have been added to Status for each of the request
+        self.assertEqual(replication.rep[replication.id][REQ_Q], [
+            {REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP, ReplicationEnums.COMMIT}},
+            {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP, ReplicationEnums.COMMIT}}
+        ])
+
+    def test_while_actually_comitting_request(self):
+        # line 23-25
+        replication = ReplicationModule(1, self.resolver, 6, 1, 1)
+        replication.run_forever = False
+        # All functions called in while must be mocked:
+
+        replication.com_pref_states = Mock()
+        replication.delayed = MagicMock(return_value = False)
+        replication.stale_rep = MagicMock(return_value = False)
+        replication.conflict = MagicMock(return_value = False)
+        replication.unassigned_reqs = MagicMock(return_value = [])
+        replication.commit = Mock()
+        replication.act_as_nonprim_when_view_changed = Mock()
+        replication.act_as_prim_when_view_changed = Mock()
+        replication.send_msg = Mock()
+        replication.accept_req_preprep = MagicMock(return_value = True)
+        replication.known_pend_reqs = MagicMock(return_value =[])
+
+        # If not returning arrays, it returns an Mock-object and tests don't pass at all
+        replication.find_cons_state = MagicMock(return_value = [])
+        replication.get_ds_state = MagicMock(return_value = [])
+        replication.committed_set = MagicMock(return_value = {0,1,2,3,4,5})
+        replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
+        replication.last_exec = MagicMock(return_value = 2)
+        replication.seq_n = 2
+        assigned_req1 = {CLIENT_REQ: {CLIENT: 0}, VIEW: 0, SEQUENCE_NO: 3}
+        assigned_req2 = {CLIENT_REQ: {CLIENT: 1}, VIEW: 0, SEQUENCE_NO: 4}
+
+        replication.rep = [{
+                REP_STATE: [],
+                R_LOG: [],
+                PEND_REQS: [assigned_req1, assigned_req2],
+                REQ_Q: [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP, ReplicationEnums.COMMIT}},
+                        {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP, ReplicationEnums.COMMIT}}],
+                LAST_REQ: [],
+                CON_FLAG: False,
+                VIEW_CHANGE: False,
+                PRIM: 0} for i in range(6)
+            ]
+
+        replication.run()
+        # Commit should be called with only assigned_req1 (since lastExec() returns 2)
+        replication.commit.assert_called_once_with({REQUEST: {REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP, ReplicationEnums.COMMIT}},
+                                                    X_SET: {0,1,2,3,4,5}})
 
     def template_for_while_true(self):
         replication = ReplicationModule(0, self.resolver, 6, 1, 1)
@@ -1235,3 +1323,4 @@ class TestReplicationModule(unittest.TestCase):
             return True
         else:
             return 0
+
