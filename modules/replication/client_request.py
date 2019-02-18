@@ -27,3 +27,10 @@ class ClientRequest:
     def get_operation(self):
         """Returns the operation of the request, i.e. the RSM operation."""
         return self.operation
+
+    # TODO 
+    # def __eq__(self, other):
+    # """Overrides the default implementation"""
+    # if isinstance(other, Number):
+    #     return self.number == other.number
+    # return False

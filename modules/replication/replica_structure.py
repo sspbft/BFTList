@@ -63,6 +63,9 @@ class ReplicaStructure():
     
     def remove_from_pend_reqs(self, req):
         self.pend_reqs.remove(req)
+    
+    def set_pend_reqs(self, pend_reqs):
+        self.pend_reqs = pend_reqs
 
     def get_req_q(self):
         """Returns the requests that are in process along with their status
