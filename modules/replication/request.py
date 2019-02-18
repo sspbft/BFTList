@@ -18,24 +18,24 @@ class Request:
         self.view = view
         self.seq_num = seq_num
 
-    def get_client_request(self):
+    def get_client_request(self) -> ClientRequest:
         """Returns the client request associated with this request."""
         return self.client_request
 
-    def get_view(self):
+    def get_view(self) -> int:
         """Returns the view associated with this request."""
         return self.view
-    
+
     def set_view(self, view):
+        """Updates the view of this request."""
         self.view = view
 
-    def get_seq_num(self):
+    def get_seq_num(self) -> int:
         """Returns the sequence number associated with this request."""
         return self.seq_num
-    
-    # TODO 
-    # def __eq__(self, other):
-    # """Overrides the default implementation"""
-    # if isinstance(other, Number):
-    #     return self.number == other.number
-    # return False
+
+    def __eq__(self, other):
+        """Overrides the default implementation."""
+        return (self.client_request == other.get_client_request() and
+                self.view == other.get_view() and
+                self.seq_num == other.get_seq_num())
