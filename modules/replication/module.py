@@ -131,7 +131,6 @@ class ReplicationModule(AlgorithmModule):
                 self.flush_local()
 
             self.rep[self.id][PEND_REQS].extend(self.known_pend_reqs())
-
             # line 15 - 25
             if (self.resolver.execute(
                     Module.VIEW_ESTABLISHMENT_MODULE,
@@ -149,11 +148,10 @@ class ReplicationModule(AlgorithmModule):
                                (SIGMA * self.number_of_clients)):
                                 self.seq_n += 1
                                 req = {
-                                    CLIENT_REQ: req,
+                                    CLIENT_REQ: req[CLIENT_REQ],
                                     VIEW: prim_id,
                                     SEQUENCE_NO: self.seq_n
                                 }
-
                                 self.rep[self.id][REQ_Q].append({
                                     REQUEST: req,
                                     STATUS: {
@@ -161,7 +159,6 @@ class ReplicationModule(AlgorithmModule):
                                         ReplicationEnums.PREP
                                     }
                                 })
-
                     else:
                         # wait for prim or process reqs where 3f+1
                         # agree on seqnum
@@ -240,9 +237,11 @@ class ReplicationModule(AlgorithmModule):
         """Helper method to filter out requests to prepare."""
         if req in self.unassigned_reqs():
             return False
-        for replica_structure in self.rep:
-            if req in replica_structure[REQ_Q]:
-                return False
+        # TODO req will always be in replica_structure of prim...
+        for processor_id, replica_structure in enumerate(self.rep):
+            if(processor_id != self.rep[self.id][PRIM]):
+                if req in replica_structure[REQ_Q]:
+                    return False
         return self.accept_req_preprep(req, self.rep[self.id][PRIM])
 
     def commit(self, req_status):
@@ -367,7 +366,6 @@ class ReplicationModule(AlgorithmModule):
         processors, and if there exists another set with the default
         replica state and these two sets adds up to at least 4f+1 processors.
         """
-        TEE = -1  # TODO: Remove when merged with while True-loop
         processors_prefix_X = 0
         processors_in_def_state = 0
         X = self.find_cons_state(self.com_pref_states(
@@ -387,7 +385,7 @@ class ReplicationModule(AlgorithmModule):
             ((processors_prefix_X + processors_in_def_state) >=
                 (4 * self.number_of_byzantine + 1))):
             return X
-        return TEE
+        return self.TEE
 
     def double(self):
         """Method description.
@@ -483,11 +481,12 @@ class ReplicationModule(AlgorithmModule):
         request_set = []
         for x in self.rep[self.id][REQ_Q]:
             processor_set = 0
-            if x[STATUS] <= status:
+            if x[STATUS] <= status or status <= x[STATUS]:
                 for replication_structure in self.rep:
                     for request_pair in replication_structure[REQ_Q]:
                         if(x[REQUEST] == request_pair[REQUEST] and
-                           request_pair[STATUS] <= status):
+                           (request_pair[STATUS] <= status or
+                           status <= request_pair[STATUS])):
                             processor_set += 1
             if processor_set >= (3 * self.number_of_byzantine + 1):
                 request_set.append(x)
