@@ -7,10 +7,12 @@ rLog, (pending req. queue) pendReqs, (requests under process queue) reqQ,
 (the replicate) which is an ordered sequence log.
 """
 
-from typings import List, Dict
+# standard
+from typing import List, Dict
 
+# local
 from modules.constants import (REQUEST, REPLY, STATUS)
-from request import Request
+from .request import Request
 
 
 class ReplicaStructure():
@@ -112,6 +114,14 @@ class ReplicaStructure():
         """Returns the last assigned sequence number for this processor."""
         return self.seq_num
 
+    def inc_seq_num(self):
+        """Increments the sequence number by 1 for this processor."""
+        self.seq_num += 1
+
+    def set_seq_num(self, seq_num: int):
+        """Sets the sequence number for this processor."""
+        self.seq_num = seq_num
+
     def get_con_flag(self) -> bool:
         """Returns whether this processor has flagged for conflict."""
         return self.con_flag
@@ -139,8 +149,11 @@ class ReplicaStructure():
     # NOTE that def_state and tee should maybe not always be the same
     def is_def_state(self) -> bool:
         """Returns True if all processor data is set to default."""
-        # TODO returns True if state == DEF_STATE
-        pass
+        return (self.rep_state == [] and self.r_log == [] and
+                self.pend_reqs == [] and self.req_q == [] and
+                self.last_req == [] and self.seq_num == -1 and
+                self.con_flag is False and self.view_changed is False and
+                self.prim == -1)
 
     def is_rep_state_default(self) -> bool:
         """Returns True if the processors state is set to default."""
@@ -148,13 +161,14 @@ class ReplicaStructure():
 
     def reset_state(self):
         """Resets the entire replica_structure to its default."""
-        # TODO sets own state to DEF_STATE
-        pass
+        self.__init__(self.id)
 
     def is_tee(self) -> bool:
-        """Returns True if the entire state corresponds to TEE."""
-        # TODO returns True if state == DEF_STATE
-        pass
+        """Returns True if the entire state corresponds to TEE.
+
+        This means that the current state of this replica is the default.
+        """
+        return self.is_def_state()
 
     def validate_req_pair(self, req_pair: Dict):
         """Validates a request pair.

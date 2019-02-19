@@ -14,9 +14,9 @@ from modules.constants import (MAXINT, SIGMA, X_SET, REP_STATE, CLIENT_REQ,
                                REQUEST, STATUS, SEQUENCE_NO)
 from resolve.enums import Module, Function, MessageType
 import conf.config as conf
-from replica_structure import ReplicaStructure
-from request import Request
-from client_request import ClientRequest
+from .models.replica_structure import ReplicaStructure
+from .models.request import Request
+from .models.client_request import ClientRequest
 
 # globals
 logger = logging.getLogger(__name__)
@@ -50,25 +50,11 @@ class ReplicationModule(AlgorithmModule):
         self.number_of_nodes = n
         self.number_of_byzantine = f
         self.number_of_clients = k
-        # TODO replace with self.rep[self.id]
-        # self.DEF_STATE = {REP_STATE: [],
-        #                   R_LOG: [],
-        #                   PEND_REQS: [],
-        #                   REQ_Q: [],
-        #                   LAST_REQ: [],
-        #                   CON_FLAG: False,
-        #                   VIEW_CHANGE: False,
-        #                   PRIM: -1}
-
-
-        # self.TEE = deepcopy(self.DEF_STATE)
 
         self.flush = False
         self.need_flush = False
-        # TODO remove seq_n and replace with rs.seq_num
-        self.seq_n = 0
-
-        self.rep = [ReplicaStructure(i) for i in range(n)] # type: List[ReplicaStructure]
+        self.rep = [ReplicaStructure(i) for i in range(n)] \
+            # type: List[ReplicaStructure]
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -82,7 +68,6 @@ class ReplicationModule(AlgorithmModule):
             if (not self.rep[0].get_view_changed() and
                     self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
                                           Function.ALLOW_SERVICE)):
-                                # replace with 
                 view_changed = (not self.rep[self.id].is_tee() and
                                 (self.resolver.execute(
                                     Module.VIEW_ESTABLISHMENT_MODULE,
@@ -142,14 +127,10 @@ class ReplicationModule(AlgorithmModule):
                         # TODO re-visit this when Ioannis has answered whether
                         # to use self.get_pend_reqs() instead
                         for req in self.rep[self.id].get_pend_reqs():
-                            if self.seq_n < (self.last_exec() +
-                               (SIGMA * self.number_of_clients)):
-                                self.seq_n += 1
-                                # req = {
-                                #     CLIENT_REQ: req,
-                                #     VIEW: prim_id,
-                                #     SEQUENCE_NO: self.seq_n
-                                # }
+                            if self.rep[self.id].get_seq_num() < \
+                                    (self.last_exec() +
+                                        (SIGMA * self.number_of_clients)):
+                                self.rep[self.id].inc_seq_num()
                                 req = Request(
                                     req,
                                     prim_id,
@@ -273,7 +254,7 @@ class ReplicationModule(AlgorithmModule):
     # Macros
     def flush_local(self):
         """Resets all local variables."""
-        self.seq_n = 0
+        self.rep[self.id].set_seq_num(0)
         self.rep = [ReplicaStructure(i) for i in range(self.number_of_nodes)]
 
     def msg(self, status, processor_j):
@@ -396,7 +377,7 @@ class ReplicationModule(AlgorithmModule):
         """
         # Create all possible 2-combinations of the requests
         for request_pair1, request_pair2 in itertools.combinations(
-                                                self.rep[self.id].get_req_q(), 2):
+                self.rep[self.id].get_req_q(), 2):
             if(request_pair1[REQUEST].get_client_request() ==
                     request_pair2[REQUEST].get_client_request() and
                     # the sequence number or view number is different
@@ -423,7 +404,8 @@ class ReplicationModule(AlgorithmModule):
             for replica_structure in self.rep:
                 # for all request in their request queue
                 for req_pair in replica_structure.get_req_q():
-                    if(client_request == req_pair[REQUEST].get_client_request()):
+                    if(client_request ==
+                            req_pair[REQUEST].get_client_request()):
                         processors_supporting += 1
             if(processors_supporting < (2 * self.number_of_byzantine + 1)):
                 return True
@@ -541,9 +523,11 @@ class ReplicationModule(AlgorithmModule):
         if request in self.known_pend_reqs():
             # The request should be acknowledged by other processors
             for req_pair in self.rep[self.id].get_req_q():
-                if (req_pair[REQUEST].get_client_request() == request.get_client_request() and
+                if (req_pair[REQUEST].get_client_request() ==
+                    request.get_client_request() and
                    req_pair[REQUEST].get_view() == prim and
-                   self.exists_preprep_msg(req_pair[REQUEST].get_client_request(), prim) and
+                   self.exists_preprep_msg(
+                    req_pair[REQUEST].get_client_request(), prim) and
                    self.last_exec() <= req_pair[REQUEST].get_seq_num() <=
                         (self.last_exec() + SIGMA * self.number_of_clients)):
                         # A request should not already exist with the same
@@ -588,11 +572,13 @@ class ReplicationModule(AlgorithmModule):
             # If not we will always return True.
             if req == request_pair[REQUEST]:
                 continue
-            if (request_pair[REQUEST].get_client_request() == req.get_client_request() and
+            if (request_pair[REQUEST].get_client_request() ==
+                req.get_client_request() and
                request_pair[REQUEST].get_seq_num() == req.get_seq_num()):
                 return True
         for request_pair in self.rep[self.id].get_r_log():
-            if (request_pair[REQUEST].get_client_request() == req.get_client_request() and
+            if (request_pair[REQUEST].get_client_request() ==
+                req.get_client_request() and
                request_pair[REQUEST].get_seq_num() == req.get_seq_num()):
                 return True
         return False

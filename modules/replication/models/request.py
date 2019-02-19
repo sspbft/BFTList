@@ -4,7 +4,8 @@ An assigned request takes the form req = ⟨(request) q, (view) v,
 (seq. num.) sq⟩.
 """
 
-from client_request import ClientRequest
+# local
+from .client_request import ClientRequest
 
 
 class Request:
@@ -36,6 +37,8 @@ class Request:
 
     def __eq__(self, other):
         """Overrides the default implementation."""
-        return (self.client_request == other.get_client_request() and
-                self.view == other.get_view() and
-                self.seq_num == other.get_seq_num())
+        if type(other) == type(self):
+            return (self.client_request == other.get_client_request() and
+                    self.view == other.get_view() and
+                    self.seq_num == other.get_seq_num())
+        return False
