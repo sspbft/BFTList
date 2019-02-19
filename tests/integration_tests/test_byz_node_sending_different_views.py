@@ -1,8 +1,11 @@
 """
-Case 6
-
-Node 0-2 have the same view v, nodes 3-4 have the same view DF_VIEW and
-node 5 is acting Byzantine, i.e. not responding.
+Case 7.1
+Byzantine node 0 tells some nodes that its view is (1,1) and others that it is (2,2)
+The Byzantine node tries to trick some nodes to migrate to view (2,2), while telling
+others to stay in (1,1).
+All correct nodes should stay in the current view (1,1) since not enough nodes seems
+to be wanting a view change to (2,2). Meaning the Byz node should NOT be able to trick
+the correct nodes.
 """
 
 # standard
@@ -20,23 +23,18 @@ N = 6
 DF_VIEW = 0
 logger = logging.getLogger(__name__)
 
-views = [{"current": 2, "next": 2}, {"current": 2, "next": 2},
-         {"current": 2, "next": 2}, {"current": DF_VIEW, "next": 0},
-         {"current": DF_VIEW, "next": 0}, {"current": 1, "next": 1}]
+views = [{"current": 1, "next": 1} for i in range(N)]
 phases = [0 for i in range(N)]
 vChanges = [False for i in range(N)]
-witnesses = [False for i in range(N)]
+witnesses = [True for i in range(N)]
 start_state = {}
 
-views = [{"current": 2, "next": 2} for i in range(N)]
-views_2 = [{"current": 2, "next": 2} for i in range(3)] + \
-         [{"current": DF_VIEW, "next": 0} for i in range(2)] + \
-         [{"current": 1, "next": 1}]
+views = [{"current": 1, "next": 1} for i in range(N)]
 
 for i in range(N):
     start_state[str(i)] = {
         "VIEW_ESTABLISHMENT_MODULE": {
-            "views": views if i <= 2 else views_2,
+            "views": views,
             "phs": phases,
             "vChange": vChanges[i],
             "witnesses": witnesses
@@ -45,13 +43,13 @@ for i in range(N):
 
 args = {
     "BYZANTINE": {
-        "NODES": [5],
-        "BEHAVIOR": "UNRESPONSIVE"
+        "NODES": [0],
+        "BEHAVIOR": "DIFFERENT_VIEWS"
     }
 }
 
-class TestByzNodeSilent(AbstractIntegrationTest):
-    """Performs health check on all nodes base endpoint (/)."""
+class TestByzNodeSendingDifferentViews(AbstractIntegrationTest):
+    """Checks that a Byzantine node can not trick some nodes to do a view change."""
 
     async def bootstrap(self):
         """Sets up BFTList for the test."""
@@ -75,12 +73,10 @@ class TestByzNodeSilent(AbstractIntegrationTest):
                 views = data["views"]
                 id = data["id"]
 
-                if id != 5:
+                if id != 0:
                     for i,vp in enumerate(views):
-                        if i <= 2:
-                            checks.append(vp == {"current": 2, "next": 2})
-                        elif i <= 4:
-                            checks.append(vp == {"current": -1, "next": 0})
+                        if i > 0:
+                            checks.append(vp == {"current": 1, "next": 1})
 
             # if all checks passed, test passed
             if all(checks):
