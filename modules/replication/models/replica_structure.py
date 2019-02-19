@@ -60,8 +60,18 @@ class ReplicaStructure():
         { REQUEST: req, STATUS: set(st) : st ∈ ⟨PRE−PREP, PREP, COMMIT⟩},
         where req is of type Request
         """
+        # TODO fix this method, right now we're adding the req_pair, should be
+        # a dict { REQUEST: req, X_SET: set of nodes that executed req }
         self.validate_req_pair(req_pair)
         self.r_log.append(req_pair)
+
+    def set_r_log(self, r_log: List):
+        """Sets the r_log for this processor.
+
+        NOTE that no validation of r_log is done, this is mainly used for
+        testing purposes.
+        """
+        self.r_log = r_log
 
     def get_pend_reqs(self) -> List[Request]:
         """Returns the requests received from clients, all ClientRequests
@@ -77,7 +87,8 @@ class ReplicaStructure():
 
     def remove_from_pend_reqs(self, req: Request):
         """Removes the first occurrence of req from pend_reqs."""
-        self.pend_reqs.remove(req)
+        if req in self.pend_reqs:
+            self.pend_reqs.remove(req)
 
     def set_pend_reqs(self, pend_reqs: List[Request]):
         """Sets the pend_reqs for this processor."""
@@ -91,6 +102,14 @@ class ReplicaStructure():
         """Adds a request pair to the req_q."""
         self.validate_req_pair(req_pair)
         self.req_q.append(req_pair)
+
+    def set_req_q(self, req_q: List[Dict]):
+        """Sets the req_q for this processor.
+
+        NOTE that no validation is done on the performed req_q. This is mainly
+        used for testing purposes.
+        """
+        self.req_q = req_q
 
     def remove_from_req_q(self, req):
         """Removes all occurrences of req from req_q."""
@@ -183,3 +202,25 @@ class ReplicaStructure():
         status = req_pair[STATUS]
         if type(req) != Request or type(status) != set:
             raise ValueError(f"Illegal values in req_pair dict")
+
+    def __eq__(self, other):
+        """Overrides the default implementation."""
+        if type(other) == type(self):
+            return (self.rep_state == other.get_rep_state() and
+                    self.r_log == other.get_r_log() and
+                    self.pend_reqs == other.get_pend_reqs() and
+                    self.req_q == other.get_req_q() and
+                    self.last_req == other.get_last_req() and
+                    self.seq_num == other.get_seq_num() and
+                    self.con_flag == other.get_con_flag() and
+                    self.view_changed == other.get_view_changed() and
+                    self.prim == other.get_prim())
+
+    def __str__(self):
+        """Override default __str__."""
+        return f"ReplicaStructure: id: {self.id}, rep_state:" + \
+               f" {self.rep_state}, r_log: {self.r_log}, pend_reqs: " + \
+               f"{self.pend_reqs}, req_q: {self.req_q}, last_req: " + \
+               f"{self.last_req}, seq_num: {self.seq_num}, con_flag: " + \
+               f"{self.con_flag}, view_changed: {self.view_changed}" + \
+               f", prim: {self.prim}"

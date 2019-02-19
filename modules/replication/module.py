@@ -254,8 +254,8 @@ class ReplicationModule(AlgorithmModule):
     # Macros
     def flush_local(self):
         """Resets all local variables."""
-        self.rep[self.id].set_seq_num(0)
         self.rep = [ReplicaStructure(i) for i in range(self.number_of_nodes)]
+        self.rep[self.id].set_seq_num(0)
 
     def msg(self, status, processor_j):
         """Returns requests reported to p_i from processor_j with status."""
@@ -294,6 +294,8 @@ class ReplicationModule(AlgorithmModule):
             if(replica_structure.get_r_log()):
                 x = replica_structure.get_r_log()[-1]
                 # Get the maximal sequence number
+                if X_SET not in x:
+                    raise ValueError(f"entry in r_log does not have x_set key: {x}")
                 if (len(x[X_SET]) >=
                    (3 * self.number_of_byzantine + 1)):
                         if (last_common_exec_request is None or
