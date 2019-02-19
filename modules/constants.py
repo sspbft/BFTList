@@ -30,3 +30,8 @@ REPLY = "reply"
 
 MAXINT = sys.maxsize  # Sequence number limit
 SIGMA = 10  # Threshold for assigning sequence numbers
+
+# Primary Monitoring
+V_STATUS = "v_status"
+NEED_CHANGE = "need_change"
+NEED_CHG_SET = "need_chg_set"
