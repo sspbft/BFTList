@@ -2,6 +2,9 @@
 Case 7.2
 Byzantine node 0 tells all nodes that its view is RST_PAIR,
 trying to force the others to do a reset, eventhough it is not needed.
+All correct nodes should stay in the current view (1,1) since not enough nodes seems
+to be wanting a reset. Meaning the Byz node should NOT be able to trick
+the correct nodes into a reset.
 """
 
 # standard

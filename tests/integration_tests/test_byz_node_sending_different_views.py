@@ -1,6 +1,11 @@
 """
 Case 7.1
-Byzantine node 0 tells some nodes that its view is (1,1) and others that it is (2,2).
+Byzantine node 0 tells some nodes that its view is (1,1) and others that it is (2,2)
+The Byzantine node tries to trick some nodes to migrate to view (2,2), while telling
+others to stay in (1,1).
+All correct nodes should stay in the current view (1,1) since not enough nodes seems
+to be wanting a view change to (2,2). Meaning the Byz node should NOT be able to trick
+the correct nodes.
 """
 
 # standard

@@ -209,28 +209,27 @@ class ViewEstablishmentModule(AlgorithmModule):
                 # Overwriting own_data to send different views to different
                 # nodes, to trick them
                 # if acting Byzantine with different_views - behaviour
-                if (byz.is_byzantine() and
-                   byz.get_byz_behavior() == byz.DIFFERENT_VIEWS):
-                    logger.info(
-                        f"Node is acting byzantine: {byz.DIFFERENT_VIEWS}")
-                    if (node_j % 2 == 0):
+                if byz.is_byzantine():
+                    if byz.get_byz_behavior() == byz.DIFFERENT_VIEWS:
+                        logger.info(
+                            f"Node is acting byzantine: {byz.DIFFERENT_VIEWS}")
+                        if (node_j % 2 == 0):
+                            own_data = [0,
+                                        True,
+                                        {CURRENT: 1, NEXT: 1}
+                                        ]
+                        else:
+                            own_data = [0,
+                                        True,
+                                        {CURRENT: 2, NEXT: 2}
+                                        ]
+                    elif byz.get_byz_behavior() == byz.FORCING_RESET:
+                        logger.info(
+                            f"Node is acting byzantine: {byz.FORCING_RESET}")
                         own_data = [0,
                                     True,
-                                    {CURRENT: 1, NEXT: 1}
+                                    self.pred_and_action.RST_PAIR
                                     ]
-                    else:
-                        own_data = [0,
-                                    True,
-                                    {CURRENT: 2, NEXT: 2}
-                                    ]
-                if (byz.is_byzantine() and
-                   byz.get_byz_behavior() == byz.FORCING_RESET):
-                    logger.info(
-                        f"Node is acting byzantine: {byz.FORCING_RESET}")
-                    own_data = [0,
-                                True,
-                                self.pred_and_action.RST_PAIR
-                                ]
 
                 msg = {"type": MessageType.VIEW_ESTABLISHMENT_MESSAGE,
                        "sender": self.id,
