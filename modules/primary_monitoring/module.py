@@ -98,9 +98,8 @@ class PrimaryMonitoringModule(AlgorithmModule):
     # Functions added for default values
     def get_default_vcm(self, id):
         """Returns the DEF_STATE for vcm."""
-        prim = self.get_current_view(id)
         return ({V_STATUS: enums.OK,
-                PRIM: prim,
+                PRIM: self.get_current_view(id),
                 NEED_CHANGE: False,
                 NEED_CHG_SET: set()}
                 )
