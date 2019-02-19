@@ -1,9 +1,11 @@
 """
 Case 1.1
 
-Two nodes are behind, there is not enough node to establish view 2.
-Node 0 and 1 will catch up to phase 1 for moving into view 2.
-Then all will establish view 2 and the system will be in a safe state in phase 0, view 2.
+Two nodes are behind so there is not enough node yet to establish view 2.
+We want the nodes to catch up with the majority of nodes.
+Node 0 and 1 will catch up to phase 1 and hence moving into view 2.
+Then view 2 will be establishable and all nodes will establish the view (2,2)
+The system will be in a safe state in phase 0, view 2.
 """
 
 # standard

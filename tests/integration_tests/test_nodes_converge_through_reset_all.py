@@ -1,8 +1,11 @@
 """
 Case 3
 
-Nodes are in different views and stable, should converge to the the reset view
-(stable) by resetAll since no predicate will be true for any of the nodes
+When the system is in a non-stable state, reset should occur.
+Nodes are in different views but legit.
+The whole system should converge to the reset view by resetAll,
+since no predicate will be true for any of the nodes.
+Then the system will be in stable state with view (0,0).
 """
 
 # standard
