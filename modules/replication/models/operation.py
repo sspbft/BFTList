@@ -9,7 +9,7 @@ from modules.enums import OperationEnums
 
 class Operation:
     """Models operations that can be performed on the state
-    
+
     Operations should be specified along with a list of arguments by clients
     when sending requests to BFTList.
     """

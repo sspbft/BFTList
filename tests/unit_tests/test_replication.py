@@ -1473,7 +1473,7 @@ class TestReplicationModule(unittest.TestCase):
 
         replication.rep = [ReplicaStructure(i) for i in range(6)]
     
-    # test applying a request
+    # validates applying requests
     def test_apply(self):
         replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         state = []
