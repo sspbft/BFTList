@@ -55,7 +55,6 @@ class ReplicationModule(AlgorithmModule):
         self.need_flush = False
         self.rep = [ReplicaStructure(i) for i in range(n)] \
             # type: List[ReplicaStructure]
-        print(self.rep[0].get_r_log())
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -247,8 +246,12 @@ class ReplicationModule(AlgorithmModule):
 
     def apply(self, req: Request):
         """Applies a request."""
-        logger.info(f"Applying request {req}")
-        # TODO implement
+        current_state = self.rep[self.id].get_rep_state()
+        operation = req.get_client_request().get_operation()
+        new_state = operation.execute(current_state)
+        self.rep[self.id].set_rep_state(new_state)
+        logger.info(f"Applying request {req} on state {current_state}. " +
+                    f"New state: {new_state}")
 
     # Macros
     def flush_local(self):

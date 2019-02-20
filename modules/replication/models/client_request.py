@@ -5,15 +5,17 @@ where t is a totally-ordered timestamp (local to c) and o is the
 requested operation.
 """
 
+# local
+from .operation import Operation
+
 
 class ClientRequest:
     """Models a request as used in the Replication module."""
 
-    def __init__(self, client_id, timestamp, operation):
+    def __init__(self, client_id, timestamp, operation: Operation):
         """Initializes a client request with the required data."""
         self.client_id = client_id
         self.timestamp = timestamp
-        # TODO validate this in some way? should maybe add Operation class?
         self.operation = operation
 
     def get_client_id(self):

@@ -7,7 +7,7 @@ import sys
 from resolve.resolver import Resolver
 from modules.replication.module import ReplicationModule
 from resolve.enums import Function, Module
-from modules.enums import ReplicationEnums
+from modules.enums import ReplicationEnums, OperationEnums
 from modules.constants import (REP_STATE, R_LOG, PEND_REQS, REQ_Q,
                                LAST_REQ, CON_FLAG, VIEW_CHANGE,
                                REQUEST, SEQUENCE_NO, STATUS, VIEW, X_SET, CLIENT_REQ,
@@ -15,6 +15,7 @@ from modules.constants import (REP_STATE, R_LOG, PEND_REQS, REQ_Q,
 from modules.replication.models.replica_structure import ReplicaStructure
 from modules.replication.models.request import Request
 from modules.replication.models.client_request import ClientRequest
+from modules.replication.models.operation import Operation
 
 class TestReplicationModule(unittest.TestCase):
 
@@ -1471,6 +1472,24 @@ class TestReplicationModule(unittest.TestCase):
         replication.resolver.execute = MagicMock(return_value = 0)
 
         replication.rep = [ReplicaStructure(i) for i in range(6)]
+    
+    # test applying a request
+    def test_apply(self):
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+        state = []
+        target_state = [0, 1, 2, 4]
+        # append 1..5
+        for i in range(5):
+            op = Operation(OperationEnums.APPEND, i)
+            client_req = ClientRequest(0, None, op)
+            req = Request(client_req, 0, i)
+            replication.apply(req)
+        # pop index 3
+        op = Operation(OperationEnums.POP, 3)
+        client_req = ClientRequest(0, None, op)
+        req = Request(client_req, 0, 5)
+        replication.apply(req)
+        self.assertEqual(replication.rep[replication.id].get_rep_state(), target_state)
 
     # Functions used to mock execute at resolver
     def get_0_as_view(self, func):
