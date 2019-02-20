@@ -1,0 +1,44 @@
+"""Request class and helpers.
+
+An assigned request takes the form req = ⟨(request) q, (view) v,
+(seq. num.) sq⟩.
+"""
+
+# local
+from .client_request import ClientRequest
+
+
+class Request:
+    """Models a request as used in the Replication module."""
+
+    def __init__(self, client_request: ClientRequest, view: int, seq_num: int):
+        """Initializes a request object."""
+        if type(client_request) != ClientRequest:
+            raise ValueError("Arg client_request must be a ClientRequest")
+        self.client_request = client_request
+        self.view = view
+        self.seq_num = seq_num
+
+    def get_client_request(self) -> ClientRequest:
+        """Returns the client request associated with this request."""
+        return self.client_request
+
+    def get_view(self) -> int:
+        """Returns the view associated with this request."""
+        return self.view
+
+    def set_view(self, view):
+        """Updates the view of this request."""
+        self.view = view
+
+    def get_seq_num(self) -> int:
+        """Returns the sequence number associated with this request."""
+        return self.seq_num
+
+    def __eq__(self, other):
+        """Overrides the default implementation."""
+        if type(other) == type(self):
+            return (self.client_request == other.get_client_request() and
+                    self.view == other.get_view() and
+                    self.seq_num == other.get_seq_num())
+        return False
