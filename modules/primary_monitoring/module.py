@@ -59,7 +59,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                    self.vcm[self.id][V_STATUS] != enums.V_CHANGE):
                     self.update_need_chg_set()
                     # Line 11
-                    if(self.number_of_processor_in_no_service() <
+                    if(self.number_of_processors_in_no_service() <
                        (2 * self.number_of_byzantine + 1)):
                         self.rep[V_STATUS] = enums.OK
                     # Line 12
@@ -91,7 +91,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 break
 
     # Help functions for run-method
-    def number_of_processor_in_no_service(self):
+    def number_of_processors_in_no_service(self):
         """Returns the number of processors which is in NO_SERVICE."""
         processors = 0
         for processor_id, processor_vcm in enumerate(self.vcm):

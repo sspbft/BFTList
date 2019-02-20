@@ -87,7 +87,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         self.assertEqual(primary_mod.get_default_vcm(0),
             {V_STATUS: enums.OK, PRIM: 1, NEED_CHANGE: False, NEED_CHG_SET: set()})
         
-    def test_number_of_processor_in_no_service(self):
+    def test_number_of_processors_in_no_service(self):
         primary_mod = PrimaryMonitoringModule(0, self.resolver, 6, 1)
         # All nodes (6 of them) are in status no_service
         primary_mod.vcm = [{V_STATUS: enums.NO_SERVICE,
@@ -95,7 +95,7 @@ class TestPredicatesAndAction(unittest.TestCase):
                 NEED_CHANGE: False,
                 NEED_CHG_SET: set()
         } for i in range(6)]
-        self.assertEqual(primary_mod.number_of_processor_in_no_service(), 6)
+        self.assertEqual(primary_mod.number_of_processors_in_no_service(), 6)
         # Only 3 nodes are in status no_service
         primary_mod.vcm = [{V_STATUS: enums.NO_SERVICE,
                 PRIM: 0,
@@ -106,7 +106,7 @@ class TestPredicatesAndAction(unittest.TestCase):
                 NEED_CHANGE: False,
                 NEED_CHG_SET: set()
         } for i in range(3,6)]
-        self.assertEqual(primary_mod.number_of_processor_in_no_service(), 3)
+        self.assertEqual(primary_mod.number_of_processors_in_no_service(), 3)
 
     def test_update_need_chg_set(self):
         primary_mod = PrimaryMonitoringModule(0, self.resolver, 6, 1)
