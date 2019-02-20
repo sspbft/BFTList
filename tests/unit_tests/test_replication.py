@@ -84,7 +84,7 @@ class TestReplicationModule(unittest.TestCase):
         # There is no executed requests
         replication.rep[replication.id].set_r_log([])
 
-        self.assertIsNone(replication.last_exec())
+        self.assertEqual(replication.last_exec(), -1)
         
 
     def test_last_common_execution(self):
@@ -399,15 +399,15 @@ class TestReplicationModule(unittest.TestCase):
         #         ]
         replication.rep = [ReplicaStructure(
             0,
-            pend_reqs=[self.dummyRequest1, self.dummyRequest2]
+            pend_reqs=[self.dummyRequest1.get_client_request(), self.dummyRequest2.get_client_request()]
         )] + [ReplicaStructure(
             i,
             req_q=[{REQUEST: self.dummyRequest1, STATUS:{}}]
         ) for i in range(1,4)] + [ReplicaStructure(
             i,
-            pend_reqs=[self.dummyRequest1]
+            pend_reqs=[self.dummyRequest1.get_client_request()]
         ) for i in range(4,6)]
-        self.assertEqual(replication.known_pend_reqs(), [self.dummyRequest1])
+        self.assertEqual(replication.known_pend_reqs(), [self.dummyRequest1.get_client_request()])
 
         # No known pending request found, only 3 processor has dummyRequest1
         # replication.rep = [{
@@ -740,7 +740,7 @@ class TestReplicationModule(unittest.TestCase):
         #         ]
         replication.rep = [ReplicaStructure(
             i,
-            pend_reqs=[self.dummyRequest1],
+            pend_reqs=[self.dummyRequest1.get_client_request()],
             view_changed=True
         ) for i in range(6)]
         # Pretend prim == replication.id (0)
@@ -773,11 +773,11 @@ class TestReplicationModule(unittest.TestCase):
         #         ]
         replication.rep = [ReplicaStructure(
             i,
-            pend_reqs=[self.dummyRequest1],
+            pend_reqs=[self.dummyRequest1.get_client_request()],
             view_changed=True
         ) for i in range(0, 3)] + [ReplicaStructure(
             i,
-            pend_reqs=[self.dummyRequest1]
+            pend_reqs=[self.dummyRequest1.get_client_request()]
         ) for i in range(3, 6)]
 
         # Pretend prim == replication.id (0)
@@ -803,7 +803,7 @@ class TestReplicationModule(unittest.TestCase):
         #         ]
         replication.rep = [ReplicaStructure(
             i,
-            pend_reqs=[self.dummyRequest1],
+            pend_reqs=[self.dummyRequest1.get_client_request()],
             view_changed=True
         ) for i in range(6)]
         # Pretend prim == replication.id % 2 => half will say 0, half will say 1
@@ -815,6 +815,37 @@ class TestReplicationModule(unittest.TestCase):
         replication.find_cons_state.assert_not_called()
         replication.renew_reqs.assert_not_called()
         self.assertTrue(replication.rep[replication.id].get_view_changed())
+
+    def test_updating_seq_num_when_prim(self):
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+
+        replication.rep = [ReplicaStructure(
+            i,
+            pend_reqs=[self.dummyRequest1.get_client_request()],
+            req_q=[],
+            view_changed=True
+        ) for i in range(6)]
+        # Pretend prim == replication.id (0)
+        replication.resolver.execute = MagicMock(return_value = replication.id)
+        replication.renew_reqs = Mock()
+        replication.find_cons_state = Mock()
+
+        # Since req_q is empty, the sequence number should be the one from last_exex()
+        replication.last_exec = MagicMock(return_value = 1)
+        replication.act_as_prim_when_view_changed(replication.id)
+        self.assertEqual(replication.rep[replication.id].get_seq_num(), 1)
+        
+        # Now there exists a request in req_q that has a higher sequence number (2) than
+        # last executed (1)
+        replication.rep[replication.id] = ReplicaStructure(
+            replication.id,
+            pend_reqs=[self.dummyRequest1.get_client_request()],
+            req_q=[{REQUEST: self.dummyRequest2,
+                   STATUS:{ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}],
+            view_changed=True
+        )
+        replication.act_as_prim_when_view_changed(replication.id)
+        self.assertEqual(replication.rep[replication.id].get_seq_num(), 2)
 
     def test_act_as_nonprim_when_view_changed(self):
         replication = ReplicationModule(0, Resolver(), 6, 1, 1)
@@ -1037,7 +1068,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.stale_rep = MagicMock(return_value = False)
         replication.conflict = MagicMock(return_value = False)
         replication.last_exec = Mock()
-        replication.unassigned_reqs = Mock()
+        #replication.unassigned_reqs = Mock()
         replication.committed_set = MagicMock(return_value = [])
         replication.reqs_to_prep = Mock()
         replication.commit = Mock()
@@ -1237,7 +1268,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.stale_rep = MagicMock(return_value = False)
         replication.conflict = MagicMock(return_value = False)
         replication.known_pend_reqs = Mock()
-        replication.unassigned_reqs = Mock()
+        
         replication.committed_set = MagicMock(reurn_value = [])
         replication.reqs_to_prep = Mock()
         replication.commit = Mock()
@@ -1252,6 +1283,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
         replication.known_pend_reqs = MagicMock(return_value = [])
         replication.last_exec = MagicMock(return_value = 2)
+        #replication.unassigned_reqs = MagicMock(return_value=[])
         # replication.seq_n = 2
 
         # unassigned_req1 = {CLIENT_REQ: {CLIENT: 0}, VIEW: -1, SEQUENCE_NO: -1}
