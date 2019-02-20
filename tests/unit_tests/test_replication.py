@@ -19,20 +19,20 @@ from modules.replication.models.client_request import ClientRequest
 class TestReplicationModule(unittest.TestCase):
 
     def setUp(self):
-        self.resolver = Resolver()
+        # self.resolver = Resolver()
         # self.dummyRequest1 = {CLIENT_REQ: {CLIENT: 0}, VIEW: 1, SEQUENCE_NO: 1}
         # self.dummyRequest2 = {CLIENT_REQ: {CLIENT: 2}, VIEW: 1, SEQUENCE_NO: 2}
         self.dummyRequest1 = Request(ClientRequest(0, None, None), 1, 1)
         self.dummyRequest2 = Request(ClientRequest(2, None, None), 1, 2)
     
     def test_resolver_can_be_initialized(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
         self.assertIsNotNone(replication)
 
     # Macros
 
     def test_flush_local(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
         replication.flush_local()
         # The local variables should be the default values
         # rep_default = [{REP_STATE: [],
@@ -64,7 +64,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(one.get_prim(), two.get_prim())
 
     def test_msg(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
         replication.rep[1].set_req_q([
                 {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}},
                 {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PREP} }])
@@ -74,7 +74,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.msg({ReplicationEnums.COMMIT}, 1), [])
 
     def test_last_execution(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
         # The last executed is dummyRequest 2 with sequence number 2
         replication.rep[replication.id].set_r_log([{REQUEST: self.dummyRequest1, X_SET: {5}},
                                   {REQUEST: self.dummyRequest2, X_SET: {5}}])
@@ -87,8 +87,8 @@ class TestReplicationModule(unittest.TestCase):
         
 
     def test_last_common_execution(self):
-        # 4 nodes, 1 byzantine
-        replication = ReplicationModule(0, self.resolver, 5, 1, 1)
+        # 5 nodes, 1 byzantine
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         
 
         # The last common executed request has sequence number 2
@@ -105,12 +105,12 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep = [ReplicaStructure(
             i,
             r_log=[{REQUEST: self.dummyRequest1, X_SET: set()},{REQUEST: self.dummyRequest2, X_SET:{0,1,2,3,4,5}}]
-        ) for i in range(5)]
+        ) for i in range(6)]
 
         self.assertEqual(replication.last_common_exec(), 2)
 
         # There is no common last executed request, 3 nodes have
-        # request 1 and 2 nodes have not executed anything.
+        # request 1 and 3 nodes have not executed anything.
         # replication.rep = [{
         #      REP_STATE: [],
         #      R_LOG: [{REQUEST: self.dummyRequest1, X_SET:{}}],
@@ -126,10 +126,11 @@ class TestReplicationModule(unittest.TestCase):
         #         LAST_REQ: [],
         #         CON_FLAG: False,
         #         VIEW_CHANGE: False} for i in range(3,5)]
+
         replication.rep = [ReplicaStructure(
             i,
-            r_log=[{REQUEST: self.dummyRequest1, X_SET:{}}]
-        ) for i in range(2)] + [ReplicaStructure(i) for i in range(3, 5)]
+            r_log=[{REQUEST: self.dummyRequest1, X_SET:{0,1,2}}]
+        ) for i in range(3)] + [ReplicaStructure(i) for i in range(3, 6)]
 
         self.assertIsNone(replication.last_common_exec())
 
@@ -154,10 +155,10 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep = [ReplicaStructure(
             i,
             r_log=[{REQUEST: self.dummyRequest1, X_SET:{}}]
-        ) for i in range(2)] + [ReplicaStructure(
+        ) for i in range(3)] + [ReplicaStructure(
             i,
             r_log=[{REQUEST: self.dummyRequest2, X_SET:{3,4,5}}]
-        ) for i in range(3, 5)]
+        ) for i in range(3, 6)]
 
         self.assertIsNone(replication.last_common_exec())
 
@@ -191,7 +192,7 @@ class TestReplicationModule(unittest.TestCase):
 
     def test_conflict(self):
         # 6 nodes 1 byzantine
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
 
         # All but one node have their conflict flag to True
         # replication.rep = [{
@@ -241,7 +242,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertFalse(replication.conflict())
 
     def test_com_pref_states(self):
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         replication.rep[0].set_rep_state([{"op": "add", "val": 0}])
         replication.rep[1].set_rep_state([{"op": "add", "val": 0}])
         replication.rep[2].set_rep_state([{"op": "add", "val": 1}])
@@ -255,7 +256,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.com_pref_states(4), set())
 
     def test_get_ds_state(self):
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         replication.rep[0].set_rep_state([{"op": "add", "val": 0}])
         replication.rep[1].set_rep_state([{"op": "add", "val": 0}])
         replication.rep[2].set_rep_state([{"op": "add", "val": 1}])
@@ -269,11 +270,12 @@ class TestReplicationModule(unittest.TestCase):
         # Not enough processors with the state found in find_cons_state
         replication.rep[0].set_rep_state([{"op": "add", "val": 2}])
         replication.rep[1].set_rep_state([{"op": "add", "val": 4}])
+
         # TODO how check if get_ds_state is TEE? Might need to build a helper method for this
         # self.assertEqual(replication.get_ds_state(), replication.TEE)
 
     def test_double(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
         
         replication.rep[0].set_req_q([{REQUEST: self.dummyRequest1, STATUS: set()},
                     {REQUEST: self.dummyRequest2, STATUS: set()}])
@@ -286,7 +288,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertTrue(replication.double())
 
     def test_stale_req_seqn(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
 
         # The replica has executed a request with sequence number within the threshold
         replication.last_exec = MagicMock(return_value = 1)
@@ -297,7 +299,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertTrue(replication.stale_req_seqn())
 
     def test_unsup_req(self):
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
 
         # All processors have the same req_q, so there is no unsupported msg
         # replication.rep = [{
@@ -347,7 +349,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertTrue(replication.unsup_req())
 
     def test_stale_rep(self):
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         replication.stale_req_seqn = MagicMock(return_value = False)
         replication.double = MagicMock(return_value = False)
         replication.unsup_req = MagicMock(return_value = False)
@@ -366,7 +368,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.unsup_req.call_count, 2)
 
     def test_known_pend_reqs(self):
-        replication = ReplicationModule(0, self.resolver, 4, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 4, 1, 1)
         # Node 0 has both dummyRequests in pend queue
         # Node 1-3 have dummyRequest1 in request queue
         # Node 4-5 have dummyRequest1 in pend queue
@@ -442,7 +444,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.known_pend_reqs(), [])
 
     def test_known_reqs(self):
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         # Node 0 has both requests in request queue, the others have only request 1 with 
         # same status, should therefore return dummyRequest1
         # replication.rep = [{
@@ -523,7 +525,7 @@ class TestReplicationModule(unittest.TestCase):
         )
 
     def test_delay(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
         
         # Last execution will be within the threshold
         replication.last_common_exec = MagicMock(return_value = 3)
@@ -536,7 +538,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertTrue(replication.delayed())
 
     def test_exists_preprep_msg(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
         # Primary is set to processor 1, with a PRE_PREP msg for dummyRequst 1
         replication.prim = 1
         replication.rep[1].set_req_q([
@@ -551,7 +553,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertFalse(replication.exists_preprep_msg(self.dummyRequest1.get_client_request(), 0))
 
     def test_unassigned_reqs(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
         replication.rep[0].set_pend_reqs([self.dummyRequest1, self.dummyRequest2])
 
         # Both requests are unassigned
@@ -573,50 +575,62 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.unassigned_reqs(), [])
 
     def test_accept_req_preprep(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
 
-        replication.known_pend_reqs = MagicMock(return_value = [self.dummyRequest1, self.dummyRequest2])
+        replication.known_pend_reqs = MagicMock(return_value = [
+            self.dummyRequest1.get_client_request(),
+            self.dummyRequest2.get_client_request()
+        ])
         replication.exists_preprep_msg = MagicMock(return_value = True)
         replication.last_exec = MagicMock(return_value = 0)
-        replication.rep[replication.id].set_req_q([{ REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP} },
-                    {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PREP} }])
+        replication.rep[replication.id].set_req_q([])
+        replication.rep[self.dummyRequest1.get_view()].set_req_q([
+                    { REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+                    {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PREP}}])
 
         # The dummyRequest1 should be accepted
-        self.assertTrue(replication.accept_req_preprep(self.dummyRequest1, self.dummyRequest1.get_view()))
+        self.assertTrue(replication.accept_req_preprep(self.dummyRequest1.get_client_request(), self.dummyRequest1.get_view()))
 
         # Request has a sequence number outside the threshold
         # dummyRequest3 = {CLIENT_REQ: {2}, VIEW: 1, SEQUENCE_NO: 10000}
         dummyRequest3 = Request(ClientRequest(2, None, None), 1, 10000)
-        replication.known_pend_reqs = MagicMock(return_value = [dummyRequest3])
-        replication.rep[replication.id].set_req_q([{REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP} },
+        replication.known_pend_reqs = MagicMock(return_value = [dummyRequest3.get_client_request()])
+        replication.rep[1].set_req_q([{REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP} },
             {REQUEST: dummyRequest3, STATUS: {ReplicationEnums.PREP} }])
-        self.assertFalse(replication.accept_req_preprep(dummyRequest3, 1))
+        self.assertFalse(replication.accept_req_preprep(dummyRequest3.get_client_request(), 1))
 
         # The input prim does not match any of the requests
         # dummyRequest3 = {CLIENT_REQ: {2}, VIEW: 1, SEQUENCE_NO: 1}
         dummyRequest3 = Request(ClientRequest(2, None, None), 1, 1)
 
-        replication.known_pend_reqs = MagicMock(return_value = [dummyRequest3])
+        replication.known_pend_reqs = MagicMock(return_value = [dummyRequest3.get_client_request()])
         replication.rep[replication.id].set_req_q([{REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP} },
             {REQUEST: dummyRequest3, STATUS: {ReplicationEnums.PREP} }])
-        self.assertFalse(replication.accept_req_preprep(dummyRequest3, 2))
+        self.assertFalse(replication.accept_req_preprep(dummyRequest3.get_client_request(), 1))
         
         # The dummyRequest1 (input) does not exists in known_pend_reqs
-        replication.known_pend_reqs = MagicMock(return_value = [self.dummyRequest2])
+        replication.known_pend_reqs = MagicMock(return_value = [self.dummyRequest2.get_client_request()])
         self.assertFalse(replication.accept_req_preprep(self.dummyRequest1, self.dummyRequest1.get_view()))
 
         # Now the request already exists in REQ_Q (checks the logic of already_exists)
-        replication.known_pend_reqs = MagicMock(return_value = [self.dummyRequest1, self.dummyRequest2])
-        replication.rep[replication.id].set_req_q([{REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PREP}},
-            {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PREP}},
-            {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}}])
-        self.assertFalse(replication.accept_req_preprep(self.dummyRequest1, self.dummyRequest1.get_view()))
+        replication.known_pend_reqs = MagicMock(return_value = [
+            self.dummyRequest1.get_client_request(),
+            self.dummyRequest2.get_client_request()
+        ])
+        replication.rep[replication.id].set_req_q([
+            {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+        ])
+        replication.rep[self.dummyRequest2.get_view()].set_req_q([
+            {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+            {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+        ])
+        self.assertFalse(replication.accept_req_preprep(self.dummyRequest1.get_client_request(), self.dummyRequest1.get_view()))
         
         # The dummyRequest2 on the other hand should be accepted
-        self.assertTrue(replication.accept_req_preprep(self.dummyRequest2, self.dummyRequest2.get_view()))
+        self.assertTrue(replication.accept_req_preprep(self.dummyRequest2.get_client_request(), self.dummyRequest2.get_view()))
 
     def test_committed_set(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
 
         # The other processor (1) has the dummyRequest2 in it's R_LOG but the msg-function does not
         # return any
@@ -635,7 +649,7 @@ class TestReplicationModule(unittest.TestCase):
     # Interface functions
 
     def test_get_pend_reqs(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
 
         # Should return the intersection of the two sets, meaning {2}
         replication.unassigned_reqs = MagicMock(return_value = {1,2})
@@ -644,7 +658,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.get_pend_reqs(), {2})
 
     def test_rep_request_reset(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
 
         # Should return false
         replication.need_flush = False
@@ -656,7 +670,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertFalse(replication.need_flush)
 
     def test_replica_flush(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
 
         # Should change flush to True
         replication.flush = False
@@ -665,13 +679,12 @@ class TestReplicationModule(unittest.TestCase):
 
     # Added functions
     def test_request_already_exists(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
         # dummyRequest3 = {CLIENT_REQ: {CLIENT:0}, VIEW: 2, SEQUENCE_NO: 1}
         dummyRequest3 = Request(ClientRequest(0, None, None), 2, 1)
         # The request does not already exist with a different status
-        replication.rep[replication.id].set_req_q([{REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}},
-                                                  {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PREP}}])
-        self.assertFalse(replication.request_already_exists({REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}}))
+        replication.rep[replication.id].set_req_q([{REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}}])
+        self.assertFalse(replication.request_already_exists({REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP}}))
         
         # dummyRequest1 already exists with a different status
         replication.rep[replication.id].set_req_q([{REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PREP}},
@@ -685,7 +698,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertTrue(replication.request_already_exists({REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PREP}}))
 
     def test_prefixes(self):
-        replication = ReplicationModule(0, self.resolver, 2, 0, 1)
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
 
         # Basic examples
         log_A = [1,2,3]
@@ -715,7 +728,7 @@ class TestReplicationModule(unittest.TestCase):
     # Tests for while true-loop
 
     def test_act_as_prim_when_view_changed(self):
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         # replication.rep = [{
         #             REP_STATE: [],
         #             R_LOG: [],
@@ -804,7 +817,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertTrue(replication.rep[replication.id].get_view_changed())
 
     def test_act_as_nonprim_when_view_changed(self):
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
 
         # Prim will be node 5, has a different replica strucutre
         # replication.rep = [{
@@ -955,7 +968,7 @@ class TestReplicationModule(unittest.TestCase):
         ))
 
     def test_reqs_to_prep(self):
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         # DummyRequest1 exists in unassigned_reqs
         replication.unassigned_reqs = MagicMock(return_value = [self.dummyRequest1])
         self.assertFalse(replication.reqs_to_prep(self.dummyRequest1))
@@ -970,7 +983,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertTrue(replication.reqs_to_prep(self.dummyRequest2))
 
     def test_commit(self):
-        replication = ReplicationModule(0, self.resolver, 6, 1, 2)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 2)
         replication.apply = MagicMock(return_value = "REPLY")
 
         # replication.rep[replication.id] = {
@@ -991,7 +1004,8 @@ class TestReplicationModule(unittest.TestCase):
         )
 
         # Commit should removed dummyRequest 1 from pend_reqs and req_q and add to last_req and R_log
-        replication.commit({REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP, ReplicationEnums.COMMIT}})
+        # replication.commit({REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP, ReplicationEnums.COMMIT}})
+        replication.commit({REQUEST: self.dummyRequest1, X_SET: {0,1,2,3,4,5,6}})
         # Apply should be called once with self.dummyRequest1
         replication.apply.assert_called_once_with(self.dummyRequest1)
         # self.assertEqual(replication.rep[replication.id], {
@@ -1007,14 +1021,14 @@ class TestReplicationModule(unittest.TestCase):
             replication.id,
             rep_state=[],
             last_req=[{REQUEST: self.dummyRequest1, REPLY: 'REPLY'}],
-            r_log=[{REQUEST: self.dummyRequest1, X_SET: set()}],
+            r_log=[{REQUEST: self.dummyRequest1, X_SET: {0,1,2,3,4,5,6}}],
             pend_reqs=[self.dummyRequest2],
             view_changed=True
         ))
 
     def test_while_check_for_view_change(self):
         # Line 1-3
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         replication.run_forever = False
         # All functions called in while must be mocked:
 
@@ -1024,7 +1038,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.conflict = MagicMock(return_value = False)
         replication.last_exec = Mock()
         replication.unassigned_reqs = Mock()
-        replication.committed_set = Mock()
+        replication.committed_set = MagicMock(return_value = [])
         replication.reqs_to_prep = Mock()
         replication.commit = Mock()
         replication.act_as_nonprim_when_view_changed = Mock()
@@ -1058,7 +1072,7 @@ class TestReplicationModule(unittest.TestCase):
 
     def test_while_view_change_occur_check_calls(self):
         # Line 4-8
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         replication.run_forever = False
         # All functions called in while must be mocked:
 
@@ -1097,7 +1111,7 @@ class TestReplicationModule(unittest.TestCase):
 
     def test_while_finding_consolidated_state(self):
         # Line 9-11
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         replication.run_forever = False
         # All functions called in while must be mocked:
 
@@ -1141,7 +1155,7 @@ class TestReplicationModule(unittest.TestCase):
 
     def test_while_reset_cases(self):
         # Lines 12-13
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         replication.run_forever = False
         # All functions called in while must be mocked:
 
@@ -1181,8 +1195,8 @@ class TestReplicationModule(unittest.TestCase):
         # Need to have the dummy 2 just because extend of a empty mock-list is
         # biting my ass
         # self.assertEqual(replication.rep[replication.id], replication.DEF_STATE)
-        self.assertTrue(replication.rep[replication.id].is_def_state())
         replication.flush_local.assert_called_once()
+        self.assertTrue(replication.rep[replication.id].is_tee())
 
         # Specific mock-calls for this case test
         replication.stale_rep = MagicMock(return_value = False)
@@ -1203,7 +1217,7 @@ class TestReplicationModule(unittest.TestCase):
         # Need to have the dummy 2 just because extend of a empty mock-list is
         # biting my ass
         # self.assertEqual(replication.rep[replication.id], replication.DEF_STATE)
-        self.assertTrue(replication.rep[replication.id].is_def_state())
+        self.assertTrue(replication.rep[replication.id].is_tee())
         replication.flush_local.assert_called_once()
 
         # Just testing flush = True -> flush_local called
@@ -1214,7 +1228,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.flush_local.call_count, 2)
 
     def test_while_assigning_pre_prep_as_prim(self):
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         replication.run_forever = False
         # All functions called in while must be mocked:
 
@@ -1227,6 +1241,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.committed_set = MagicMock(reurn_value = [])
         replication.reqs_to_prep = Mock()
         replication.commit = Mock()
+        replication.known_reqs = MagicMock(return_value = [])
         replication.act_as_nonprim_when_view_changed = Mock()
         replication.act_as_prim_when_view_changed = Mock()
         replication.send_msg = Mock()
@@ -1272,12 +1287,13 @@ class TestReplicationModule(unittest.TestCase):
 
         # The pending requests are being assigned sequencial sequence numbers and
         # added to REQ_QUEUE
+        self.maxDiff = None
         self.assertEqual(replication.rep[replication.id].get_req_q(),
         [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}, 
         {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}])
 
     def test_while_assigning_prep_as_non_prim(self):
-        replication = ReplicationModule(1, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(1, Resolver(), 6, 1, 1)
         replication.run_forever = False
         # All functions called in while must be mocked:
 
@@ -1331,7 +1347,7 @@ class TestReplicationModule(unittest.TestCase):
 
     def test_while_committing_to_request(self):
         # line 22
-        replication = ReplicationModule(1, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(1, Resolver(), 6, 1, 1)
         replication.run_forever = False
         # All functions called in while must be mocked:
 
@@ -1378,7 +1394,7 @@ class TestReplicationModule(unittest.TestCase):
 
     def test_while_actually_comitting_request(self):
         # line 23-25
-        replication = ReplicationModule(1, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(1, Resolver(), 6, 1, 1)
         replication.run_forever = False
         # All functions called in while must be mocked:
 
@@ -1432,7 +1448,7 @@ class TestReplicationModule(unittest.TestCase):
                                                     X_SET: {0,1,2,3,4,5}})
 
     def template_for_while_true(self):
-        replication = ReplicationModule(0, self.resolver, 6, 1, 1)
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         replication.run_forever = False
         # All functions called in while must be mocked:
 

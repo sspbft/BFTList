@@ -107,7 +107,7 @@ class ReplicationModule(AlgorithmModule):
                 self.rep[self.id].set_rep_state(deepcopy(X))
             if self.stale_rep() or self.conflict():
                 self.flush_local()
-                self.rep[self.id].reset_state()
+                self.rep[self.id].set_to_tee()
                 self.need_flush = True
             if self.flush:
                 self.flush_local()
@@ -123,9 +123,7 @@ class ReplicationModule(AlgorithmModule):
                     Function.NO_VIEW_CHANGE) and
                         self.rep[self.id].get_view_changed() is False):
                     if prim_id == self.id:
-                        # primary processes all pending reqs
-                        # TODO re-visit this when Ioannis has answered whether
-                        # to use self.get_pend_reqs() instead
+                        # TODO https://bit.ly/2GAG5pc
                         for req in self.rep[self.id].get_pend_reqs():
                             if self.rep[self.id].get_seq_num() < \
                                     (self.last_exec() +
@@ -255,7 +253,8 @@ class ReplicationModule(AlgorithmModule):
     def flush_local(self):
         """Resets all local variables."""
         self.rep = [ReplicaStructure(i) for i in range(self.number_of_nodes)]
-        self.rep[self.id].set_seq_num(0)
+        for r in self.rep:
+            r.set_to_tee()
 
     def msg(self, status, processor_j):
         """Returns requests reported to p_i from processor_j with status."""
@@ -291,11 +290,13 @@ class ReplicationModule(AlgorithmModule):
         last_common_exec_request = None
         for replica_structure in self.rep:
             # If R_LOG is empty, ignore that processor
-            if(replica_structure.get_r_log()):
+            if(replica_structure.get_r_log() and
+               len(replica_structure.get_r_log()) > 0):
                 x = replica_structure.get_r_log()[-1]
                 # Get the maximal sequence number
                 if X_SET not in x:
-                    raise ValueError(f"entry in r_log does not have x_set key: {x}")
+                    raise ValueError(f"entry in r_log does not have " +
+                                     f"x_set key: {x}")
                 if (len(x[X_SET]) >=
                    (3 * self.number_of_byzantine + 1)):
                         if (last_common_exec_request is None or
@@ -356,7 +357,7 @@ class ReplicationModule(AlgorithmModule):
 
         # Find default replica structures and prefixes to/of X
         for replica_structure in self.rep:
-            if(replica_structure.is_def_state()):
+            if(replica_structure.is_rep_state_default()):
                 processors_in_def_state += 1
                 continue
             if self.prefixes(replica_structure.get_rep_state(), X):
@@ -515,7 +516,7 @@ class ReplicationModule(AlgorithmModule):
                     request_set.append(req)
         return request_set
 
-    def accept_req_preprep(self, request, prim):
+    def accept_req_preprep(self, request: ClientRequest, prim: int):
         """Method description.
 
         True if PRE_PREP msg from prim exists and the content is the same for
@@ -524,10 +525,10 @@ class ReplicationModule(AlgorithmModule):
         # Processor i knows of the request
         if request in self.known_pend_reqs():
             # The request should be acknowledged by other processors
-            for req_pair in self.rep[self.id].get_req_q():
-                if (req_pair[REQUEST].get_client_request() ==
-                    request.get_client_request() and
-                   req_pair[REQUEST].get_view() == prim and
+
+            for req_pair in self.rep[prim].get_req_q():
+                if (req_pair[REQUEST].get_client_request() == request and
+                    req_pair[REQUEST].get_view() == prim and
                    self.exists_preprep_msg(
                     req_pair[REQUEST].get_client_request(), prim) and
                    self.last_exec() <= req_pair[REQUEST].get_seq_num() <=
@@ -572,8 +573,8 @@ class ReplicationModule(AlgorithmModule):
             # If exactly the same, same request with same status.
             # Ignore since it is the request we have as input.
             # If not we will always return True.
-            if req == request_pair[REQUEST]:
-                continue
+            # if req == request_pair[REQUEST]:
+            #   continue
             if (request_pair[REQUEST].get_client_request() ==
                 req.get_client_request() and
                request_pair[REQUEST].get_seq_num() == req.get_seq_num()):

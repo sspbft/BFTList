@@ -11,7 +11,7 @@ rLog, (pending req. queue) pendReqs, (requests under process queue) reqQ,
 from typing import List, Dict
 
 # local
-from modules.constants import (REQUEST, REPLY, STATUS)
+from modules.constants import (REQUEST, REPLY, STATUS, X_SET)
 from .request import Request
 
 
@@ -20,8 +20,8 @@ class ReplicaStructure():
 
     def __init__(self, id, rep_state=[], r_log=[],
                  pend_reqs=[], req_q=[], last_req=[],
-                 seq_num=-1, con_flag=False, view_changed=False, prim=-1):
-        """."""
+                 seq_num=-1, con_flag=False, view_changed=False, prim=0):
+        """Initializes a replica structure with its default state."""
         self.id = id
         self.rep_state = rep_state
         self.r_log = r_log
@@ -62,7 +62,7 @@ class ReplicaStructure():
         """
         # TODO fix this method, right now we're adding the req_pair, should be
         # a dict { REQUEST: req, X_SET: set of nodes that executed req }
-        self.validate_req_pair(req_pair)
+        self.validate_log_entry(req_pair)
         self.r_log.append(req_pair)
 
     def set_r_log(self, r_log: List):
@@ -165,14 +165,13 @@ class ReplicaStructure():
         """Update what node this processor considers to be the primary."""
         self.prim = prim
 
-    # NOTE that def_state and tee should maybe not always be the same
     def is_def_state(self) -> bool:
         """Returns True if all processor data is set to default."""
         return (self.rep_state == [] and self.r_log == [] and
                 self.pend_reqs == [] and self.req_q == [] and
-                self.last_req == [] and self.seq_num == -1 and
+                self.last_req == [] and self.seq_num == 0 and
                 self.con_flag is False and self.view_changed is False and
-                self.prim == -1)
+                self.prim == 0)
 
     def is_rep_state_default(self) -> bool:
         """Returns True if the processors state is set to default."""
@@ -182,12 +181,28 @@ class ReplicaStructure():
         """Resets the entire replica_structure to its default."""
         self.__init__(self.id)
 
+    def set_to_tee(self):
+        """Sets the entire replica structure to TEE."""
+        self.rep_state = []
+        self.r_log = []
+        self.pend_reqs = []
+        self.req_q = []
+        self.last_req = []
+        self.seq_num = -1
+        self.con_flag = False
+        self.view_changed = False
+        self.prim = -1
+
     def is_tee(self) -> bool:
         """Returns True if the entire state corresponds to TEE.
 
         This means that the current state of this replica is the default.
         """
-        return self.is_def_state()
+        return (self.rep_state == [] and self.r_log == [] and
+                self.pend_reqs == [] and self.req_q == [] and
+                self.last_req == [] and self.seq_num == -1 and
+                self.con_flag is False and self.view_changed is False and
+                self.prim == -1)
 
     def validate_req_pair(self, req_pair: Dict):
         """Validates a request pair.
@@ -202,6 +217,20 @@ class ReplicaStructure():
         status = req_pair[STATUS]
         if type(req) != Request or type(status) != set:
             raise ValueError(f"Illegal values in req_pair dict")
+
+    def validate_log_entry(self, log_entry: Dict):
+        """Validates a request log entry.
+
+        A request_pair is structured as follows:
+        { REQUEST: req, X_SET: set([x]) : x is a processor id},
+        where req is of type Request.
+        """
+        if REQUEST not in log_entry or X_SET not in log_entry:
+            raise ValueError(f"log_entry {log_entry} is invalid")
+        req = log_entry[REQUEST]
+        x_set = log_entry[X_SET]
+        if type(req) != Request or type(x_set) != set:
+            raise ValueError(f"Illegal values in log_entry dict")
 
     def __eq__(self, other):
         """Overrides the default implementation."""
