@@ -6,6 +6,7 @@ import os
 import logging
 
 # local
+from copy import deepcopy
 from modules.algorithm_module import AlgorithmModule
 from resolve.enums import Function, Module
 from modules.enums import PrimaryMonitoringEnums as enums
@@ -38,7 +39,27 @@ class PrimaryMonitoringModule(AlgorithmModule):
         time.sleep(int(sec) if sec is not None else 0)
 
         while True:
-            time.sleep(1)
+            if self.vcm[self.id][PRIM] != self.get_current_view(self.id):
+                self.clean_state()
+
+            self.vcm[self.id][PRIM] = self.get_current_view(self.id)
+
+            # TODO algo4 running in own thread? Talk through resolver
+            # algo 4 running in same thread, have an instance of it
+            # self.vcm[self.id][NEED_CHANGE] = ALGO4.suspected()
+
+            if self.resolver.execute(
+               Module.VIEW_ESTABLISHMENT_MODULE, Function.ALLOW_SERVICE):
+                if (self.vcm[self.id][PRIM] ==
+                        self.get_current_view(self.id) and
+                   self.vcm[self.id][V_STATUS] != enums.V_CHANGE):
+                    self.update_need_chg_set()
+
+    def update_need_chg_set(self):
+        """."""
+        temp = deepcopy(self.rep[self.id][NEED_CHG_SET])
+        processor_set = set()
+        self.rep[self.id][NEED_CHG_SET] = deepcopy(temp.union(processor_set))
 
     # Macros
     def clean_state(self):
