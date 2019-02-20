@@ -55,7 +55,6 @@ class ReplicationModule(AlgorithmModule):
         self.need_flush = False
         self.rep = [ReplicaStructure(i) for i in range(n)] \
             # type: List[ReplicaStructure]
-        print(self.rep[0].get_r_log())
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -125,7 +124,8 @@ class ReplicationModule(AlgorithmModule):
                         self.rep[self.id].get_view_changed() is False):
                     if prim_id == self.id:
                         # TODO https://bit.ly/2GAG5pc
-                        for req in self.rep[self.id].get_pend_reqs():
+                        # for req in self.rep[self.id].get_pend_reqs():
+                        for req in self.unassigned_reqs():
                             if self.rep[self.id].get_seq_num() < \
                                     (self.last_exec() +
                                         (SIGMA * self.number_of_clients)):
@@ -274,12 +274,12 @@ class ReplicationModule(AlgorithmModule):
 
         Requests are always added with consecutive sequence number, the last
         element in the list is the last executed.
-        If no request executed, return None.
+        If no request executed, return -1.
         """
         r_log = self.rep[self.id].get_r_log()
         if r_log:
             return r_log[-1][REQUEST].get_seq_num()
-        return None
+        return -1
 
     def last_common_exec(self):
         """Method description.
@@ -448,7 +448,7 @@ class ReplicationModule(AlgorithmModule):
                     # Avoid searching this queue if already found in pending
                     # requests
                     for request_pair in replica_structure.get_req_q():
-                        if req == request_pair[REQUEST]:
+                        if req == request_pair[REQUEST].get_client_request():
                             processor_set += 1
 
             if(processor_set >= (3 * self.number_of_byzantine + 1)):
@@ -624,6 +624,21 @@ class ReplicationModule(AlgorithmModule):
                 processor_ids.add(j)
 
         if len(processor_ids) >= (4 * self.number_of_byzantine) + 1:
+            # Update our sequence number to the most recent one.
+            potential_seq = 0
+            # Find max sequence number of requests that has not yet been
+            # committed, but should not receive new sequence numbers.
+            for request_pair in self.rep[self.id].get_req_q():
+                if request_pair[STATUS] == {ReplicationEnums.PRE_PREP,
+                                            ReplicationEnums.PREP}:
+                    potential_seq = max(potential_seq,
+                                        request_pair[REQUEST].get_seq_num())
+            # If no potential sequence number,
+            # (all assigned request has been committed)
+            # then add last executed sequence number
+            new_seq = max(self.last_exec(), potential_seq)
+            self.rep[self.id].set_seq_num(new_seq)
+
             self.renew_reqs(processor_ids)
             self.find_cons_state(self.com_pref_states(
                 (3 * self.number_of_byzantine) + 1
@@ -730,6 +745,12 @@ class ReplicationModule(AlgorithmModule):
             if req in reqs_need_pre_prep:
                 # current view is equal to self.id since we are primary
                 req[REQUEST].set_view(self.id)
+                # Increment sequence number and assign
+                self.rep[self.id].inc_seq_num()
+                req[REQUEST].set_seq_num(self.rep[self.id].get_seq_num())
+                # Add PREP since node is primary and do not need to validate
+                # PRE_PREP - message
+                req[STATUS].add(ReplicationEnums.PREP)
 
     def find_cons_state(self, processors_set):
         """Method description.

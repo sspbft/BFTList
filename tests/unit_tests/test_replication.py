@@ -83,7 +83,7 @@ class TestReplicationModule(unittest.TestCase):
         # There is no executed requests
         replication.rep[replication.id].set_r_log([])
 
-        self.assertIsNone(replication.last_exec())
+        self.assertEqual(replication.last_exec(), -1)
         
 
     def test_last_common_execution(self):
@@ -398,15 +398,15 @@ class TestReplicationModule(unittest.TestCase):
         #         ]
         replication.rep = [ReplicaStructure(
             0,
-            pend_reqs=[self.dummyRequest1, self.dummyRequest2]
+            pend_reqs=[self.dummyRequest1.get_client_request(), self.dummyRequest2.get_client_request()]
         )] + [ReplicaStructure(
             i,
             req_q=[{REQUEST: self.dummyRequest1, STATUS:{}}]
         ) for i in range(1,4)] + [ReplicaStructure(
             i,
-            pend_reqs=[self.dummyRequest1]
+            pend_reqs=[self.dummyRequest1.get_client_request()]
         ) for i in range(4,6)]
-        self.assertEqual(replication.known_pend_reqs(), [self.dummyRequest1])
+        self.assertEqual(replication.known_pend_reqs(), [self.dummyRequest1.get_client_request()])
 
         # No known pending request found, only 3 processor has dummyRequest1
         # replication.rep = [{
@@ -1036,7 +1036,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.stale_rep = MagicMock(return_value = False)
         replication.conflict = MagicMock(return_value = False)
         replication.last_exec = Mock()
-        replication.unassigned_reqs = Mock()
+        #replication.unassigned_reqs = Mock()
         replication.committed_set = MagicMock(return_value = [])
         replication.reqs_to_prep = Mock()
         replication.commit = Mock()
@@ -1236,7 +1236,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.stale_rep = MagicMock(return_value = False)
         replication.conflict = MagicMock(return_value = False)
         replication.known_pend_reqs = Mock()
-        replication.unassigned_reqs = Mock()
+        
         replication.committed_set = MagicMock(reurn_value = [])
         replication.reqs_to_prep = Mock()
         replication.commit = Mock()
@@ -1251,6 +1251,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
         replication.known_pend_reqs = MagicMock(return_value = [])
         replication.last_exec = MagicMock(return_value = 2)
+        #replication.unassigned_reqs = MagicMock(return_value=[])
         # replication.seq_n = 2
 
         # unassigned_req1 = {CLIENT_REQ: {CLIENT: 0}, VIEW: -1, SEQUENCE_NO: -1}
