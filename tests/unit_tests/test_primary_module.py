@@ -46,11 +46,24 @@ class TestPredicatesAndAction(unittest.TestCase):
                            NEED_CHG_SET: {0,1,2}} for i in range(3)] + [
                              {V_STATUS: enums.OK,
                            PRIM: 0,
-                           NEED_CHANGE: False,
+                           NEED_CHANGE: True,
                            NEED_CHG_SET: {}} for i in range(3,6)  
                            ]
 
         self.assertFalse(primary_mod.sup_change(6))
+
+        # The amount if processor that requires a change are enough and the intersection big enough.
+        primary_mod.vcm = [{V_STATUS: enums.OK,
+                    PRIM: 0,
+                    NEED_CHANGE: True,
+                    NEED_CHG_SET: {0,1,2,3}} for i in range(4)] + [
+                        {V_STATUS: enums.OK,
+                    PRIM: 0,
+                    NEED_CHANGE: False,
+                    NEED_CHG_SET: {}} for i in range(4,6)  
+                    ]
+        
+        self.assertTrue(primary_mod.sup_change(4))
 
     # Interface functions
     def test_no_view_change(self):

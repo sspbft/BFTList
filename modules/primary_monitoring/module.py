@@ -14,7 +14,8 @@ from modules.constants import V_STATUS, PRIM, NEED_CHANGE, NEED_CHG_SET
 # global
 logger = logging.getLogger(__name__)
 
-# vcm = {v_status: OK, NO_SERVICE or V_CHANGE,
+# The structure of variable vcm:
+# vcm = {v_status: {OK, NO_SERVICE or V_CHANGE},
 #       prim: current primary id,
 #       need_change: boolean,
 #       need_chg_set: set of processors that need change}
@@ -29,7 +30,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
         self.resolver = resolver
         self.number_of_nodes = n
         self.number_of_byzantine = f
-        self.vcm = [self.get_default_vcm(id) for i in range(n)]
+        self.vcm = [self.get_default_vcm(i) for i in range(n)]
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -93,7 +94,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
         """Calls get_current_view method at View Establishment module."""
         return self.resolver.execute(
                                     Module.VIEW_ESTABLISHMENT_MODULE,
-                                    Function.GET_CURRENT_VIEW, id)
+                                    Function.GET_CURRENT_VIEW, processor_id)
 
     # Functions added for default values
     def get_default_vcm(self, id):
