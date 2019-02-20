@@ -54,6 +54,8 @@ class Resolver:
             return module.get_current_view(args[0])
         elif func == Function.ALLOW_SERVICE:
             return module.allow_service()
+        elif func == Function.VIEW_CHANGE:
+            return module.view_change()
         else:
             raise ValueError("Bad function parameter")
 

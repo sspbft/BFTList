@@ -16,14 +16,15 @@ class Function(Enum):
     # View Establishment Module
     GET_CURRENT_VIEW = 1  # re-named from getView in the paper
     ALLOW_SERVICE = 2
+    VIEW_CHANGE = 3
 
     # Replication Module
-    REPLICA_FLUSH = 3
-    GET_PEND_REQS = 4
-    REP_REQUEST_RESET = 5
+    REPLICA_FLUSH = 4
+    GET_PEND_REQS = 5
+    REP_REQUEST_RESET = 6
 
     # Primary Monitoring Module
-    NO_VIEW_CHANGE = 6
+    NO_VIEW_CHANGE = 7
 
 
 class MessageType(IntEnum):

@@ -171,6 +171,10 @@ class ViewEstablishmentModule(AlgorithmModule):
         """Calls allow_service of PredicatesAndAction."""
         return self.pred_and_action.allow_service()
 
+    def view_change(self):
+        """Calls view_change of PredicatesAndAction."""
+        return self.pred_and_action.view_change()
+
     # Methods to communicate with other processors
     def send_msg(self):
         """Method description.
