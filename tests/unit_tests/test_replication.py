@@ -739,7 +739,7 @@ class TestReplicationModule(unittest.TestCase):
         #         ]
         replication.rep = [ReplicaStructure(
             i,
-            pend_reqs=[self.dummyRequest1],
+            pend_reqs=[self.dummyRequest1.get_client_request()],
             view_changed=True
         ) for i in range(6)]
         # Pretend prim == replication.id (0)
@@ -772,11 +772,11 @@ class TestReplicationModule(unittest.TestCase):
         #         ]
         replication.rep = [ReplicaStructure(
             i,
-            pend_reqs=[self.dummyRequest1],
+            pend_reqs=[self.dummyRequest1.get_client_request()],
             view_changed=True
         ) for i in range(0, 3)] + [ReplicaStructure(
             i,
-            pend_reqs=[self.dummyRequest1]
+            pend_reqs=[self.dummyRequest1.get_client_request()]
         ) for i in range(3, 6)]
 
         # Pretend prim == replication.id (0)
@@ -802,7 +802,7 @@ class TestReplicationModule(unittest.TestCase):
         #         ]
         replication.rep = [ReplicaStructure(
             i,
-            pend_reqs=[self.dummyRequest1],
+            pend_reqs=[self.dummyRequest1.get_client_request()],
             view_changed=True
         ) for i in range(6)]
         # Pretend prim == replication.id % 2 => half will say 0, half will say 1
@@ -814,6 +814,37 @@ class TestReplicationModule(unittest.TestCase):
         replication.find_cons_state.assert_not_called()
         replication.renew_reqs.assert_not_called()
         self.assertTrue(replication.rep[replication.id].get_view_changed())
+
+    def test_updating_seq_num_when_prim(self):
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+
+        replication.rep = [ReplicaStructure(
+            i,
+            pend_reqs=[self.dummyRequest1.get_client_request()],
+            req_q=[],
+            view_changed=True
+        ) for i in range(6)]
+        # Pretend prim == replication.id (0)
+        replication.resolver.execute = MagicMock(return_value = replication.id)
+        replication.renew_reqs = Mock()
+        replication.find_cons_state = Mock()
+
+        # Since req_q is empty, the sequence number should be the one from last_exex()
+        replication.last_exec = MagicMock(return_value = 1)
+        replication.act_as_prim_when_view_changed(replication.id)
+        self.assertEqual(replication.rep[replication.id].get_seq_num(), 1)
+        
+        # Now there exists a request in req_q that has a higher sequence number (2) than
+        # last executed (1)
+        replication.rep[replication.id] = ReplicaStructure(
+            replication.id,
+            pend_reqs=[self.dummyRequest1.get_client_request()],
+            req_q=[{REQUEST: self.dummyRequest2,
+                   STATUS:{ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}],
+            view_changed=True
+        )
+        replication.act_as_prim_when_view_changed(replication.id)
+        self.assertEqual(replication.rep[replication.id].get_seq_num(), 2)
 
     def test_act_as_nonprim_when_view_changed(self):
         replication = ReplicationModule(0, Resolver(), 6, 1, 1)

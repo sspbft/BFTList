@@ -123,8 +123,6 @@ class ReplicationModule(AlgorithmModule):
                     Function.NO_VIEW_CHANGE) and
                         self.rep[self.id].get_view_changed() is False):
                     if prim_id == self.id:
-                        # TODO https://bit.ly/2GAG5pc
-                        # for req in self.rep[self.id].get_pend_reqs():
                         for req in self.unassigned_reqs():
                             if self.rep[self.id].get_seq_num() < \
                                     (self.last_exec() +
