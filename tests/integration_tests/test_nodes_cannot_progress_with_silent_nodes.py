@@ -1,8 +1,11 @@
 """
 Case 6
-
+In a very specific setting (See picture on drive) the system can not make progress
+and reach a stable state.
 Node 0-2 have the same view v, nodes 3-4 have the same view DF_VIEW and
 node 5 is acting Byzantine, i.e. not responding.
+Node 5 has reported different views to Node 0-2 and node 3-4, so both groups
+think that their view is stable.
 """
 
 # standard

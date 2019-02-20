@@ -1,8 +1,9 @@
 """
 Case 5
+A corrupted view variable in one node should be detected and converge to the stable view.
 
 Node 0 is behind and has a corrupt next view value. The others are stable in phase 0 and view 2
-Node 0 will eventually catch up.
+Node 0 will eventually catch up with the rest of the nodes by adopting their view.
 """
 
 # standard
