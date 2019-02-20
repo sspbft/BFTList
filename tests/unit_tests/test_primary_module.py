@@ -87,3 +87,60 @@ class TestPredicatesAndAction(unittest.TestCase):
         self.assertEqual(primary_mod.get_default_vcm(0),
             {V_STATUS: enums.OK, PRIM: 1, NEED_CHANGE: False, NEED_CHG_SET: set()})
         
+    def test_number_of_processor_in_no_service(self):
+        primary_mod = PrimaryMonitoringModule(0, self.resolver, 6, 1)
+        # All nodes (6 of them) are in status no_service
+        primary_mod.vcm = [{V_STATUS: enums.NO_SERVICE,
+                PRIM: 0,
+                NEED_CHANGE: False,
+                NEED_CHG_SET: set()
+        } for i in range(6)]
+        self.assertEqual(primary_mod.number_of_processor_in_no_service(), 6)
+        # Only 3 nodes are in status no_service
+        primary_mod.vcm = [{V_STATUS: enums.NO_SERVICE,
+                PRIM: 0,
+                NEED_CHANGE: False,
+                NEED_CHG_SET: set()
+        } for i in range(3)] + [{V_STATUS: enums.OK,
+                PRIM: 0,
+                NEED_CHANGE: False,
+                NEED_CHG_SET: set()
+        } for i in range(3,6)]
+        self.assertEqual(primary_mod.number_of_processor_in_no_service(), 3)
+
+    def test_update_need_chg_set(self):
+        primary_mod = PrimaryMonitoringModule(0, self.resolver, 6, 1)
+        primary_mod.get_current_view = MagicMock(return_value = 0)
+
+        # All processor need a change
+        primary_mod.vcm = [{V_STATUS: enums.NO_SERVICE,
+                PRIM: 0,
+                NEED_CHANGE: True,
+                NEED_CHG_SET: set()
+        } for i in range(6)]
+        primary_mod.update_need_chg_set()
+        self.assertEqual(primary_mod.vcm[primary_mod.id][NEED_CHG_SET], {0,1,2,3,4,5})
+
+        # Node 0,1,2 need a change
+        primary_mod.vcm = [{V_STATUS: enums.NO_SERVICE,
+                PRIM: 0,
+                NEED_CHANGE: True,
+                NEED_CHG_SET: set()
+        } for i in range(3)] + [{V_STATUS: enums.NO_SERVICE,
+                PRIM: 0,
+                NEED_CHANGE: False,
+                NEED_CHG_SET: set()
+        } for i in range(3)]
+        primary_mod.update_need_chg_set()
+        self.assertEqual(primary_mod.vcm[primary_mod.id][NEED_CHG_SET], {0,1,2})
+
+        # Half of the nodes has primary 0 and half has primary 1
+        # All need change, but not all are in same view
+        primary_mod.get_current_view = MagicMock(side_effect = lambda x: x % 2)
+        primary_mod.vcm = [{V_STATUS: enums.NO_SERVICE,
+                PRIM: 0,
+                NEED_CHANGE: True,
+                NEED_CHG_SET: set()
+        } for i in range(6)]
+        primary_mod.update_need_chg_set()
+        self.assertEqual(primary_mod.vcm[primary_mod.id][NEED_CHG_SET], {0,2,4})

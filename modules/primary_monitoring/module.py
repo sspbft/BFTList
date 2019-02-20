@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 class PrimaryMonitoringModule(AlgorithmModule):
     """Models the Primary Monitoring module - View Change algorithm."""
 
+    run_forever = True
+
     def __init__(self, id, resolver, n, f):
         """Initializes the module."""
         self.id = id
@@ -46,20 +48,67 @@ class PrimaryMonitoringModule(AlgorithmModule):
 
             # TODO algo4 running in own thread? Talk through resolver
             # algo 4 running in same thread, have an instance of it
+
             # self.vcm[self.id][NEED_CHANGE] = ALGO4.suspected()
 
             if self.resolver.execute(
                Module.VIEW_ESTABLISHMENT_MODULE, Function.ALLOW_SERVICE):
+                # Line 9-10
                 if (self.vcm[self.id][PRIM] ==
-                        self.get_current_view(self.id) and
+                   self.get_current_view(self.id) and
                    self.vcm[self.id][V_STATUS] != enums.V_CHANGE):
                     self.update_need_chg_set()
+                    # Line 11
+                    if(self.number_of_processor_in_no_service() <
+                       (2 * self.number_of_byzantine + 1)):
+                        self.rep[V_STATUS] = enums.OK
+                    # Line 12
+                    if(self.rep[V_STATUS] == enums.OK and
+                       self.sup_change(3 * self.number_of_byzantine + 1)):
+                        self.rep[V_STATUS] = enums.NO_SERVICE
+                    # Line 13
+                    elif self.sup_change(4 * self.number_of_byzantine + 1):
+                        self.rep[V_STATUS] = enums.V_CHANGE
+                        self.resolver.execute(
+                            Module.VIEW_ESTABLISHMENT_MODULE,
+                            Function.VIEW_CHANGE)
+                # Line 14
+                elif(self.vcm[self.id][PRIM] ==
+                     self.get_current_view(self.id) and
+                     self.vcm[self.id][V_STATUS] == enums.V_CHANGE):
+                    self.resolver.execute(
+                            Module.VIEW_ESTABLISHMENT_MODULE,
+                            Function.VIEW_CHANGE)
+                # Line 15
+                else:
+                    self.clean_state()
+
+            # Send vcm to all nodes
+            self.send_msg()
+
+            # Stopping the while loop, used for testing purpose
+            if(not self.run_forever):
+                break
+
+    # Help functions for run-method
+    def number_of_processor_in_no_service(self):
+        """Returns the number of processors which is in NO_SERVICE."""
+        processors = 0
+        for processor_id, processor_vcm in enumerate(self.vcm):
+            if processor_vcm[V_STATUS] == enums.NO_SERVICE:
+                processors += 1
+        return processors
 
     def update_need_chg_set(self):
-        """."""
-        temp = deepcopy(self.rep[self.id][NEED_CHG_SET])
+        """Updates the set of processors which requires a change."""
         processor_set = set()
-        self.rep[self.id][NEED_CHG_SET] = deepcopy(temp.union(processor_set))
+        for processor_id, processor_vcm in enumerate(self.vcm):
+            if (processor_vcm[NEED_CHANGE] and
+                self.get_current_view(self.id) == self.get_current_view(
+                                                        processor_id)):
+                processor_set.add(processor_id)
+
+        self.vcm[self.id][NEED_CHG_SET] = deepcopy(processor_set)
 
     # Macros
     def clean_state(self):
@@ -125,6 +174,16 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 NEED_CHANGE: False,
                 NEED_CHG_SET: set()}
                 )
+
+    # Functions to send messages to other nodes
+
+    def send_msg(self):
+        """Method description.
+
+        Calls the Resolver to send a message containing the vcm of processor i
+        to processor_j
+        """
+        raise NotImplementedError
 
     # Function to extract data
     def get_data(self):
