@@ -1,5 +1,7 @@
 """
+Testing functionality of reseting when no other node is resetting. 
 Node 0 has gone through a reset without needing it and ended up in phase 1 with RST_PAIR.
+Node 0 shall catch up with the other nodes in view (2,2)
 """
 
 # standard

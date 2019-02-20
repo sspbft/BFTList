@@ -2,7 +2,9 @@
 Case 2
 
 Primary Monitoring module has required a view change at 3f+1 nodes,
-node 5 does not want to change view
+node 5 does not want to change view. 
+Node 0-4 should conduct the view change, node 5 should eventually follow
+to the new view (2,2). 
 """
 
 # standard
@@ -55,11 +57,8 @@ class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
                 views = data["VIEW_ESTABLISHMENT_MODULE"]["views"]
                 vp_target = {"current": 2, "next": 2}
 
-                for i,vp in enumerate(views):
-                    if i == 5:
-                        checks.append(vp == vp_target)
-                    else:
-                        checks.append(vp in [vp_target, {"current": 1, "next": 1}])
+                for vp in views:
+                    checks.append(vp == vp_target)
 
             # test passed if all checks returned true
             if all(checks):

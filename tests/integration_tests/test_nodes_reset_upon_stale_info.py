@@ -1,9 +1,10 @@
 """
 Case 4
 
+Stale information should not exists in the system more than one execution round.
 All nodes have stale information (in different variation) except nodes
-4, 5 which is up-to-date. All nodes should identify stale information
-and move to reset view pair.
+4, 5 which is up-to-date. 
+All nodes should identify stale information and move to the reset view pair.
 """
 
 # standard
