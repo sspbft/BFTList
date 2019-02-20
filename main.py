@@ -49,7 +49,7 @@ def start_modules(resolver):
         Module.REPLICATION_MODULE:
             ReplicationModule(id, resolver, n, f, k),
         Module.PRIMARY_MONITORING_MODULE:
-            PrimaryMonitoringModule(id, resolver)
+            PrimaryMonitoringModule(id, resolver, n, f)
     }
 
     # start threads and attach to resolver
