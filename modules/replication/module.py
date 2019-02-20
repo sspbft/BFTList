@@ -55,6 +55,7 @@ class ReplicationModule(AlgorithmModule):
         self.need_flush = False
         self.rep = [ReplicaStructure(i) for i in range(n)] \
             # type: List[ReplicaStructure]
+        print(self.rep[0].get_r_log())
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""

@@ -101,7 +101,8 @@ class TestReplicationModule(unittest.TestCase):
         #      LAST_REQ: [],
         #      CON_FLAG: False,
         #     VIEW_CHANGE: False} for i in range(5)]
-        replication.rep = []
+        #print(replication.rep[2])
+        #print(replication.rep[2].get_req_q())
         replication.rep = [ReplicaStructure(
             i,
             r_log=[{REQUEST: self.dummyRequest1, X_SET: set()},{REQUEST: self.dummyRequest2, X_SET:{0,1,2,3,4,5}}]
@@ -126,12 +127,10 @@ class TestReplicationModule(unittest.TestCase):
         #         LAST_REQ: [],
         #         CON_FLAG: False,
         #         VIEW_CHANGE: False} for i in range(3,5)]
-
         replication.rep = [ReplicaStructure(
             i,
             r_log=[{REQUEST: self.dummyRequest1, X_SET:{0,1,2}}]
-        ) for i in range(3)] + [ReplicaStructure(i) for i in range(3, 6)]
-
+        ) for i in range(3)] + [ReplicaStructure(i, r_log = []) for i in range(3, 6)]
         self.assertIsNone(replication.last_common_exec())
 
         # There is no common last executed request, 3 nodes have request 1 and 2 nodes request 2
