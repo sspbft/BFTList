@@ -41,7 +41,6 @@ class TestDummyRepTest(AbstractIntegrationTest):
         calls_left = helpers.MAX_NODE_CALLS
         test_result = False
 
-        # sleep for 10 seconds, then check if no progress has been made
         await asyncio.sleep(10)
 
         while calls_left > 0:

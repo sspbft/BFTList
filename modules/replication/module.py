@@ -7,6 +7,7 @@ from copy import deepcopy
 import time
 import os
 from typing import List, Tuple
+import jsonpickle
 
 # local
 from modules.algorithm_module import AlgorithmModule
@@ -63,20 +64,9 @@ class ReplicationModule(AlgorithmModule):
             if (start_state is not {} and str(self.id) in start_state and
                "REPLICATION_MODULE" in start_state[str(self.id)]):
                 data = start_state[str(self.id)]["REPLICATION_MODULE"]
-                rep = data["rep"][self.id]
-                print(rep)
-                if data is not None:
-                    if "phs" in data:
-                        self.phs = deepcopy(data["phs"])
-                    if "views" in data:
-                        self.pred_and_action.views = deepcopy(data["views"])
-                    if "witnesses" in data:
-                        self.witnesses = deepcopy(data["witnesses"])
-                    if "echo" in data:
-                        self.echo = deepcopy(data["echo"])
-                    if "vChange" in data:
-                        self.pred_and_action.vChange = deepcopy(
-                                                        data["vChange"])
+                rep = data["rep"]
+                if rep is not None and len(rep) == n:
+                    self.rep = rep
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -207,7 +197,7 @@ class ReplicationModule(AlgorithmModule):
 
     def send_msg(self):
         """Broadcasts its own replica_structure to other nodes."""
-        for j, in conf.get_other_nodes().keys():
+        for j in conf.get_other_nodes():
             msg = {
                 "type": MessageType.REPLICATION_MESSAGE,
                 "sender": self.id,

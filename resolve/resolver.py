@@ -1,7 +1,7 @@
 """Contains code related to the module resolver."""
 
 # standard
-import json
+import jsonpickle
 import logging
 from threading import Lock
 
@@ -77,7 +77,7 @@ class Resolver:
         the other node.
         """
         if node_id in self.senders:
-            msg_json = json.dumps(msg_dct)
+            msg_json = jsonpickle.encode(msg_dct)
             byte_obj = self.pack_helper.pack(msg_json.encode())
             self.senders[node_id].add_msg_to_queue(byte_obj)
 

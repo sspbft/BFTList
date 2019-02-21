@@ -35,8 +35,9 @@ def get_nodes(hosts_path="conf/hosts.txt"):
 def get_other_nodes():
     """Helper that returns all other nodes in the system."""
     all_nodes = get_nodes()
-    own_id = os.getenv("ID")
-    return all_nodes.pop(own_id)
+    own_id = int(os.getenv("ID"))
+    all_nodes.pop(own_id)
+    return all_nodes
 
 
 def get_start_state():

@@ -1,7 +1,6 @@
 # standard
 import asyncio
 import os
-# import json
 import requests
 import psutil
 import time
