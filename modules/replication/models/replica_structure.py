@@ -12,7 +12,7 @@ from typing import List, Dict
 
 # local
 from modules.constants import (REQUEST, REPLY, STATUS, X_SET)
-from .request import Request
+from .request import Request, ClientRequest
 
 
 class ReplicaStructure():
@@ -73,7 +73,7 @@ class ReplicaStructure():
         """
         self.r_log = r_log
 
-    def get_pend_reqs(self) -> List[Request]:
+    def get_pend_reqs(self) -> List[ClientRequest]:
         """Returns the requests received from clients, all ClientRequests
 
         pend_reqs has size SIGMA * K, where SIGMA is a user-defined constant
@@ -81,16 +81,18 @@ class ReplicaStructure():
         """
         return self.pend_reqs
 
-    def extend_pend_reqs(self, req: Request):
+    def extend_pend_reqs(self, req: [ClientRequest]):
         """Adds a request to pend_reqs."""
-        self.pend_reqs.extend(req)
+        for r in req:
+            if r not in self.pend_reqs:
+                self.pend_reqs.add(r)
 
-    def remove_from_pend_reqs(self, req: Request):
+    def remove_from_pend_reqs(self, req: ClientRequest):
         """Removes the first occurrence of req from pend_reqs."""
         if req in self.pend_reqs:
             self.pend_reqs.remove(req)
 
-    def set_pend_reqs(self, pend_reqs: List[Request]):
+    def set_pend_reqs(self, pend_reqs: List[ClientRequest]):
         """Sets the pend_reqs for this processor."""
         self.pend_reqs = pend_reqs
 
