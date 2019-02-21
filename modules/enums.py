@@ -35,7 +35,7 @@ class ReplicationEnums(IntEnum):
     COMMIT = 2
 
 
-class OperationEnums(Enum):
+class OperationEnums(IntEnum):
     """Represent the operations that can be carried out on the RSM."""
 
     APPEND = 0

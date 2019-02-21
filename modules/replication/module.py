@@ -9,7 +9,7 @@ import os
 
 # local
 from modules.algorithm_module import AlgorithmModule
-from modules.enums import ReplicationEnums
+from modules.enums import ReplicationEnums, OperationEnums
 from modules.constants import (MAXINT, SIGMA, X_SET, REP_STATE, CLIENT_REQ,
                                REQUEST, STATUS, SEQUENCE_NO)
 from resolve.enums import Module, Function, MessageType
@@ -17,6 +17,7 @@ import conf.config as conf
 from .models.replica_structure import ReplicaStructure
 from .models.request import Request
 from .models.client_request import ClientRequest
+from .models.operation import Operation
 
 # globals
 logger = logging.getLogger(__name__)
@@ -825,4 +826,30 @@ class ReplicationModule(AlgorithmModule):
     # Function to extract data
     def get_data(self):
         """Returns current values on local variables."""
-        return {}
+        rep = self.rep[self.id]
+        pend_reqs = [
+            ClientRequest(1, None, Operation(OperationEnums.APPEND, 1)),
+            ClientRequest(1, None, Operation(OperationEnums.APPEND, 2))
+        ]
+
+        req_q = [
+            { REQUEST: Request(pend_reqs[0], 0, 1), STATUS: {ReplicationEnums.PRE_PREP} },
+            { REQUEST: Request(pend_reqs[1], 0, 1), STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP} }
+        ]
+        return {
+            "id": self.id,
+            "rep_state": rep.get_rep_state(),
+            # "pend_reqs": rep.get_pend_reqs(),
+            "pend_reqs": pend_reqs,
+            # "req_q": rep.get_req_q(),
+            # get status name instead of int
+            "req_q": list(map(lambda x: {
+                        REQUEST: x[REQUEST],
+                        STATUS: set(map(lambda y: y.name, x[STATUS]))
+                    }, req_q)),
+            "last_req": rep.get_last_req(),
+            "seq_num": rep.get_seq_num(),
+            "con_flag": rep.get_con_flag(),
+            "view_changed": rep.get_view_changed(),
+            "prim": rep.get_prim()
+        }

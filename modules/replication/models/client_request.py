@@ -42,3 +42,8 @@ class ClientRequest:
                     self.timestamp == other.get_timestamp() and
                     self.operation == other.get_operation())
         return False
+
+    def to_dct(self):
+        """Converts a client request to a corresponding dictionary."""
+        return {"client_id": self.client_id, "timestamp": self.timestamp,
+                "operation": self.operation}

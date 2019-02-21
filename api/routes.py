@@ -10,6 +10,9 @@ import requests
 # local
 import conf.config as conf
 import modules.byzantine as byz
+from modules.replication.models.request import Request
+from modules.replication.models.client_request import ClientRequest
+from modules.replication.models.operation import Operation
 
 # globals
 routes = Blueprint("routes", __name__)
@@ -22,8 +25,8 @@ class CustomEncoder(json.JSONEncoder):
         """Converts set to list, all other datatypes are treated as usual."""
         if isinstance(obj, set):
             return list(obj)
-        if isinstance(obj, "Node"):
-            return obj.__dict__
+        if isinstance(obj, (Request, ClientRequest, Operation)):
+            return obj.to_dct()
         return json.JSONEncoder.default(self, obj)
 
 

@@ -44,3 +44,7 @@ class Operation:
             return (self.type == other.type and
                     self.args == other.args)
         return False
+
+    def to_dct(self):
+        """Converts an operation to a corresponding dictionary."""
+        return {"type": self.type.name, "args": self.args}
