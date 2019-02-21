@@ -32,7 +32,7 @@ class ReplicationModule(AlgorithmModule):
     rep_state = UNDEFINED
     r_log (x_set is the set that claim to have executed/comitted request):
         [<request, x_set>]
-    pend_req: [<request>]
+    pend_req: [<client_request>]
     req_q : [<request, status t>]
     last_req[K]: (last executed request for each client): [<request, reply>]
 
@@ -64,7 +64,6 @@ class ReplicationModule(AlgorithmModule):
         while True:
             # lines 1-3
             self.lock.acquire()
-            # if self.rep[self.id].get_r_log()
             if (not self.rep[0].get_view_changed() and
                     self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
                                           Function.ALLOW_SERVICE)):
@@ -160,7 +159,7 @@ class ReplicationModule(AlgorithmModule):
                     for req_pair in self.known_reqs({ReplicationEnums.PREP}):
                         req_pair[STATUS].add(ReplicationEnums.COMMIT)
                         self.rep[self.id].remove_from_pend_reqs(
-                            req_pair[REQUEST])
+                            req_pair[REQUEST].get_client_request())
 
                     for req_pair in self.known_reqs(
                             {ReplicationEnums.PREP,
@@ -210,7 +209,7 @@ class ReplicationModule(AlgorithmModule):
 
     def receive_msg_from_client(self, msg):
         """Logic for receiving a message from a client."""
-        # TODO
+        # TODO implement
         pass
 
     def send_last_exec_req_to_client(self):
@@ -436,10 +435,6 @@ class ReplicationModule(AlgorithmModule):
 
         Returns the set of requests in request queue and in the message queue
         of 3f+1 other processors.
-
-        TODO look into if we should change logic of known_pend_reqs to avoid
-        duplicate requests in own pendReqs.
-        https://bit.ly/2NcXJjg
         """
         request_set = []
         for req in self.rep[self.id].get_pend_reqs():
@@ -515,8 +510,12 @@ class ReplicationModule(AlgorithmModule):
         for req in self.rep[self.id].get_pend_reqs():
             if (not self.exists_preprep_msg(
                     req, self.rep[self.id].get_prim()) and
-                    req not in list(map(lambda x: x[REQUEST], self.known_reqs(
-                        {ReplicationEnums.PREP, ReplicationEnums.COMMIT})))):
+                    req not in list(map(lambda x:
+                                        x[REQUEST].get_client_request(),
+                                        self.known_reqs(
+                                            {ReplicationEnums.PREP,
+                                             ReplicationEnums.COMMIT}))
+                                    )):
                     request_set.append(req)
         return request_set
 
@@ -546,7 +545,7 @@ class ReplicationModule(AlgorithmModule):
                         return True
         return False
 
-    def committed_set(self, request):
+    def committed_set(self, request: Request):
         """Method description.
 
         Returns the set of processors that have reported to commit to the
@@ -575,10 +574,8 @@ class ReplicationModule(AlgorithmModule):
         req = req_pair[REQUEST]
         for request_pair in self.rep[self.id].get_req_q():
             # If exactly the same, same request with same status.
-            # Ignore since it is the request we have as input.
-            # If not we will always return True.
-            # if req == request_pair[REQUEST]:
-            #   continue
+            # Ignore since it is the input request.
+            # If not return True.
             if (request_pair[REQUEST].get_client_request() ==
                 req.get_client_request() and
                request_pair[REQUEST].get_seq_num() == req.get_seq_num()):
@@ -678,7 +675,7 @@ class ReplicationModule(AlgorithmModule):
         """
         if not self.rep[self.id].get_view_changed():
             return(self.known_pend_reqs().intersection(self.unassigned_reqs()))
-        # I will leave this else until the calling algorithm is
+        # TODO I will leave this else until the calling algorithm is
         # implemented and we can see how it will react
         # else:
             # return("view_change")

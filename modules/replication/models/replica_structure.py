@@ -85,7 +85,7 @@ class ReplicaStructure():
         """Adds a request to pend_reqs."""
         for r in req:
             if r not in self.pend_reqs:
-                self.pend_reqs.add(r)
+                self.pend_reqs.append(r)
 
     def remove_from_pend_reqs(self, req: ClientRequest):
         """Removes the first occurrence of req from pend_reqs."""
