@@ -844,11 +844,11 @@ class ReplicationModule(AlgorithmModule):
                 state = op.execute(state)
             if state == prefix_state:
                 # found correct r_log entries
-                r_log = entries
-                return
+                # entries is tuple -> convert to list
+                r_log = list(entries)
+                break
         if r_log == []:
             return (-1, [])
-
         return (prefix_state, r_log)
 
     def find_prefix(self, rep_states: List):
