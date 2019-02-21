@@ -30,6 +30,11 @@ class ClientRequest:
         """Returns the operation of the request, i.e. the RSM operation."""
         return self.operation
 
+    def __str__(self):
+        """Overrides the default implementation"""
+        return (f"ClientRequest - client_id: {self.client_id}, timestamp: " +
+                f"{self.timestamp}, operation: {self.operation}")
+
     def __eq__(self, other):
         """Overrides the default implementation"""
         if type(other) is type(self):

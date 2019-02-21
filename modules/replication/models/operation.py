@@ -37,3 +37,10 @@ class Operation:
     def __str__(self):
         """Override the default __str__."""
         return f"Operation - type: {self.type}, args: {self.args}"
+
+    def __eq__(self, other):
+        """Overrides the default implementation"""
+        if type(other) is type(self):
+            return (self.type == other.type and
+                    self.args == other.args)
+        return False

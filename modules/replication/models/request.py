@@ -42,3 +42,8 @@ class Request:
                     self.view == other.get_view() and
                     self.seq_num == other.get_seq_num())
         return False
+
+    def __str__(self):
+        """Overrides the default implementation."""
+        return (f"Request - client_request: {str(self.client_request)}, " +
+                f"view: {self.view}, seq_num: {self.seq_num}")
