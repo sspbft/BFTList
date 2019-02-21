@@ -10,6 +10,9 @@ import requests
 # local
 import conf.config as conf
 import modules.byzantine as byz
+from modules.replication.models.request import Request
+from modules.replication.models.client_request import ClientRequest
+from modules.replication.models.operation import Operation
 
 # globals
 routes = Blueprint("routes", __name__)
@@ -22,8 +25,8 @@ class CustomEncoder(json.JSONEncoder):
         """Converts set to list, all other datatypes are treated as usual."""
         if isinstance(obj, set):
             return list(obj)
-        if isinstance(obj, "Node"):
-            return obj.__dict__
+        if isinstance(obj, (Request, ClientRequest, Operation)):
+            return obj.to_dct()
         return json.JSONEncoder.default(self, obj)
 
 
@@ -72,15 +75,35 @@ def fetch_data_for_all_nodes():
     return data
 
 
-@routes.route("/view", methods=["GET"])
-def render_view():
-    """Renders the global view page."""
+def render_global_view(view="view-est"):
+    """Renders the global view for a specified module."""
     nodes_data = fetch_data_for_all_nodes()
 
     test_name = os.getenv("INTEGRATION_TEST")
     test_data = {"test_name": test_name} if test_name is not None else {}
 
     return render_template("view/main.html", data={
+        "view": view,
         "nodes_data": nodes_data,
         "test_data": test_data
     })
+
+
+@routes.route("/view/view-est", methods=["GET"])
+def render_view_est_view():
+    """Renders the global view for the View Establishment module.
+
+    This view only displays data related to the view est module and should
+    only be used when running integration test for that module.
+    """
+    return render_global_view("view-est")
+
+
+@routes.route("/view/rep", methods=["GET"])
+def render_rep_view():
+    """Renders the global view for the Replication module.
+
+    This view only displays data related to the rep module and should
+    only be used when running integration test for that module.
+    """
+    return render_global_view("rep")

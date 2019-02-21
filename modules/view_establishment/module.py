@@ -273,11 +273,12 @@ class ViewEstablishmentModule(AlgorithmModule):
     # Function to extract data
     def get_data(self):
         """Returns current values on local variables."""
-        return {"id": self.id,
-                "phs": self.phs,
-                "views": self.pred_and_action.views,
-                "vChange": self.pred_and_action.vChange,
-                "witnesses": self.witnesses,
-                "witnesses_set": self.witnesses_set,
-                "echo": self.echo
-                }
+        return {
+            "id": self.id,
+            "phs": self.phs,
+            "views": self.pred_and_action.views,
+            "vChange": self.pred_and_action.vChange,
+            "witnesses": self.witnesses,
+            "witnesses_set": self.witnesses_set,
+            "echo": self.echo
+        }

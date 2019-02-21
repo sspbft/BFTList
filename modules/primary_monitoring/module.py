@@ -61,14 +61,14 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     # Line 11
                     if(self.number_of_processors_in_no_service() <
                        (2 * self.number_of_byzantine + 1)):
-                        self.rep[V_STATUS] = enums.OK
+                        self.vcm[self.id][V_STATUS] = enums.OK
                     # Line 12
-                    if(self.rep[V_STATUS] == enums.OK and
+                    if(self.vcm[self.id][V_STATUS] == enums.OK and
                        self.sup_change(3 * self.number_of_byzantine + 1)):
-                        self.rep[V_STATUS] = enums.NO_SERVICE
+                        self.vcm[self.id][V_STATUS] = enums.NO_SERVICE
                     # Line 13
                     elif self.sup_change(4 * self.number_of_byzantine + 1):
-                        self.rep[V_STATUS] = enums.V_CHANGE
+                        self.vcm[self.id][V_STATUS] = enums.V_CHANGE
                         self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
@@ -183,7 +183,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
         Calls the Resolver to send a message containing the vcm of processor i
         to processor_j
         """
-        raise NotImplementedError
+        pass
 
     # Function to extract data
     def get_data(self):

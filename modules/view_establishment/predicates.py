@@ -236,7 +236,8 @@ class PredicatesAndAction():
         Returns true if atleast 3f+1 nodes has the same view as
         current node and current node is not in a view change
         """
-        return (len(self.same_v_set(self.id)) >
+        return (len(self.same_v_set(self.id,
+                    self.view_module.get_phs(self.id))) >
                 3 * self.number_of_byzantine and
                 self.view_module.get_phs(self.id) == 0 and
                 self.views[self.id].get(CURRENT) ==
