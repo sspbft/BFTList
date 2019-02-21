@@ -27,8 +27,8 @@ class Operation:
 
         if self.type == OperationEnums.APPEND:
             lst.append(self.args[0])
-        elif self.type == OperationEnums.POP:
-            lst.pop(self.args[0])
+        elif self.type == OperationEnums.NO_OP:
+            pass
         else:
             raise ValueError(f"Bad operation {self.type}")
 
