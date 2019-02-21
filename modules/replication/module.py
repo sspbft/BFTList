@@ -833,8 +833,10 @@ class ReplicationModule(AlgorithmModule):
         ]
 
         req_q = [
-            { REQUEST: Request(pend_reqs[0], 0, 1), STATUS: {ReplicationEnums.PRE_PREP} },
-            { REQUEST: Request(pend_reqs[1], 0, 1), STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP} }
+            {REQUEST: Request(pend_reqs[0], 0, 1),
+             STATUS: {ReplicationEnums.PRE_PREP}},
+            {REQUEST: Request(pend_reqs[1], 0, 1),
+             STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
         ]
         return {
             "id": self.id,
