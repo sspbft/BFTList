@@ -159,7 +159,7 @@ class ReplicationModule(AlgorithmModule):
                     for req_pair in self.known_reqs({ReplicationEnums.PREP}):
                         req_pair[STATUS].add(ReplicationEnums.COMMIT)
                         self.rep[self.id].remove_from_pend_reqs(
-                            req_pair[REQUEST])
+                            req_pair[REQUEST].get_client_request())
 
                     for req_pair in self.known_reqs(
                             {ReplicationEnums.PREP,
@@ -510,8 +510,12 @@ class ReplicationModule(AlgorithmModule):
         for req in self.rep[self.id].get_pend_reqs():
             if (not self.exists_preprep_msg(
                     req, self.rep[self.id].get_prim()) and
-                    req not in list(map(lambda x: x[REQUEST], self.known_reqs(
-                        {ReplicationEnums.PREP, ReplicationEnums.COMMIT})))):
+                    req not in list(map(lambda x:
+                                        x[REQUEST].get_client_request(),
+                                        self.known_reqs(
+                                            {ReplicationEnums.PREP,
+                                             ReplicationEnums.COMMIT}))
+                                    )):
                     request_set.append(req)
         return request_set
 

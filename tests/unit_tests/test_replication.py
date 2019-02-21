@@ -276,8 +276,8 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep = [ReplicaStructure(
             0,
             pend_reqs=[
-                self.dummyRequest1,
-                self.dummyRequest2
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request()
                 ]
         )] + [ReplicaStructure(
             i,
@@ -370,21 +370,23 @@ class TestReplicationModule(unittest.TestCase):
 
     def test_unassigned_reqs(self):
         replication = ReplicationModule(0, Resolver(), 2, 0, 1)
-        replication.rep[0].set_pend_reqs([self.dummyRequest1, self.dummyRequest2])
+        replication.rep[0].set_pend_reqs([self.dummyRequest1.get_client_request(), self.dummyRequest2.get_client_request()])
 
         # Both requests are unassigned
         replication.exists_preprep_msg = MagicMock(return_value = False)
         replication.known_reqs = MagicMock(return_value = [])
-        self.assertEqual(replication.unassigned_reqs(), [self.dummyRequest1, self.dummyRequest2])
+        self.assertEqual(replication.unassigned_reqs(), [self.dummyRequest1.get_client_request(), self.dummyRequest2.get_client_request()])
         calls = [
-            call(self.dummyRequest1, replication.rep[replication.id].get_prim()),
-            call(self.dummyRequest2, replication.rep[replication.id].get_prim())
+            call(self.dummyRequest1.get_client_request(), replication.rep[replication.id].get_prim()),
+            call(self.dummyRequest2.get_client_request(), replication.rep[replication.id].get_prim())
         ]
         replication.exists_preprep_msg.assert_has_calls(calls)
        
         # Dummyrequest2 is in known_reqs with
-        replication.known_reqs = MagicMock(return_value = [{ REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.COMMIT} }])
-        self.assertEqual(replication.unassigned_reqs(), [self.dummyRequest1])
+        replication.known_reqs = MagicMock(return_value = [
+            {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PREP}}
+            ])
+        self.assertEqual(replication.unassigned_reqs(), [self.dummyRequest1.get_client_request()])
 
         # There exists PRE_PREP msg for both of the requests
         replication.exists_preprep_msg = MagicMock(return_value = True)
@@ -928,7 +930,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep = [ReplicaStructure(
             i,
             pend_reqs=[
-                self.dummyRequest1
+                self.dummyRequest1.get_client_request()
                 ],
             view_changed=True,
             prim=2
@@ -948,7 +950,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep = [ReplicaStructure(
             i,
             pend_reqs=[
-                self.dummyRequest1
+                self.dummyRequest1.get_client_request()
                 ],
             view_changed=True,
             prim=2
@@ -1048,8 +1050,8 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep = [ReplicaStructure(
             0,
             pend_reqs=[
-                assigned_req1,
-                assigned_req2],
+                assigned_req1.get_client_request(),
+                assigned_req2.get_client_request()],
             req_q =[
                 {REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
                 {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
@@ -1058,8 +1060,8 @@ class TestReplicationModule(unittest.TestCase):
         )] + [ReplicaStructure(
             i,
             pend_reqs=[
-                assigned_req1,
-                assigned_req2],
+                assigned_req1.get_client_request(),
+                assigned_req2.get_client_request()],
             req_q=[
                 {REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP}},
                 {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP}}
@@ -1110,8 +1112,8 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep = [ReplicaStructure(
             i,
             pend_reqs=[
-                assigned_req1,
-                assigned_req2],
+                assigned_req1.get_client_request(),
+                assigned_req2.get_client_request()],
             req_q=req_q,
             prim=0
         ) for i in range(6)]
@@ -1156,8 +1158,8 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep = [ReplicaStructure(
             i,
             pend_reqs=[
-                assigned_req1,
-                assigned_req2
+                assigned_req1.get_client_request(),
+                assigned_req2.get_client_request()
                 ],
             req_q=[
                 {REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP, ReplicationEnums.COMMIT}},
