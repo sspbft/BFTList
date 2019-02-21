@@ -27,8 +27,8 @@ class Operation:
 
         if self.type == OperationEnums.APPEND:
             lst.append(self.args[0])
-        elif self.type == OperationEnums.POP:
-            lst.pop(self.args[0])
+        elif self.type == OperationEnums.NO_OP:
+            pass
         else:
             raise ValueError(f"Bad operation {self.type}")
 
@@ -44,3 +44,7 @@ class Operation:
             return (self.type == other.type and
                     self.args == other.args)
         return False
+
+    def to_dct(self):
+        """Converts an operation to a corresponding dictionary."""
+        return {"type": self.type.name, "args": self.args}

@@ -6,10 +6,11 @@ import logging
 from copy import deepcopy
 import time
 import os
+from typing import List, Tuple
 
 # local
 from modules.algorithm_module import AlgorithmModule
-from modules.enums import ReplicationEnums
+from modules.enums import ReplicationEnums, OperationEnums
 from modules.constants import (MAXINT, SIGMA, X_SET, REP_STATE, CLIENT_REQ,
                                REQUEST, STATUS, SEQUENCE_NO)
 from resolve.enums import Module, Function, MessageType
@@ -17,6 +18,7 @@ import conf.config as conf
 from .models.replica_structure import ReplicaStructure
 from .models.request import Request
 from .models.client_request import ClientRequest
+from .models.operation import Operation
 
 # globals
 logger = logging.getLogger(__name__)
@@ -53,7 +55,7 @@ class ReplicationModule(AlgorithmModule):
 
         self.flush = False
         self.need_flush = False
-        self.rep = [ReplicaStructure(i) for i in range(n)] \
+        self.rep = [ReplicaStructure(i, k) for i in range(n)] \
             # type: List[ReplicaStructure]
 
     def run(self):
@@ -90,20 +92,25 @@ class ReplicationModule(AlgorithmModule):
                 self.act_as_nonprim_when_view_changed(prim_id)
 
             # lines 9 - 10
+            # X and Y are tuples (rep_state, r_log)
+            # -1 in X[0] and Y[0] is used to indicate failure
             X = self.find_cons_state(self.com_pref_states(
                 (3 * self.number_of_byzantine) + 1
             ))
             Y = self.get_ds_state()
-            if len(X) == 0 and len(Y) > 0:
+            if X[0] == -1 and Y[0] != -1:
                 X = Y
 
             # lines 11 - 14
-            self.rep[self.id].set_con_flag(len(X) == 0)
+            # TODO check if X[1] should be a prefix of self.rep[self.id].r_log?
+            # https://bit.ly/2Iu6I0E
+            self.rep[self.id].set_con_flag(X[0] == -1)
             if (not (self.rep[self.id].get_con_flag()) and
-               (not (self.prefixes(self.rep[self.id].get_rep_state(), X)) or
+               (not (self.prefixes(self.rep[self.id].get_rep_state(), X[0])) or
                self.rep[self.id].is_rep_state_default() or self.delayed())):
-                # will extend X to { rep_state: state, r_log: log }
-                self.rep[self.id].set_rep_state(deepcopy(X))
+                # set own rep_state and r_log to consolidated values
+                self.rep[self.id].set_rep_state(deepcopy(X[0]))
+                self.rep[self.id].set_r_log(deepcopy(X[1]))
             if self.stale_rep() or self.conflict():
                 self.flush_local()
                 self.rep[self.id].set_to_tee()
@@ -346,7 +353,7 @@ class ReplicationModule(AlgorithmModule):
                 return S
         return set()
 
-    def get_ds_state(self):
+    def get_ds_state(self) -> Tuple[List, List]:
         """Method description.
 
         Returns a prefix if suggested by at least 2f+1 and at most 3f+1
@@ -357,13 +364,15 @@ class ReplicationModule(AlgorithmModule):
         processors_in_def_state = 0
         X = self.find_cons_state(self.com_pref_states(
                                 2 * self.number_of_byzantine + 1))
+        if X[0] == -1:
+            return X
 
         # Find default replica structures and prefixes to/of X
         for replica_structure in self.rep:
             if(replica_structure.is_rep_state_default()):
                 processors_in_def_state += 1
                 continue
-            if self.prefixes(replica_structure.get_rep_state(), X):
+            if self.prefixes(replica_structure.get_rep_state(), X[0]):
                 processors_prefix_X += 1
 
         # Checks if the sets are in the correct size span
@@ -372,8 +381,8 @@ class ReplicationModule(AlgorithmModule):
             ((processors_prefix_X + processors_in_def_state) >=
                 (4 * self.number_of_byzantine + 1))):
             return X
-        # return [] for now due to check of length after calling get_ds_state
-        return []
+
+        return (-1, [])
 
     def double(self):
         """Method description.
@@ -605,6 +614,19 @@ class ReplicationModule(AlgorithmModule):
         # Log A has run out of items and is therefore a prefix of B
         return True
 
+    def is_prefix_of(self, sq_log_A, sq_log_B):
+        """Returns True if sq_log_A is a prefix of sq_log_B."""
+        if len(sq_log_A) > len(sq_log_B):
+            return False
+
+        # Check entries in A to see that they match entries in B
+        for index, item in enumerate(sq_log_A):
+            if item == sq_log_B[index]:
+                continue
+            else:
+                return False
+        return True
+
     def act_as_prim_when_view_changed(self, prim_id):
         """Actions to perform when a view change has ocurred.
 
@@ -639,13 +661,48 @@ class ReplicationModule(AlgorithmModule):
             new_seq = max(self.last_exec(), potential_seq)
             self.rep[self.id].set_seq_num(new_seq)
 
+            last_seq_num = self.last_exec()
+            if new_seq > last_seq_num:
+                # check if missing requests are in request queue
+                last_seq_num += 1
+                if not self.req_with_seq_num_in_req_q(last_seq_num):
+                    # add dummy request to req_q
+                    req_pair = self.produce_dummy_req(last_seq_num)
+                    self.rep[self.id].add_to_req_q(req_pair)
+
             self.renew_reqs(processor_ids)
-            self.find_cons_state(self.com_pref_states(
+            # X is a tuple (rep_state, r_log)
+            X = self.find_cons_state(self.com_pref_states(
                 (3 * self.number_of_byzantine) + 1
             ))
-            # TODO assign REP_STATE and R_LOG to the return val
-            # from cons_state when impl.
-            self.rep[self.id].set_view_changed(False)
+
+            # check if something went wrong
+            if X[0] == -1:
+                self.rep[self.id].set_to_tee()
+            # update values accordingly
+            else:
+                self.rep[self.id].set_rep_state(X[0])
+                self.rep[self.id].set_r_log(X[1])
+                self.rep[self.id].set_view_changed(False)
+
+    def req_with_seq_num_in_req_q(self, seq_num):
+        """Checks if a request with a certain seq num exists in req queue."""
+        for r in self.rep[self.id].get_req_q():
+            if r[REQUEST].get_seq_num() == seq_num:
+                return True
+        return False
+
+    def produce_dummy_req(self, seq_num):
+        """Produces a NO-OP request with the given seq num."""
+        dummy_request = Request(
+            ClientRequest(-1, None, Operation(
+                OperationEnums.NO_OP
+            )),
+            self.id, seq_num)
+        return {
+            REQUEST: dummy_request,
+            STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PRE_PREP}
+        }
 
     def act_as_nonprim_when_view_changed(self, prim_id):
         """Actions to perform when a view change has ocurred.
@@ -752,7 +809,7 @@ class ReplicationModule(AlgorithmModule):
                 # PRE_PREP - message
                 req[STATUS].add(ReplicationEnums.PREP)
 
-    def find_cons_state(self, processors_set):
+    def find_cons_state(self, processors_set) -> Tuple[List, List]:
         """Method description.
 
         Returns a consolidated replica state based on the processors_set,
@@ -760,10 +817,59 @@ class ReplicationModule(AlgorithmModule):
         among request and pending queues.
         Produces a dummy request if 3f+1 processor have committed a number
         of request without the existence of the previous request.
+
+        NOTE that this assumes that elements in rep_state have a corresponding
+        r_log entry at this processor.
+        NOTE that returning (-1, *) means that something went wrong.
         """
-        # TODO This should return REP_STATE and R_LOG,
-        # which the prim can "adopt"  after a view Change has occured.
-        raise NotImplementedError
+        if len(processors_set) == 0:
+            return (-1, [])
+
+        rep_states = []
+        for processor_id in processors_set:
+            rep_states.append(self.rep[processor_id].get_rep_state())
+
+        prefix_state = self.find_prefix(rep_states)
+        if prefix_state == []:
+            return (-1, [])
+
+        # create consistent r_log
+        r_log = []
+        for entries in itertools.combinations(
+                self.rep[self.id].get_r_log(), len(prefix_state)):
+            # execute all reqs in this combination
+            state = []
+            for e in entries:
+                op = e[REQUEST].get_client_request().get_operation()
+                state = op.execute(state)
+            if state == prefix_state:
+                # found correct r_log entries
+                r_log = entries
+                return
+        if r_log == []:
+            return (-1, [])
+
+        return (prefix_state, r_log)
+
+    def find_prefix(self, rep_states: List):
+        """Finds the prefix of a list of replica states."""
+        prefix = []
+
+        # find shortest rep state
+        shortest = rep_states[0]
+        for i in range(1, len(rep_states)):
+            if len(rep_states[i]) < len(shortest):
+                shortest = rep_states[i]
+        # check for same value in all rep_states at a given index to find
+        # prefix
+        for i in range(len(shortest)):
+            starting_val = shortest[i]
+            for r in rep_states:
+                if r[i] != starting_val:
+                    return prefix
+            prefix.append(starting_val)
+
+        return prefix
 
     def check_new_v_state(self, prim):
         """Method description.
@@ -796,7 +902,17 @@ class ReplicationModule(AlgorithmModule):
                     CLIENT_REQ: req_pair[REQUEST].get_client_request(),
                     SEQUENCE_NO: req_pair[REQUEST].get_seq_num()
                 }
-                if (key not in req_exists_count or
+                # add dummy requests to req_q to avoid halting
+                if key.get_client_request().is_dummy():
+                    dummy_seq_num = key.get_seq_num()
+                    # make sure dummy seq num does not exist for other req
+                    # in req q
+                    for r in self.rep[prim].get_req_q():
+                        if r != key and r.get_seq_num() == dummy_seq_num:
+                            return False
+
+                    continue
+                elif (key not in req_exists_count or
                         req_exists_count[key] <
                         (3 * self.number_of_byzantine + 1)):
                     return False
@@ -814,12 +930,57 @@ class ReplicationModule(AlgorithmModule):
                     seen_reqs[req] < (3 * self.number_of_byzantine + 1)):
                 return False
 
-        # TODO implement check that prefix is correct when find_cons_state
-        # is implemented
+        return self.check_new_v_state(prim)
 
-        return True
+    def check_new_state_and_r_log(self, prim) -> bool:
+        """Checks the state and r_log proposed by the new primary."""
+        # check that new state is prefix to 3f+1 processors
+        count = 0
+        prim_state = self.rep[prim].get_rep_state()
+        for rs in self.rep:
+            rep_state = rs.get_rep_state()
+            if self.is_prefix_of(prim_state, rep_state):
+                count += 1
+        if count < (3 * self.number_of_byzantine + 1):
+            return False
+
+        # check r_log
+        state = []
+        for e in self.rep[prim].get_r_log():
+            op = e[REQUEST].get_client_request().get_operation()
+            state = op.execute(state)
+
+        return state == self.rep[prim].get_rep_state()
 
     # Function to extract data
     def get_data(self):
         """Returns current values on local variables."""
-        return {}
+        rep = self.rep[self.id]
+        pend_reqs = [
+            ClientRequest(1, None, Operation(OperationEnums.APPEND, 1)),
+            ClientRequest(1, None, Operation(OperationEnums.APPEND, 2))
+        ]
+
+        req_q = [
+            {REQUEST: Request(pend_reqs[0], 0, 1),
+             STATUS: {ReplicationEnums.PRE_PREP}},
+            {REQUEST: Request(pend_reqs[1], 0, 1),
+             STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+        ]
+        return {
+            "id": self.id,
+            "rep_state": rep.get_rep_state(),
+            # "pend_reqs": rep.get_pend_reqs(),
+            "pend_reqs": pend_reqs,
+            # "req_q": rep.get_req_q(),
+            # get status name instead of int
+            "req_q": list(map(lambda x: {
+                        REQUEST: x[REQUEST],
+                        STATUS: set(map(lambda y: y.name, x[STATUS]))
+                    }, req_q)),
+            "last_req": rep.get_last_req(),
+            "seq_num": rep.get_seq_num(),
+            "con_flag": rep.get_con_flag(),
+            "view_changed": rep.get_view_changed(),
+            "prim": rep.get_prim()
+        }
