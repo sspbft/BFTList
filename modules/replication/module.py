@@ -240,13 +240,18 @@ class ReplicationModule(AlgorithmModule):
         self.rep[self.id].add_to_r_log(req_pair)
 
         # remove request from pend_reqs and req_q
-        self.rep[self.id].remove_from_pend_reqs(request)
+        self.rep[self.id].remove_from_pend_reqs(request.get_client_request())
         self.rep[self.id].remove_from_req_q(request)
 
     def apply(self, req: Request):
-        """Applies a request."""
-        logger.info(f"Applying request {req}")
-        # TODO implement
+        """Applies a request and returns the resulting state."""
+        current_state = self.rep[self.id].get_rep_state()
+        operation = req.get_client_request().get_operation()
+        new_state = operation.execute(current_state)
+        self.rep[self.id].set_rep_state(new_state)
+        logger.info(f"Applying request {req} on state {current_state}. " +
+                    f"New state: {new_state}")
+        return new_state
 
     # Macros
     def flush_local(self):

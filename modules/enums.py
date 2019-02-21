@@ -33,3 +33,10 @@ class ReplicationEnums(IntEnum):
     PRE_PREP = 0
     PREP = 1
     COMMIT = 2
+
+
+class OperationEnums(Enum):
+    """Represent the operations that can be carried out on the RSM."""
+
+    APPEND = 0
+    POP = 1
