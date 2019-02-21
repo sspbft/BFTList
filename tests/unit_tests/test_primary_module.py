@@ -206,6 +206,9 @@ class TestPredicatesAndAction(unittest.TestCase):
         primary_mod.number_of_processors_in_no_service = MagicMock(return_value = 4)
         primary_mod.run()
         self.assertEqual(primary_mod.vcm[primary_mod.id][V_STATUS], enums.V_CHANGE)
+        self.assertEqual(call(Module.VIEW_ESTABLISHMENT_MODULE,
+                    Function.VIEW_CHANGE), self.resolver.execute.call_args)
+        
 
     def test_while_v_change_true(self):
         # Line 14
