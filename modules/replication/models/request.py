@@ -47,3 +47,8 @@ class Request(object):
         """Overrides the default implementation."""
         return (f"Request - client_request: {str(self.client_request)}, " +
                 f"view: {self.view}, seq_num: {self.seq_num}")
+
+    def to_dct(self):
+        """Converts a request to a corresponding dictionary."""
+        return {"client_request": self.client_request, "view": self.view,
+                "seq_num": self.seq_num}

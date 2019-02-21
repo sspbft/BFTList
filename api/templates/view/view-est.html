@@ -1,0 +1,27 @@
+<p>Phases: 
+{% for phs in item.data.VIEW_ESTABLISHMENT_MODULE.phs %}
+    {% if item.node.id == (loop.index - 1) %}
+        <b><u>{{ phs }}</u></b>
+    {% else %}
+        {{ phs }}
+    {% endif %}
+{% endfor %}
+</p>
+<p>Views: 
+{% for v in item.data.VIEW_ESTABLISHMENT_MODULE.views %}
+    {% if item.node.id == (loop.index - 1) %}
+        <b><u>[{{ v.current }},{{ v.next }}]</u></b>
+    {% else %}
+        [{{ v.current }},{{ v.next }}]
+    {% endif %}
+{% endfor %}
+</p>
+<p>vChange: {{ item.data.VIEW_ESTABLISHMENT_MODULE.vChange }}</p>
+<p>Witnesses: 
+{% for w in item.data.VIEW_ESTABLISHMENT_MODULE.witnesses %}
+    {% if item.node.id == (loop.index - 1) %}
+        <b><u>{{ w }}</u></b>
+    {% else %}
+        {{ w }}
+    {% endif %}
+{% endfor %}

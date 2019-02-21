@@ -7,6 +7,7 @@ requested operation.
 
 # local
 from .operation import Operation
+from modules.enums import OperationEnums
 
 
 class ClientRequest(object):
@@ -30,6 +31,12 @@ class ClientRequest(object):
         """Returns the operation of the request, i.e. the RSM operation."""
         return self.operation
 
+    def is_dummy(self):
+        """Returns True if this request is a dummy request."""
+        return (self.client_id == -1 and
+                self.timestamp is None and
+                self.operation.type == OperationEnums.NO_OP)
+
     def __str__(self):
         """Overrides the default implementation"""
         return (f"ClientRequest - client_id: {self.client_id}, timestamp: " +
@@ -42,3 +49,8 @@ class ClientRequest(object):
                     self.timestamp == other.get_timestamp() and
                     self.operation == other.get_operation())
         return False
+
+    def to_dct(self):
+        """Converts a client request to a corresponding dictionary."""
+        return {"client_id": self.client_id, "timestamp": self.timestamp,
+                "operation": self.operation}

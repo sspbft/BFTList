@@ -9,6 +9,7 @@ rLog, (pending req. queue) pendReqs, (requests under process queue) reqQ,
 
 # standard
 from typing import List, Dict
+from copy import deepcopy
 
 # local
 from modules.constants import (REQUEST, REPLY, STATUS, X_SET)
@@ -18,10 +19,13 @@ from .request import Request, ClientRequest
 class ReplicaStructure(object):
     """Models a replica structure as used in the Replication module."""
 
-    def __init__(self, id, rep_state=[], r_log=[],
+    def __init__(self, id, number_of_clients=1, rep_state=[], r_log=[],
                  pend_reqs=[], req_q=[], last_req=[],
                  seq_num=-1, con_flag=False, view_changed=False, prim=0):
         """Initializes a replica structure with its default state."""
+        if (last_req == []):
+            last_req = [None for i in range(number_of_clients)]
+
         self.id = id
         self.rep_state = rep_state
         self.r_log = r_log
@@ -43,7 +47,7 @@ class ReplicaStructure(object):
 
     def set_rep_state(self, rep_state):
         """Returns the state reported by this processor."""
-        self.rep_state = rep_state
+        self.rep_state = deepcopy(rep_state)
 
     def get_r_log(self) -> List[Dict]:
         """Returns the request execution log
@@ -71,7 +75,7 @@ class ReplicaStructure(object):
         NOTE that no validation of r_log is done, this is mainly used for
         testing purposes.
         """
-        self.r_log = r_log
+        self.r_log = deepcopy(r_log)
 
     def get_pend_reqs(self) -> List[ClientRequest]:
         """Returns the requests received from clients, all ClientRequests
@@ -85,7 +89,7 @@ class ReplicaStructure(object):
         """Adds a request to pend_reqs."""
         for r in req:
             if r not in self.pend_reqs:
-                self.pend_reqs.append(r)
+                self.pend_reqs.append(deepcopy(r))
 
     def remove_from_pend_reqs(self, req: ClientRequest):
         """Removes the first occurrence of req from pend_reqs."""
@@ -94,7 +98,7 @@ class ReplicaStructure(object):
 
     def set_pend_reqs(self, pend_reqs: List[ClientRequest]):
         """Sets the pend_reqs for this processor."""
-        self.pend_reqs = pend_reqs
+        self.pend_reqs = deepcopy(pend_reqs)
 
     def get_req_q(self) -> List[Dict]:
         """Returns the requests that are in process along with their status."""
@@ -103,7 +107,7 @@ class ReplicaStructure(object):
     def add_to_req_q(self, req_pair: Dict):
         """Adds a request pair to the req_q."""
         self.validate_req_pair(req_pair)
-        self.req_q.append(req_pair)
+        self.req_q.append(deepcopy(req_pair))
 
     def set_req_q(self, req_q: List[Dict]):
         """Sets the req_q for this processor.
@@ -128,7 +132,7 @@ class ReplicaStructure(object):
     def update_last_req(self, client_id: int, request: Request, reply):
         """Update the last executed request for client with client_id."""
         self.last_req[client_id] = {
-            REQUEST: request, REPLY: reply
+            REQUEST: deepcopy(request), REPLY: deepcopy(reply)
         }
 
     def get_seq_num(self) -> int:
