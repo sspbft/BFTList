@@ -3,6 +3,8 @@
 
     let nodeElements = {}
     let fetchIntervals = [], failedReqs = []
+    const view = '{{ data.view }}'
+
     const nodes = JSON.parse('{{ data.nodes_data | tojson }}').map(el => {
         // pre-get all dom nodes on mount, this won't change
         id = el.data.node_id
@@ -57,8 +59,13 @@
         nodeElements[id].data.children[3].innerHTML = witnesses
     }
 
-    const renderRepData = (id, data) => {}
-    const renderPriMonData = (id, data) => {}
+    const renderRepData = (id, data) => {
+        // TODO implement
+    }
+
+    const renderPriMonData = (id, data) => {
+        // TODO implement
+    }
 
     // fetches data for a nodes and updates its view
     const refreshNode = n => {
@@ -69,9 +76,22 @@
                 res.byzantine
                     ? renderByzantineNode(res.node_id, res.byzantine_behavior)
                     : renderNormalNode(res.node_id)
-                renderViewEstData(res.node_id, res.VIEW_ESTABLISHMENT_MODULE)
-                renderRepData(res.node_id, res.REPLICATION_MODULE)
-                renderPriMonData(res.node_id, res.PRIMARY_MONITORING_MODULE)
+                switch(view) {
+                    case 'view-est':
+                        renderViewEstData(res.node_id, res.VIEW_ESTABLISHMENT_MODULE)
+                        break
+                    
+                    case 'rep':
+                        renderRepData(res.node_id, res.REPLICATION_MODULE)
+                        break
+
+                    default:
+                        console.error(`Bad view supplied: ${view}`)
+                        break
+                }
+                
+                // TODO implement this later
+                // renderPriMonData(res.node_id, res.PRIMARY_MONITORING_MODULE)
 
                 if (res.test_data) {
                     // testName might not have been rendered on mount
