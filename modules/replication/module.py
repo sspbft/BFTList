@@ -930,7 +930,7 @@ class ReplicationModule(AlgorithmModule):
                     seen_reqs[req] < (3 * self.number_of_byzantine + 1)):
                 return False
 
-        return self.check_new_v_state(prim)
+        return self.check_new_state_and_r_log(prim)
 
     def check_new_state_and_r_log(self, prim) -> bool:
         """Checks the state and r_log proposed by the new primary."""

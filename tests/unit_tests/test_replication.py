@@ -878,7 +878,11 @@ class TestReplicationModule(unittest.TestCase):
 
         # The consolidated state is mock_rep_state
         mock_rep_state = [1,2]
-        replication.find_cons_state = MagicMock(return_value = (mock_rep_state, []))
+        mock_r_log = [
+            {REQUEST: self.dummyRequest1, REPLY: [1]},
+            {REQUEST: self.dummyRequest2, REPLY: [1,2]}
+        ]
+        replication.find_cons_state = MagicMock(return_value = (mock_rep_state, mock_r_log))
         replication.stale_rep = MagicMock(return_value = False)
         replication.conflict = MagicMock(return_value = False)
 
@@ -886,16 +890,70 @@ class TestReplicationModule(unittest.TestCase):
         replication.run()
         self.assertFalse(replication.rep[replication.id].get_con_flag())
         self.assertEqual(replication.rep[replication.id].get_rep_state(), mock_rep_state)
+        self.assertEqual(replication.rep[replication.id].get_r_log(), mock_r_log)
 
         # Node 0 REP_STATE is not a prefix of mock_rep_state and should adopt
         replication.rep = [ReplicaStructure(
             i,
-            rep_state=[[7]],
+            rep_state=[7],
             prim=4
         ) for i in range(5)]
 
         replication.run()
         self.assertEqual(replication.rep[replication.id].get_rep_state(), mock_rep_state)
+        self.assertEqual(replication.rep[replication.id].get_r_log(), mock_r_log)
+
+    def test_while_assigning_y_to_x(self):
+        # Line 9-11
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+        replication.run_forever = False
+        # All functions called in while must be mocked:
+
+        replication.com_pref_states = Mock()
+        replication.delayed = Mock()
+        replication.last_exec = Mock()
+        replication.unassigned_reqs = Mock()
+        replication.committed_set = MagicMock(return_value = [])
+        replication.reqs_to_prep = Mock()
+        replication.commit = Mock()
+        replication.act_as_nonprim_when_view_changed = Mock()
+        replication.act_as_prim_when_view_changed = Mock()
+        replication.send_msg = Mock()
+
+        # If not returning arrays, it returns an Mock-object and tests don't pass at all
+        # These functions are not used for the current case of test
+
+        replication.resolver.execute = MagicMock(return_value = -1)
+        replication.known_pend_reqs = MagicMock(return_value = [])
+
+        # The consolidated state is not found
+        replication.find_cons_state = MagicMock(return_value = (-1, []))
+        # Get DS_state on the other hand returns a rep_state
+        mock_rep_state = [1,2]
+        mock_r_log = [
+            {REQUEST: self.dummyRequest1, REPLY: [1]},
+            {REQUEST: self.dummyRequest2, REPLY: [1,2]}
+        ]
+        replication.get_ds_state = MagicMock(return_value = (mock_rep_state, mock_r_log))
+        replication.stale_rep = MagicMock(return_value = False)
+        replication.conflict = MagicMock(return_value = False)
+
+        # Node 0 has DEF_STATE, should "adopt" mock_rep_state
+        replication.run()
+        self.assertFalse(replication.rep[replication.id].get_con_flag())
+        self.assertEqual(replication.rep[replication.id].get_rep_state(), mock_rep_state)
+        self.assertEqual(replication.rep[replication.id].get_r_log(), mock_r_log)
+
+        # Node 0 REP_STATE is not a prefix of mock_rep_state and should adopt
+        replication.rep = [ReplicaStructure(
+            i,
+            rep_state=[7],
+            prim=4
+        ) for i in range(5)]
+
+        replication.run()
+        self.assertEqual(replication.rep[replication.id].get_rep_state(), mock_rep_state)
+        self.assertEqual(replication.rep[replication.id].get_r_log(), mock_r_log)
 
     def test_while_reset_cases(self):
         # Lines 12-13
@@ -1305,7 +1363,6 @@ class TestReplicationModule(unittest.TestCase):
     def test_check_new_state_and_r_log(self):
         replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         # Let prim == 1
-
         replication.rep = [ReplicaStructure(
             i,
             rep_state = [1,2,3],
