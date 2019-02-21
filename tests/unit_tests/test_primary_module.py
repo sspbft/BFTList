@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, call
 from resolve.resolver import Resolver
 from modules.primary_monitoring.module import PrimaryMonitoringModule
 from resolve.enums import Function, Module
@@ -144,3 +144,84 @@ class TestPredicatesAndAction(unittest.TestCase):
         } for i in range(6)]
         primary_mod.update_need_chg_set()
         self.assertEqual(primary_mod.vcm[primary_mod.id][NEED_CHG_SET], {0,2,4})
+
+    
+    def test_while_clean_state(self):
+        # Pretend primary == 1, also then allowService() is True
+        self.resolver.execute = MagicMock(return_value = 1)
+        primary_mod = PrimaryMonitoringModule(0, self.resolver, 6, 1)
+        primary_mod.run_forever = False
+
+        # Prim is not equal to current view
+        primary_mod.vcm[primary_mod.id][PRIM] = 0
+        primary_mod.clean_state = Mock()
+        primary_mod.run()
+        primary_mod.clean_state.assert_called_once()
+
+    def test_while_update_chg_need(self):
+        # Line 9-10
+        # Pretend primary == 1
+        self.resolver.execute = MagicMock(return_value = 1)
+        primary_mod = PrimaryMonitoringModule(0, self.resolver, 6, 1)
+        primary_mod.run_forever = False
+        primary_mod.update_need_chg_set = Mock()
+        primary_mod.run()
+        primary_mod.update_need_chg_set.assert_called_once()
+
+    def test_while_set_v_status_to_OK(self):
+        # Line 11
+        # Pretend primary == 1
+        self.resolver.execute = MagicMock(return_value = 1)
+        primary_mod = PrimaryMonitoringModule(0, self.resolver, 6, 1)
+        primary_mod.run_forever = False
+
+        # V_status is not OK from the start
+        primary_mod.vcm[primary_mod.id][V_STATUS] = enums.NO_SERVICE
+        primary_mod.run()
+        self.assertEqual(primary_mod.vcm[primary_mod.id][V_STATUS], enums.OK)
+
+    def test_while_set_v_status_to_no_service(self):
+        # Line 12
+        # Pretend primary == 1
+        self.resolver.execute = MagicMock(return_value = 1)
+        primary_mod = PrimaryMonitoringModule(0, self.resolver, 6, 1)
+        primary_mod.run_forever = False
+        primary_mod.sup_change = MagicMock(return_value = True)
+
+        # V_status is OK from the start, should be no_service after run
+        primary_mod.run()
+        self.assertEqual(primary_mod.vcm[primary_mod.id][V_STATUS], enums.NO_SERVICE)
+
+    def test_while_set_v_status_to_v_change(self):
+        # Line 13
+        # Pretend primary == 1
+        self.resolver.execute = MagicMock(return_value = 1)
+        primary_mod = PrimaryMonitoringModule(0, self.resolver, 6, 1)
+        primary_mod.run_forever = False
+        primary_mod.sup_change = MagicMock(return_value = True)
+
+        # V_status is NO_SERVICE, should be no_service after run
+        primary_mod.vcm[primary_mod.id][V_STATUS] = enums.NO_SERVICE
+        # More than 2f+1 processors are not providing services, everything is NOT OK
+        primary_mod.number_of_processors_in_no_service = MagicMock(return_value = 4)
+        primary_mod.run()
+        self.assertEqual(primary_mod.vcm[primary_mod.id][V_STATUS], enums.V_CHANGE)
+        self.assertEqual(call(Module.VIEW_ESTABLISHMENT_MODULE,
+                    Function.VIEW_CHANGE), self.resolver.execute.call_args)
+        
+
+    def test_while_v_change_true(self):
+        # Line 14
+        # Pretend primary == 1
+        self.resolver.execute = MagicMock(return_value = 1)
+        primary_mod = PrimaryMonitoringModule(0, self.resolver, 6, 1)
+        primary_mod.run_forever = False
+
+        # The node wants a view change
+        primary_mod.vcm[primary_mod.id][V_STATUS] = enums.V_CHANGE
+        primary_mod.run()
+
+        # execute.call_args gives the last input given to the function being called
+        self.assertEqual(call(Module.VIEW_ESTABLISHMENT_MODULE,
+                            Function.VIEW_CHANGE), self.resolver.execute.call_args)
+
