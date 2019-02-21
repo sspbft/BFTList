@@ -3,7 +3,7 @@
 # standard
 import os
 import logging
-import json
+import jsonpickle
 
 # local
 from communication.node import Node
@@ -44,7 +44,8 @@ def get_start_state():
     path = os.path.abspath("./conf/start_state.json")
     try:
         with open(path) as f:
-            data = json.load(f)
+            decoded = f.read().replace('\n', '')
+            data = jsonpickle.decode(decoded)
             return data
     except FileNotFoundError:
         return {}

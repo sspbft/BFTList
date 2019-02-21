@@ -56,6 +56,26 @@ class ReplicationModule(AlgorithmModule):
         self.rep = [ReplicaStructure(i) for i in range(n)] \
             # type: List[ReplicaStructure]
 
+        if os.getenv("INTEGRATION_TEST"):
+            start_state = conf.get_start_state()
+            if (start_state is not {} and str(self.id) in start_state and
+               "REPLICATION_MODULE" in start_state[str(self.id)]):
+                data = start_state[str(self.id)]["REPLICATION_MODULE"]
+                rep = data["rep"][self.id]
+                print(rep)
+                if data is not None:
+                    if "phs" in data:
+                        self.phs = deepcopy(data["phs"])
+                    if "views" in data:
+                        self.pred_and_action.views = deepcopy(data["views"])
+                    if "witnesses" in data:
+                        self.witnesses = deepcopy(data["witnesses"])
+                    if "echo" in data:
+                        self.echo = deepcopy(data["echo"])
+                    if "vChange" in data:
+                        self.pred_and_action.vChange = deepcopy(
+                                                        data["vChange"])
+
     def run(self):
         """Called whenever the module is launched in a separate thread."""
         sec = os.getenv("INTEGRATION_TEST_SLEEP")

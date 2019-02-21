@@ -9,7 +9,7 @@ requested operation.
 from .operation import Operation
 
 
-class ClientRequest:
+class ClientRequest(object):
     """Models a request as used in the Replication module."""
 
     def __init__(self, client_id, timestamp, operation: Operation):
