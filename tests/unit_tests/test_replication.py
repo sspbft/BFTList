@@ -505,21 +505,21 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep[replication.id].set_req_q([
             {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}}
             ])
-        self.assertFalse(replication.request_already_exists({REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP}}))
+        self.assertFalse(replication.request_already_exists(self.dummyRequest2))
         
         # dummyRequest1 already exists with a different status
         replication.rep[replication.id].set_req_q([
             {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PREP}},
             {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PREP}}
             ])
-        self.assertTrue(replication.request_already_exists({REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}}))
+        self.assertTrue(replication.request_already_exists(self.dummyRequest1))
 
         # dummyRequest3 is the same as dummyRequest2 beside the view -> found duplicate of sq_no and q
         replication.rep[replication.id].set_req_q([
             {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PREP}},
             {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PREP}},
             {REQUEST: dummyRequest3, STATUS: {ReplicationEnums.PREP}}])
-        self.assertTrue(replication.request_already_exists({REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PREP}}))
+        self.assertTrue(replication.request_already_exists(self.dummyRequest1))
 
     def test_prefixes(self):
         replication = ReplicationModule(0, Resolver(), 2, 0, 1)
@@ -718,22 +718,22 @@ class TestReplicationModule(unittest.TestCase):
             pend_reqs=[self.dummyRequest1.get_client_request()]
         ))
 
-    def test_reqs_to_prep(self):
-        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
-        # DummyRequest1 exists in unassigned_reqs
-        replication.unassigned_reqs = MagicMock(return_value = [self.dummyRequest1])
-        self.assertFalse(replication.reqs_to_prep(self.dummyRequest1))
+    # def test_reqs_to_prep(self):
+    #     replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+    #     # DummyRequest1 exists in unassigned_reqs
+    #     replication.unassigned_reqs = MagicMock(return_value = [self.dummyRequest1])
+    #     self.assertFalse(replication.reqs_to_prep(self.dummyRequest1))
 
-        # DummyRequest1 does not exist in unassigned_reqs but in rep[REQ_Q]
-        replication.unassigned_reqs = MagicMock(return_value = [])
-        replication.rep[replication.id].set_req_q([
-            {REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP}
-            ])
-        self.assertFalse(replication.reqs_to_prep(self.dummyRequest1))
+    #     # DummyRequest1 does not exist in unassigned_reqs but in rep[REQ_Q]
+    #     replication.unassigned_reqs = MagicMock(return_value = [])
+    #     replication.rep[replication.id].set_req_q([
+    #         {REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP}
+    #         ])
+    #     self.assertFalse(replication.reqs_to_prep(self.dummyRequest1))
 
-        # DummyRequest2 is accepted
-        replication.accept_req_preprep = MagicMock(return_value = True)
-        self.assertTrue(replication.reqs_to_prep(self.dummyRequest2))
+    #     # DummyRequest2 is accepted
+    #     replication.accept_req_preprep = MagicMock(return_value = True)
+    #     self.assertTrue(replication.reqs_to_prep(self.dummyRequest2))
 
     def test_commit(self):
         replication = ReplicationModule(0, Resolver(), 6, 1, 2)
@@ -1017,7 +1017,7 @@ class TestReplicationModule(unittest.TestCase):
         [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}, 
         {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}])
 
-    def test_while_assigning_prep_as_non_prim(self):
+    def test_while_assigning_pre_prep_as_non_prim(self):
         replication = ReplicationModule(1, Resolver(), 6, 1, 1)
         replication.run_forever = False
         # All functions called in while must be mocked:
@@ -1045,7 +1045,7 @@ class TestReplicationModule(unittest.TestCase):
         assigned_req1 = Request(ClientRequest(0, None, None), 0, 3)
         assigned_req2 = Request(ClientRequest(1, None, None), 0, 4)
 
-        replication.known_pend_reqs = MagicMock(return_value =[assigned_req1, assigned_req2])
+        replication.known_pend_reqs = MagicMock(return_value =[assigned_req1.get_client_request(), assigned_req2.get_client_request()])
         # req_q = 
         replication.rep = [ReplicaStructure(
             0,
@@ -1062,21 +1062,16 @@ class TestReplicationModule(unittest.TestCase):
             pend_reqs=[
                 assigned_req1.get_client_request(),
                 assigned_req2.get_client_request()],
-            req_q=[
-                {REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP}},
-                {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP}}
-                ],
+            req_q=[],
             prim=0
         ) for i in range(1,6)]
         replication.run()
 
-        # Pending request: create dummy "real" requests of the client request in pend-reqs
-
         # The pending requests are being assigned sequencial sequence numbers and
         # added to REQ_QUEUE
         self.assertEqual(replication.rep[replication.id].get_req_q(),
-        [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}, 
-        {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}])
+        [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP}}, 
+        {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP}}])
 
     def test_while_committing_to_request(self):
         # line 22
