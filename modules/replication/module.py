@@ -735,9 +735,8 @@ class ReplicationModule(AlgorithmModule):
             # then add last executed sequence number
             new_seq = max(self.last_exec(), potential_seq)
             self.rep[self.id].set_seq_num(new_seq)
-
             last_seq_num = self.last_exec()
-            if new_seq > last_seq_num:
+            while new_seq > last_seq_num:
                 # check if missing requests are in request queue
                 last_seq_num += 1
                 if not self.req_with_seq_num_in_req_q(last_seq_num):

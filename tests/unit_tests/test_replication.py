@@ -555,13 +555,17 @@ class TestReplicationModule(unittest.TestCase):
         replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         replication.rep = [ReplicaStructure(
             i,
-            pend_reqs=[self.dummyRequest1.get_client_request()],
-            view_changed=True
+            pend_reqs=[
+                self.dummyRequest1.get_client_request()
+                ],
+            view_changed=True,
+            req_q=[]
         ) for i in range(6)]
         # Pretend prim == replication.id (0)
         replication.resolver.execute = MagicMock(return_value = replication.id)
         replication.renew_reqs = Mock()
         replication.find_cons_state = MagicMock(return_value = ([], []))
+        replication.last_exec = MagicMock(return_value = 0)
         # All nodes are in the processor set, because all has the same rep
         replication.act_as_prim_when_view_changed(replication.id)
         replication.find_cons_state.assert_called_once()
@@ -572,10 +576,13 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep = [ReplicaStructure(
             i,
             pend_reqs=[self.dummyRequest1.get_client_request()],
-            view_changed=True
+            view_changed=True,
+            req_q=[]
         ) for i in range(0, 3)] + [ReplicaStructure(
             i,
-            pend_reqs=[self.dummyRequest1.get_client_request()]
+            pend_reqs=[self.dummyRequest1.get_client_request()],
+            view_changed=False,
+            req_q=[]
         ) for i in range(3, 6)]
 
         # Pretend prim == replication.id (0)
@@ -592,6 +599,7 @@ class TestReplicationModule(unittest.TestCase):
         # All has declared a view change but not all has 0 as prim
         replication.rep = [ReplicaStructure(
             i,
+            req_q=[],
             pend_reqs=[self.dummyRequest1.get_client_request()],
             view_changed=True
         ) for i in range(6)]
@@ -1579,12 +1587,23 @@ class TestReplicationModule(unittest.TestCase):
 
     def test_req_with_seq_num_in_req_q(self):
         replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+        seq_num_jump_request = Request(ClientRequest(0, None, Operation(
+            OperationEnums.APPEND, 1
+        )), 2, 4)
         replication.rep[replication.id].set_req_q([
             {REQUEST: self.dummyRequest1,
             STATUS: {ReplicationEnums.PRE_PREP}
-            }])
+            },
+            {REQUEST: self.dummyRequest2,
+            STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}
+            },
+            {REQUEST: seq_num_jump_request, 
+            STATUS:{ReplicationEnums.PRE_PREP, ReplicationEnums.PREP} }
+            ])
         self.assertTrue(replication.req_with_seq_num_in_req_q(1))
-        self.assertFalse(replication.req_with_seq_num_in_req_q(2))
+        self.assertTrue(replication.req_with_seq_num_in_req_q(2))
+        self.assertFalse(replication.req_with_seq_num_in_req_q(3))
+        self.assertTrue(replication.req_with_seq_num_in_req_q(4))
 
     def test_check_new_state_and_r_log(self):
         replication = ReplicationModule(0, Resolver(), 6, 1, 1)
@@ -1701,7 +1720,7 @@ class TestReplicationModule(unittest.TestCase):
             0,
             pend_reqs=[
                 self.dummyRequest1.get_client_request(),
-                self.dummyRequest2.get_client_request(),
+                seq_num_jump_request.get_client_request(),
                 ],
             prim=0,
             req_q = prim_req_q,
@@ -1710,7 +1729,7 @@ class TestReplicationModule(unittest.TestCase):
             i,
             pend_reqs=[
                 self.dummyRequest1.get_client_request(),
-                self.dummyRequest2.get_client_request()
+                seq_num_jump_request.get_client_request(),
                 ],
             req_q=req_q,
             prim=0
@@ -1719,5 +1738,51 @@ class TestReplicationModule(unittest.TestCase):
         self.assertTrue(replication.check_new_v_state(0))
 
     def test_act_as_prim_when_view_changed_produce_dummy(self):
-        pass
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+        # Pretend prim == replication.id (0)
+        replication.resolver.execute = MagicMock(return_value = 0)
+        replication.renew_reqs = Mock()
+        replication.find_cons_state = MagicMock(return_value = ([], []))
+        replication.last_exec= MagicMock(return_value = 0)
+        
+        dummy_request = Request(
+            ClientRequest(-1, None, Operation(
+                OperationEnums.NO_OP
+            )),
+            0, 2)
+
+        replication.produce_dummy_req = MagicMock(return_value = {REQUEST: dummy_request,
+                                STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}})
+        seq_num_jump_request = Request(ClientRequest(0, None, Operation(
+            OperationEnums.APPEND, 1
+        )), 2, 3)
+        req_q = [
+                {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+                {REQUEST: seq_num_jump_request, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+                ]
+        replication.rep = [ReplicaStructure(
+            i,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                seq_num_jump_request.get_client_request(),
+                ],
+            prim=0,
+            req_q = req_q,
+            seq_num = 1,
+            view_changed=True
+            ) for i in range(6)]
+
+        # Half of the nodes are in the set so it's less than 4f+1,
+        #  methods should not be called and view_change = True
+        replication.act_as_prim_when_view_changed(0)
+
+        self.maxDiff = None
+        self.assertEqual(replication.rep[replication.id].get_req_q(),
+        [
+            {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+            {REQUEST: seq_num_jump_request, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+            {REQUEST: dummy_request, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+            ])
+        replication.renew_reqs.assert_called_once()
+        self.assertFalse(replication.rep[replication.id].get_view_changed())
 
