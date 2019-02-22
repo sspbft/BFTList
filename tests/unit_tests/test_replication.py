@@ -878,7 +878,11 @@ class TestReplicationModule(unittest.TestCase):
 
         # The consolidated state is mock_rep_state
         mock_rep_state = [1,2]
-        replication.find_cons_state = MagicMock(return_value = (mock_rep_state, []))
+        mock_r_log = [
+            {REQUEST: self.dummyRequest1, REPLY: [1]},
+            {REQUEST: self.dummyRequest2, REPLY: [1,2]}
+        ]
+        replication.find_cons_state = MagicMock(return_value = (mock_rep_state, mock_r_log))
         replication.stale_rep = MagicMock(return_value = False)
         replication.conflict = MagicMock(return_value = False)
 
@@ -886,16 +890,70 @@ class TestReplicationModule(unittest.TestCase):
         replication.run()
         self.assertFalse(replication.rep[replication.id].get_con_flag())
         self.assertEqual(replication.rep[replication.id].get_rep_state(), mock_rep_state)
+        self.assertEqual(replication.rep[replication.id].get_r_log(), mock_r_log)
 
         # Node 0 REP_STATE is not a prefix of mock_rep_state and should adopt
         replication.rep = [ReplicaStructure(
             i,
-            rep_state=[[7]],
+            rep_state=[7],
             prim=4
         ) for i in range(5)]
 
         replication.run()
         self.assertEqual(replication.rep[replication.id].get_rep_state(), mock_rep_state)
+        self.assertEqual(replication.rep[replication.id].get_r_log(), mock_r_log)
+
+    def test_while_assigning_y_to_x(self):
+        # Line 9-11
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+        replication.run_forever = False
+        # All functions called in while must be mocked:
+
+        replication.com_pref_states = Mock()
+        replication.delayed = Mock()
+        replication.last_exec = Mock()
+        replication.unassigned_reqs = Mock()
+        replication.committed_set = MagicMock(return_value = [])
+        replication.reqs_to_prep = Mock()
+        replication.commit = Mock()
+        replication.act_as_nonprim_when_view_changed = Mock()
+        replication.act_as_prim_when_view_changed = Mock()
+        replication.send_msg = Mock()
+
+        # If not returning arrays, it returns an Mock-object and tests don't pass at all
+        # These functions are not used for the current case of test
+
+        replication.resolver.execute = MagicMock(return_value = -1)
+        replication.known_pend_reqs = MagicMock(return_value = [])
+
+        # The consolidated state is not found
+        replication.find_cons_state = MagicMock(return_value = (-1, []))
+        # Get DS_state on the other hand returns a rep_state
+        mock_rep_state = [1,2]
+        mock_r_log = [
+            {REQUEST: self.dummyRequest1, REPLY: [1]},
+            {REQUEST: self.dummyRequest2, REPLY: [1,2]}
+        ]
+        replication.get_ds_state = MagicMock(return_value = (mock_rep_state, mock_r_log))
+        replication.stale_rep = MagicMock(return_value = False)
+        replication.conflict = MagicMock(return_value = False)
+
+        # Node 0 has DEF_STATE, should "adopt" mock_rep_state
+        replication.run()
+        self.assertFalse(replication.rep[replication.id].get_con_flag())
+        self.assertEqual(replication.rep[replication.id].get_rep_state(), mock_rep_state)
+        self.assertEqual(replication.rep[replication.id].get_r_log(), mock_r_log)
+
+        # Node 0 REP_STATE is not a prefix of mock_rep_state and should adopt
+        replication.rep = [ReplicaStructure(
+            i,
+            rep_state=[7],
+            prim=4
+        ) for i in range(5)]
+
+        replication.run()
+        self.assertEqual(replication.rep[replication.id].get_rep_state(), mock_rep_state)
+        self.assertEqual(replication.rep[replication.id].get_r_log(), mock_r_log)
 
     def test_while_reset_cases(self):
         # Lines 12-13
@@ -1356,3 +1414,151 @@ class TestReplicationModule(unittest.TestCase):
             return True
         else:
             return 0
+
+    # Added functions after implementing find_cons_state
+
+    def test_is_prefix_of(self):
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
+
+        # Basic examples
+        log_A = [1,2,3]
+        log_B = [1,2]
+        self.assertFalse(replication.is_prefix_of(log_A, log_B))
+        self.assertTrue(replication.is_prefix_of(log_B, log_A))
+
+        log_B = [1,2,5]
+        self.assertFalse(replication.is_prefix_of(log_B, log_A))
+        
+        log_A = []
+        self.assertTrue(replication.is_prefix_of(log_A, log_B))
+
+        # Examples with dcts
+        log_A = [{REQUEST: self.dummyRequest1, X_SET:{2}}]
+        log_B = [{REQUEST: self.dummyRequest1, X_SET:{2}}, 
+                {REQUEST: self.dummyRequest2, X_SET:{1,3}}, 
+                ]
+        self.assertTrue(replication.is_prefix_of(log_A, log_B))
+        self.assertFalse(replication.is_prefix_of(log_B, log_A))
+        
+        log_A = [{REQUEST: self.dummyRequest1, X_SET:{2,4}}]
+        log_B = [{REQUEST: self.dummyRequest1, X_SET:{2}}, 
+                {REQUEST: self.dummyRequest2, X_SET:{1,3}}, 
+                ]
+        self.assertFalse(replication.is_prefix_of(log_A, log_B))
+
+    def test_find_prefix(self):
+        replication = ReplicationModule(0, Resolver(), 2, 0, 1)
+
+        # Basic examples
+        log_A = [1,2,3]
+        log_B = [1,2]
+        self.assertEqual(replication.find_prefix([log_A, log_B]), [1,2])
+        self.assertEqual(replication.find_prefix([log_B, log_A]), [1,2])
+
+        log_B = [1,2,5]
+        self.assertEqual(replication.find_prefix([log_B, log_A]), [1,2])
+        
+        log_A = []
+        self.assertEqual(replication.find_prefix([log_A, log_B]), [])
+
+        log_A = [2,5]
+        self.assertEqual(replication.find_prefix([log_A, log_B]), [])
+
+    def test_produce_dummy_req(self):
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+        target_request = Request(
+            ClientRequest(-1, None, Operation(
+                OperationEnums.NO_OP
+            )),
+            0,
+            2)
+        self.assertEqual(replication.produce_dummy_req(2),
+            {
+            REQUEST: target_request,
+            STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PRE_PREP}
+            })
+
+    def test_req_with_seq_num_in_req_q(self):
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+        replication.rep[replication.id].set_req_q([
+            {REQUEST: self.dummyRequest1,
+            STATUS: {ReplicationEnums.PRE_PREP}
+            }])
+        self.assertTrue(replication.req_with_seq_num_in_req_q(1))
+        self.assertFalse(replication.req_with_seq_num_in_req_q(2))
+
+    def test_check_new_state_and_r_log(self):
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+        # Let prim == 1
+        replication.rep = [ReplicaStructure(
+            i,
+            rep_state = [1,2,3],
+            r_log = [],
+            prim=1
+        ) for i in range(6)]
+
+        # Change replica structure of primary
+        prim_r_log = [
+            {REQUEST: self.dummyRequest1, REPLY: [1]},
+            {REQUEST: self.dummyRequest2, REPLY: [1,2]}]
+
+        replication.rep[1].set_rep_state([1,2])
+        replication.rep[1].set_r_log(prim_r_log)
+        self.assertTrue(replication.check_new_state_and_r_log(1))
+
+        # Now the r_log does not comply with the given new state
+        prim_r_log = [
+            {REQUEST: self.dummyRequest1, REPLY: [1]},
+            {REQUEST: self.dummyRequest1, REPLY: [1,1]}]
+        replication.rep[1].set_r_log(prim_r_log)
+        self.assertFalse(replication.check_new_state_and_r_log(1))
+
+        # The replica state of the primary is not a prefix of the others
+        replication.rep[1].set_rep_state([1,4])
+        self.assertFalse(replication.check_new_state_and_r_log(1))
+
+    def test_find_cons_state(self):
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+        # Let prim == 1
+        r_log_entries = [
+            {REQUEST: self.dummyRequest1, REPLY: [1]},
+            {REQUEST: self.dummyRequest2, REPLY: [1,2]}]
+
+        # all replicas has the same state and r_log
+        replication.rep = [ReplicaStructure(
+            i,
+            rep_state = [1,2],
+            r_log = r_log_entries,
+            prim=1
+        ) for i in range(6)]
+
+        target = ([1,2], r_log_entries)
+        self.assertEqual(replication.find_cons_state({0,1,2,3,4,5}), target)
+
+        # Empty set should return "TEE"
+        self.assertEqual(replication.find_cons_state(set()), (-1, []))
+
+        # Empty prefix_state should return "TEE"
+        # Nodes don't have a prefix in common
+        replication.rep = [ReplicaStructure(
+            i,
+            rep_state = [1,2],
+            r_log = r_log_entries,
+            prim=1
+        ) for i in range(3)] + [ReplicaStructure(
+            i,
+            rep_state = [2,4],
+            r_log = r_log_entries,
+            prim=1
+        ) for i in range(3,6)]
+        self.assertEqual(replication.find_cons_state({0,1,2,3,4,5}), (-1, []))
+
+        # Empty R_log should return "TEE"
+        # Their r_log does not match the common prefix
+        self.assertEqual(replication.find_cons_state({0,1,2,3,4,5}), (-1, []))        
+        replication.rep = [ReplicaStructure(
+            i,
+            rep_state = [1,2],
+            r_log = [{REQUEST: self.dummyRequest1, REPLY: [1]}],
+            prim=1
+        ) for i in range(6)]

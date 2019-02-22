@@ -925,7 +925,6 @@ class ReplicationModule(AlgorithmModule):
                 break
         if r_log == []:
             return (-1, [])
-
         return (prefix_state, r_log)
 
     def find_prefix(self, rep_states: List):
