@@ -1032,7 +1032,6 @@ class TestReplicationModule(unittest.TestCase):
         replication.act_as_nonprim_when_view_changed = Mock()
         replication.act_as_prim_when_view_changed = Mock()
         replication.send_msg = Mock()
-        replication.accept_req_preprep = MagicMock(return_value = True)
 
         # If not returning arrays, it returns an Mock-object and tests don't pass at all
         replication.find_cons_state = MagicMock(return_value = ([], []))
@@ -1045,8 +1044,6 @@ class TestReplicationModule(unittest.TestCase):
         assigned_req1 = Request(ClientRequest(0, None, None), 0, 3)
         assigned_req2 = Request(ClientRequest(1, None, None), 0, 4)
 
-        replication.known_pend_reqs = MagicMock(return_value =[assigned_req1.get_client_request(), assigned_req2.get_client_request()])
-        # req_q = 
         replication.rep = [ReplicaStructure(
             0,
             pend_reqs=[
@@ -1072,6 +1069,61 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.rep[replication.id].get_req_q(),
         [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP}}, 
         {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP}}])
+
+    def test_while_assigning_prep_as_non_prim(self):
+        replication = ReplicationModule(1, Resolver(), 6, 1, 1)
+        replication.run_forever = False
+        # All functions called in while must be mocked:
+
+        replication.com_pref_states = Mock()
+        replication.delayed = MagicMock(return_value = False)
+        replication.stale_rep = MagicMock(return_value = False)
+        replication.conflict = MagicMock(return_value = False)
+        replication.unassigned_reqs = MagicMock(return_value = [])
+        replication.committed_set = MagicMock(return_value = [])
+        replication.commit = Mock()
+        replication.act_as_nonprim_when_view_changed = Mock()
+        replication.act_as_prim_when_view_changed = Mock()
+        replication.send_msg = Mock()
+        #replication.accept_req_preprep = MagicMock(return_value = True)
+
+        # If not returning arrays, it returns an Mock-object and tests don't pass at all
+        replication.find_cons_state = MagicMock(return_value = ([], []))
+        replication.get_ds_state = MagicMock(return_value = [])
+        replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
+        replication.last_exec = MagicMock(return_value = 2)
+        replication.seq_n = 2
+
+        # Request that the prim has send with PRE_prep and Prep
+        assigned_req1 = Request(ClientRequest(0, None, None), 0, 3)
+        assigned_req2 = Request(ClientRequest(1, None, None), 0, 4)
+
+        replication.rep = [ReplicaStructure(
+            0,
+            r_log=[],
+            pend_reqs=[
+                assigned_req1.get_client_request(),
+                assigned_req2.get_client_request()],
+            req_q =[
+                {REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+                {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+                ],
+            prim=0
+        )] + [ReplicaStructure(
+            i,
+            r_log=[],
+            pend_reqs=[
+                assigned_req1.get_client_request(),
+                assigned_req2.get_client_request()],
+            req_q=[{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP}},
+                {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP}}],
+            prim=0
+        ) for i in range(1,6)]
+        replication.run()
+        # The status of the requests should be updated to both PRE_PREP and PREP
+        self.assertEqual(replication.rep[replication.id].get_req_q(),
+        [{REQUEST: assigned_req1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}, 
+         {REQUEST: assigned_req2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}])
 
     def test_while_committing_to_request(self):
         # line 22
@@ -1215,6 +1267,36 @@ class TestReplicationModule(unittest.TestCase):
         replication.apply(req)
 
         self.assertEqual(replication.rep[replication.id].get_rep_state(), target_state)
+
+    def test_accept_req_prep(self):
+        # Indirect checks prep_request_already_exists-method
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+        req_q = [
+            {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+            {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}]
+        replication.rep = [ReplicaStructure(
+            0,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request()],
+            prim=1,
+            req_q = [
+                {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}},
+                {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+                ]
+            )]+ [ReplicaStructure(
+            i,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request()
+                ],
+            req_q=req_q,
+            prim=1
+        ) for i in range(1,6)]
+        # dummyRequest1 is OK
+        self.assertTrue(replication.accept_req_prep(self.dummyRequest1, 0))
+        # dummyRequest2 does already exist with PREP in processor's req_Q
+        self.assertFalse(replication.accept_req_prep(self.dummyRequest2, 0))
 
     # Functions used to mock execute at resolver
     def get_0_as_view(self, func):
