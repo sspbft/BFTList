@@ -1298,6 +1298,56 @@ class TestReplicationModule(unittest.TestCase):
         # dummyRequest2 does already exist with PREP in processor's req_Q
         self.assertFalse(replication.accept_req_prep(self.dummyRequest2, 0))
 
+
+    def test_renew_reqs(self):
+        replication = ReplicationModule(0, Resolver(), 6, 1, 1)
+        request3 = ClientRequest(0, None, None)
+        req_q = [
+                {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}},
+                {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+                ]
+
+        # The first 3 processors has an extra clientRequest (request3)
+        replication.rep = [ReplicaStructure(
+            i,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request(),
+                request3],
+            prim=0,
+            req_q = req_q,
+            seq_num = 2
+            ) for i in range(3)]+ [ReplicaStructure(
+            i,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request()
+                ],
+            req_q=req_q,
+            prim=0
+        ) for i in range(3,6)]
+
+        replication.renew_reqs({0,1,2,3,4,5})
+        # Request3 should be discarged
+        self.assertEqual(replication.rep[replication.id].get_pend_reqs(),
+            [self.dummyRequest1.get_client_request(),
+            self.dummyRequest2.get_client_request()])
+        # dummyRequest1 need a new Pre_prep message with the new primary as view
+        # dummyRequest1 has default view = 1, and sequence number 1,
+        # should now be updated
+        self.maxDiff = None
+        newRequest = Request(ClientRequest(0, None, Operation(
+            OperationEnums.APPEND, 1
+        )), 0, 3)
+        self.assertEqual(replication.rep[replication.id].get_req_q(),
+            [
+            {REQUEST: newRequest, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+            {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+                ])
+
+    def test_check_new_v_state(self):
+        pass
+
     # Functions used to mock execute at resolver
     def get_0_as_view(self, func):
         if (func == Function.ALLOW_SERVICE):

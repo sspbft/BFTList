@@ -50,6 +50,10 @@ class ClientRequest:
                     self.operation == other.get_operation())
         return False
 
+    def __hash__(self):
+        """Overrides the default implementation"""
+        return hash((self.client_id, self.timestamp))
+
     def to_dct(self):
         """Converts a client request to a corresponding dictionary."""
         return {"client_id": self.client_id, "timestamp": self.timestamp,

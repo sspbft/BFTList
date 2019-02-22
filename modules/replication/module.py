@@ -837,7 +837,7 @@ class ReplicationModule(AlgorithmModule):
         """Method description.
 
         Creates PRE_PREP msg for each request not being executed by
-        4f+1 processors.
+        the processors in processor_set.
         """
         # remove requests that does not exist for all
         # processors in processors_set
@@ -856,16 +856,16 @@ class ReplicationModule(AlgorithmModule):
 
         # find all reqs that only have pre-prep message, need to create new
         reqs_need_pre_prep = list(filter(
-            lambda r: r[STATUS] == {ReplicationEnums.PRE_PREP}),
-            self.rep[self.id].get_req_q()
+            lambda r: r[STATUS] == {ReplicationEnums.PRE_PREP},
+            self.rep[self.id].get_req_q())
         )
 
         for j in processors_set:
             j_req_q = self.rep[j].get_req_q()
             j_reqs_need_pre_prep = list(filter(
                 lambda r: (r[STATUS] == {ReplicationEnums.PRE_PREP} and
-                           r in reqs_need_pre_prep)),
-                j_req_q)
+                           r in reqs_need_pre_prep),
+                j_req_q))
 
             # filter out all pre_prep reqs that are not in j's req q
             reqs_need_pre_prep = list(filter(
@@ -877,6 +877,7 @@ class ReplicationModule(AlgorithmModule):
             if req in reqs_need_pre_prep:
                 # current view is equal to self.id since we are primary
                 req[REQUEST].set_view(self.id)
+
                 # Increment sequence number and assign
                 self.rep[self.id].inc_seq_num()
                 req[REQUEST].set_seq_num(self.rep[self.id].get_seq_num())
