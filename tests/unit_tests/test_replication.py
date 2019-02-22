@@ -1775,8 +1775,6 @@ class TestReplicationModule(unittest.TestCase):
         # Half of the nodes are in the set so it's less than 4f+1,
         #  methods should not be called and view_change = True
         replication.act_as_prim_when_view_changed(0)
-
-        self.maxDiff = None
         self.assertEqual(replication.rep[replication.id].get_req_q(),
         [
             {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
