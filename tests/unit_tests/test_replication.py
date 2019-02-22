@@ -145,10 +145,10 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep[4].set_rep_state([{"op": "add", "val": 3}])
         replication.rep[5].set_rep_state([{"op": "add", "val": 2}])
 
-        self.assertEqual(replication.com_pref_states(2), ([{"op": "add", "val": 0}], [{"op": "add", "val": 0}]))
-        self.assertEqual(replication.com_pref_states(3), ([{"op": "add", "val": 0}], [{"op": "add", "val": 0}],[{"op": "add", "val": 0}, {"op": "add", "val": 2}]))
+        self.assertEqual(replication.com_pref_states(2), [[{"op": "add", "val": 0}], [{"op": "add", "val": 0}]])
+        self.assertEqual(replication.com_pref_states(3), [[{"op": "add", "val": 0}], [{"op": "add", "val": 0}],[{"op": "add", "val": 0}, {"op": "add", "val": 2}]])
         # no more than 3 processors have a common prefix
-        self.assertEqual(replication.com_pref_states(4), set())
+        self.assertEqual(replication.com_pref_states(4), [])
 
     def test_get_ds_state(self):
         replication = ReplicationModule(0, Resolver(), 6, 1, 1)
@@ -1631,11 +1631,23 @@ class TestReplicationModule(unittest.TestCase):
             prim=1
         ) for i in range(6)]
 
+        processor_states = [[1,2] for i in range(6)]
+
         target = ([1,2], r_log_entries)
-        self.assertEqual(replication.find_cons_state({0,1,2,3,4,5}), target)
+        self.assertEqual(replication.find_cons_state(processor_states), target)
 
         # Empty set should return "TEE"
-        self.assertEqual(replication.find_cons_state(set()), (-1, []))
+        self.assertEqual(replication.find_cons_state([]), (-1, []))
+
+        # Empty R_log should return "TEE"
+        # Their r_log does not match the common prefix     
+        replication.rep = [ReplicaStructure(
+            i,
+            rep_state = [1,2],
+            r_log = [{REQUEST: self.dummyRequest1, REPLY: [1]}],
+            prim=1
+        ) for i in range(6)]
+        self.assertEqual(replication.find_cons_state(processor_states), (-1, []))   
 
         # Empty prefix_state should return "TEE"
         # Nodes don't have a prefix in common
@@ -1650,17 +1662,11 @@ class TestReplicationModule(unittest.TestCase):
             r_log = r_log_entries,
             prim=1
         ) for i in range(3,6)]
-        self.assertEqual(replication.find_cons_state({0,1,2,3,4,5}), (-1, []))
 
-        # Empty R_log should return "TEE"
-        # Their r_log does not match the common prefix
-        self.assertEqual(replication.find_cons_state({0,1,2,3,4,5}), (-1, []))        
-        replication.rep = [ReplicaStructure(
-            i,
-            rep_state = [1,2],
-            r_log = [{REQUEST: self.dummyRequest1, REPLY: [1]}],
-            prim=1
-        ) for i in range(6)]
+        processor_states = [[1,2] for i in range(3)] + [[2,4] for i in range(3,6)]
+        self.assertEqual(replication.find_cons_state(processor_states), (-1, []))
+
+
 
     def test_check_new_v_state_including_dummy_request(self):
         # Primary is 0 and I'm 1

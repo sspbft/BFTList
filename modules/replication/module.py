@@ -375,8 +375,8 @@ class ReplicationModule(AlgorithmModule):
                     break
             # All replica states where prefixes to each other
             if(all_states_are_prefixes):
-                return S
-        return set()
+                return list(S)
+        return []
 
     def get_ds_state(self) -> Tuple[List, List]:
         """Method description.
@@ -885,10 +885,10 @@ class ReplicationModule(AlgorithmModule):
                 # PRE_PREP - message
                 req[STATUS].add(ReplicationEnums.PREP)
 
-    def find_cons_state(self, processors_set) -> Tuple[List, List]:
+    def find_cons_state(self, processors_states) -> Tuple[List, List]:
         """Method description.
 
-        Returns a consolidated replica state based on the processors_set,
+        Returns a consolidated replica state based on the processors_states,
         the set should have a common (non-empty) prefix and consistency
         among request and pending queues.
         Produces a dummy request if 3f+1 processor have committed a number
@@ -898,14 +898,17 @@ class ReplicationModule(AlgorithmModule):
         r_log entry at this processor.
         NOTE that returning (-1, *) means that something went wrong.
         """
-        if len(processors_set) == 0:
+        # if len(processors_set) == 0:
+        #     return (-1, [])
+
+        # rep_states = []
+        # for processor_id in processors_set:
+        #     rep_states.append(self.rep[processor_id].get_rep_state())
+
+        if len(processors_states) == 0:
             return (-1, [])
 
-        rep_states = []
-        for processor_id in processors_set:
-            rep_states.append(self.rep[processor_id].get_rep_state())
-
-        prefix_state = self.find_prefix(rep_states)
+        prefix_state = self.find_prefix(processors_states)
         if prefix_state == []:
             return (-1, [])
 
