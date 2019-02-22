@@ -1404,7 +1404,106 @@ class TestReplicationModule(unittest.TestCase):
                 ])
 
     def test_check_new_v_state(self):
-        pass
+        # I'm 1 and prim = 0
+        replication = ReplicationModule(1, Resolver(), 6, 1, 1)
+        replication.check_new_state_and_r_log = MagicMock(return_value = True)
+        newRequest = Request(ClientRequest(0, None, Operation(
+            OperationEnums.APPEND, 1
+        )), 0, 3)
+        request3 = ClientRequest(0, None, None)
+        req_q = [
+                {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}},
+                {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+                ]
+        
+        prim_req_q = [
+                    {REQUEST: newRequest, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+                    {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+                    ]
+        # Node 0 has updated it's replica structure and I will check it
+        # It is Correct
+        replication.rep = [ReplicaStructure(
+            0,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request(),
+                ],
+            prim=0,
+            req_q = prim_req_q,
+            seq_num = 2
+            )]+ [ReplicaStructure(
+            i,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request()
+                ],
+            req_q=req_q,
+            prim=0
+        ) for i in range(1,6)]
+
+        self.assertTrue(replication.check_new_v_state(0))
+
+        # It is Faulty, pending reqs has an extra request.
+        replication.rep = [ReplicaStructure(
+            0,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request(),
+                request3],
+            prim=0,
+            req_q = prim_req_q,
+            seq_num = 2
+            )]+ [ReplicaStructure(
+            i,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request()
+                ],
+            req_q=req_q,
+            prim=0
+        ) for i in range(1,6)]
+
+        self.assertFalse(replication.check_new_v_state(0))
+
+    def test_check_new_v_state_false_req_q(self):
+        # I'm 1 and prim = 0
+        replication = ReplicationModule(1, Resolver(), 6, 1, 1)
+        replication.check_new_state_and_r_log = MagicMock(return_value = True)
+        newRequest = Request(ClientRequest(0, None, Operation(
+            OperationEnums.APPEND, 1
+        )), 0, 3)
+        request3 = ClientRequest(0, None, None)
+        req_q = [
+                #{REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}},
+                {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+                ]
+        # Primary has a newRequest that does not exists at the other processors req_q
+        prim_req_q = [
+                    {REQUEST: newRequest, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+                    {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+                    ]
+        # Node 0 has updated it's replica structure and I will check it
+        # It is Correct
+        replication.rep = [ReplicaStructure(
+            0,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request(),
+                ],
+            prim=0,
+            req_q = prim_req_q,
+            seq_num = 2
+            )]+ [ReplicaStructure(
+            i,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request()
+                ],
+            req_q=req_q,
+            prim=0
+        ) for i in range(1,6)]
+
+        self.assertFalse(replication.check_new_v_state(0))
 
     # Functions used to mock execute at resolver
     def get_0_as_view(self, func):
@@ -1562,3 +1661,57 @@ class TestReplicationModule(unittest.TestCase):
             r_log = [{REQUEST: self.dummyRequest1, REPLY: [1]}],
             prim=1
         ) for i in range(6)]
+
+    def test_check_new_v_state_including_dummy_request(self):
+        # Primary is 0 and I'm 1
+        replication = ReplicationModule(1, Resolver(), 6, 1, 1)
+        replication.check_new_state_and_r_log = MagicMock(return_value = True)
+
+        # dummyRequest1 has seq_no 1
+        # seq_num_jump_request has 3
+        # => We need a dummyRequest with seq_num = 2
+        dummy_request = Request(
+            ClientRequest(-1, None, Operation(
+                OperationEnums.NO_OP
+            )),
+            0, 2)
+        # This is in the old view, should be assigned 
+        seq_num_jump_request = Request(ClientRequest(0, None, Operation(
+            OperationEnums.APPEND, 1
+        )), 2, 3)
+        req_q = [
+                {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+                {REQUEST: seq_num_jump_request, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+                ]
+        # Primary adds the dummyRequest
+        prim_req_q = [
+                    {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+                    {REQUEST: seq_num_jump_request, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+                    {REQUEST: dummy_request, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PRE_PREP}
+            }]
+        # Node 0 has updated it's replica structure and I will check it
+        # It is Correct
+        replication.rep = [ReplicaStructure(
+            0,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request(),
+                ],
+            prim=0,
+            req_q = prim_req_q,
+            seq_num = 1
+            )]+ [ReplicaStructure(
+            i,
+            pend_reqs=[
+                self.dummyRequest1.get_client_request(),
+                self.dummyRequest2.get_client_request()
+                ],
+            req_q=req_q,
+            prim=0
+        ) for i in range(1,6)]
+
+        self.assertTrue(replication.check_new_v_state(0))
+
+    def test_act_as_prim_when_view_changed_produce_dummy(self):
+        pass
+

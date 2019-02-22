@@ -11,8 +11,8 @@ from typing import List, Tuple
 # local
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums, OperationEnums
-from modules.constants import (MAXINT, SIGMA, X_SET, REP_STATE, CLIENT_REQ,
-                               REQUEST, STATUS, SEQUENCE_NO)
+from modules.constants import (MAXINT, SIGMA, X_SET, REP_STATE,
+                               REQUEST, STATUS)
 from resolve.enums import Module, Function, MessageType
 import conf.config as conf
 from .models.replica_structure import ReplicaStructure
@@ -961,10 +961,7 @@ class ReplicationModule(AlgorithmModule):
                 replica_structure.get_req_q())
             )
             for req_pair in pre_prep_reqs:
-                key = {
-                    CLIENT_REQ: req_pair[REQUEST].get_client_request(),
-                    SEQUENCE_NO: req_pair[REQUEST].get_seq_num()
-                }
+                key = req_pair[REQUEST].get_client_request()
                 if key in req_exists_count:
                     req_exists_count[key] += 1
                 else:
@@ -974,17 +971,15 @@ class ReplicationModule(AlgorithmModule):
         # for 3f + 1 processors
         for req_pair in self.rep[prim].get_req_q():
             if req_pair[REQUEST].get_view() == prim:
-                key = {
-                    CLIENT_REQ: req_pair[REQUEST].get_client_request(),
-                    SEQUENCE_NO: req_pair[REQUEST].get_seq_num()
-                }
+                key = req_pair[REQUEST].get_client_request()
                 # add dummy requests to req_q to avoid halting
-                if key.get_client_request().is_dummy():
-                    dummy_seq_num = key.get_seq_num()
+                if key.is_dummy():
+                    dummy_seq_num = req_pair[REQUEST].get_seq_num()
                     # make sure dummy seq num does not exist for other req
                     # in req q
                     for r in self.rep[prim].get_req_q():
-                        if r != key and r.get_seq_num() == dummy_seq_num:
+                        if (r[REQUEST].get_client_request() != key and
+                           r[REQUEST].get_seq_num() == dummy_seq_num):
                             return False
 
                     continue
