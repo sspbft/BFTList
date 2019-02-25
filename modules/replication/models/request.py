@@ -52,6 +52,12 @@ class Request:
         return (f"Request - client_request: {str(self.client_request)}, " +
                 f"view: {self.view}, seq_num: {self.seq_num}")
 
+    def __hash__(self):
+        """Overrides the default implementation"""
+        return hash((self.client_request.get_client_id(),
+                    self.view,
+                    self.seq_num))
+
     def to_dct(self):
         """Converts a request to a corresponding dictionary."""
         return {"client_request": self.client_request, "view": self.view,
