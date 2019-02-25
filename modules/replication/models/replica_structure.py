@@ -107,7 +107,15 @@ class ReplicaStructure(object):
     def add_to_req_q(self, req_pair: Dict):
         """Adds a request pair to the req_q."""
         self.validate_req_pair(req_pair)
-        self.req_q.append(deepcopy(req_pair))
+        if not self.req_already_exist(req_pair[REQUEST]):
+            self.req_q.append(deepcopy(req_pair))
+
+    def req_already_exist(self, req: Request):
+        """Checks if the request exist in req_q."""
+        for req_pair in self.req_q:
+            if req_pair[REQUEST] == req:
+                return True
+        return False
 
     def set_req_q(self, req_q: List[Dict]):
         """Sets the req_q for this processor.

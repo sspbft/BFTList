@@ -199,6 +199,13 @@ class ReplicationModule(AlgorithmModule):
                                 # Adding PREP to the valid request
                                 req_pair[STATUS].add(ReplicationEnums.PREP)
 
+                        # Find unknown supported PREP-request and add to req_q
+                        for req in self.get_unknown_supported_prep():
+                            new_req_pair = {REQUEST: req, STATUS: {
+                                ReplicationEnums.PRE_PREP,
+                                ReplicationEnums.PREP}}
+                            self.rep[self.id].add_to_req_q(new_req_pair)
+
                     # consider prepped msgs per request,
                     # if 3f+1 agree then commit
                     for req_pair in self.known_reqs({ReplicationEnums.PREP}):
@@ -1027,6 +1034,32 @@ class ReplicationModule(AlgorithmModule):
             state = op.execute(state)
 
         return state == self.rep[prim].get_rep_state()
+
+    def get_unknown_supported_prep(self):
+        """Returns all requests that are supported by 3f+1 processor
+
+        but are unknown to processor i, meaning it does not exists in req_q.
+        """
+        reqs_count = {}
+        for rs in self.rep:
+            # No need to look through more than n - 3f since unknown
+            # requests will then not be supported
+            # (if not found before, then the request can't have 3f+1 nodes
+            # supporting it)
+            for req_pairs in rs.get_req_q():
+                if {ReplicationEnums.PREP} <= req_pairs[STATUS]:
+                    # The request has PREP_message
+                    for rp in self.rep[self.id].get_req_q():
+                        if rp[REQUEST] != req_pairs[REQUEST]:
+                            # Request does not exist in own req_q, count i
+                            if req_pairs[REQUEST] in reqs_count:
+                                reqs_count[req_pairs[REQUEST]] += 1
+                            else:
+                                reqs_count[req_pairs[REQUEST]] = 1
+        # Get all supported requests
+        supported_reqs = {k: v for (k, v) in reqs_count.items() if v >= (
+                                    3 * self.number_of_byzantine + 1)}
+        return list(supported_reqs.keys())
 
     # Function to extract data
     def get_data(self):
