@@ -68,7 +68,7 @@ class FailureDetectorModule:
     def check_progress_by_prim(self, prim):
         """Checks for progress done by the primary.
 
-        Line 15-17
+        Line 15-19
         """
         # Check progress
         exist_progress = False

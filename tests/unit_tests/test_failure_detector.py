@@ -11,12 +11,12 @@ from modules.replication.models.operation import Operation
 from modules.enums import OperationEnums
 from modules.primary_monitoring.failure_detector import FailureDetectorModule
 
-class TestConfig(unittest.TestCase):
+class TestFailureDetector(unittest.TestCase):
 
     def setUp(self):
         self.resolver = Resolver()
         self.clientRequest1 = ClientRequest(1, 1, Operation(OperationEnums.APPEND, 1))
-        self.clientRequest2 = ClientRequest(2, 2, Operation(OperationEnums.APPEND, 1))
+        self.clientRequest2 = ClientRequest(2, 2, Operation(OperationEnums.APPEND, 2))
 
     def test_call_view_establishment_module(self):
         fail_det = FailureDetectorModule(0, self.resolver, 6, 1)
