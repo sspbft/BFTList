@@ -1858,7 +1858,7 @@ class TestReplicationModule(unittest.TestCase):
         self.assertEqual(replication.get_unknown_supported_prep(), [self.dummyRequest2])
 
 
-        # Now not enough are suååort self.dummyRequest2
+        # Now not enough are support self.dummyRequest2
         replication.rep = [ReplicaStructure(
             i,
             pend_reqs=[self.dummyRequest1],
