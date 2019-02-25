@@ -199,6 +199,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         primary_mod = PrimaryMonitoringModule(0, self.resolver, 6, 1)
         primary_mod.run_forever = False
         primary_mod.sup_change = MagicMock(return_value = True)
+        primary_mod.vcm[primary_mod.id][PRIM] = 1
 
         # V_status is NO_SERVICE, should be no_service after run
         primary_mod.vcm[primary_mod.id][V_STATUS] = enums.NO_SERVICE
@@ -216,6 +217,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         self.resolver.execute = MagicMock(return_value = 1)
         primary_mod = PrimaryMonitoringModule(0, self.resolver, 6, 1)
         primary_mod.run_forever = False
+        primary_mod.vcm[primary_mod.id][PRIM] = 1
 
         # The node wants a view change
         primary_mod.vcm[primary_mod.id][V_STATUS] = enums.V_CHANGE
