@@ -44,8 +44,6 @@ def send_to_node(node, payload):
             time.sleep(1)
             continue
 
-    response = connection.getresponse()
-
 
 def broadcast(payload):
     """Broadcast the request to all running BFTList nodes."""

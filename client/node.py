@@ -17,7 +17,7 @@ class Node:
 
 def get_nodes():
     """Parses nodes file to a dict of nodes such that dct[id] = node."""
-    path = os.getenv("HOSTS_PATH")
+    path = os.getenv("HOSTS_PATH", "../conf/hosts.txt")
     with open(path) as f:
         lines = [x.strip().split(",") for x in f.readlines()]
         nodes = {}
