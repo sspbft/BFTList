@@ -11,8 +11,8 @@ from typing import List, Tuple
 # local
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums, OperationEnums
-from modules.constants import (MAXINT, SIGMA, X_SET, REP_STATE, CLIENT_REQ,
-                               REQUEST, STATUS, SEQUENCE_NO)
+from modules.constants import (MAXINT, SIGMA, X_SET, REP_STATE,
+                               REQUEST, STATUS)
 from resolve.enums import Module, Function, MessageType
 import conf.config as conf
 from .models.replica_structure import ReplicaStructure
@@ -153,13 +153,42 @@ class ReplicationModule(AlgorithmModule):
                     else:
                         # wait for prim or process reqs where 3f+1
                         # agree on seqnum
-                        reqs = list(filter(
-                            self.reqs_to_prep, self.known_pend_reqs()))
-                        for req in reqs:
-                            for req_pair in self.rep[self.id].get_req_q():
-                                # status list will always be [PRE_PREP]
-                                if req == req_pair[REQUEST]:
-                                    req_pair[STATUS].add(ReplicationEnums.PREP)
+
+                        for reqs in self.known_pend_reqs():
+                            # Check if any request should get PRE_PREP
+                            if self.accept_req_preprep(reqs, prim_id):
+                                # Find the actual request from prim
+                                for req_pair in self.rep[prim_id].get_req_q():
+                                    req = req_pair[REQUEST]
+                                    if (req.get_client_request() == reqs and
+                                        req.get_view() == prim_id and
+                                        self.last_exec() <=
+                                            req.get_seq_num() <=
+                                            (self.last_exec() +
+                                                SIGMA *
+                                                self.number_of_clients)):
+                                        # Adding the request with pre_prep
+                                        self.rep[self.id].add_to_req_q(
+                                            {REQUEST: req,
+                                             STATUS: {
+                                                 ReplicationEnums.PRE_PREP}
+                                             }
+                                        )
+                                        # No need to search further
+                                        break
+
+                        # Check if any request should be PREP
+                        for req_pair in self.known_reqs(
+                                {ReplicationEnums.PRE_PREP}):
+                            # Known_reqs gives back request pair with statuses
+                            # that INCLUDES Pre-prep, filter out the onces that
+                            # has a PREP already.
+                            if (req_pair[STATUS] ==
+                                    {ReplicationEnums.PRE_PREP} and
+                               self.accept_req_prep(req_pair[REQUEST],
+                               self.rep[self.id].get_prim())):
+                                # Adding PREP to the valid request
+                                req_pair[STATUS].add(ReplicationEnums.PREP)
 
                     # consider prepped msgs per request,
                     # if 3f+1 agree then commit
@@ -224,16 +253,12 @@ class ReplicationModule(AlgorithmModule):
         # TODO implement
         pass
 
-    def reqs_to_prep(self, req):
-        """Helper method to filter out requests to prepare."""
-        if req in self.unassigned_reqs():
-            return False
-
-        for replica_structure in self.rep:
-            if replica_structure.get_id() != self.rep[self.id].get_prim():
-                if req in replica_structure.get_req_q():
-                    return False
-        return self.accept_req_preprep(req, self.rep[self.id].get_prim())
+    # def reqs_to_prep(self, req_pair):
+    #     """Helper method to filter out requests to be PREP."""
+    #     if req_pair[STATUS] != {ReplicationEnums.PRE_PREP}:
+    #         return False
+    #     return self.accept_req_prep(req_pair[REQUEST],
+    #                                 self.rep[self.id].get_prim())
 
     def commit(self, req_pair):
         """Commits a request."""
@@ -350,8 +375,8 @@ class ReplicationModule(AlgorithmModule):
                     break
             # All replica states where prefixes to each other
             if(all_states_are_prefixes):
-                return S
-        return set()
+                return list(S)
+        return []
 
     def get_ds_state(self) -> Tuple[List, List]:
         """Method description.
@@ -534,24 +559,76 @@ class ReplicationModule(AlgorithmModule):
         True if PRE_PREP msg from prim exists and the content is the same for
         3f+1 processors in the same view and sequence number.
         """
-        # Processor i knows of the request
-        if request in self.known_pend_reqs():
+        # Processor i knows of the request and there exists a pre_prep_message
+        if (request in self.known_pend_reqs() and
+           self.exists_preprep_msg(request, prim)):
             # The request should be acknowledged by other processors
-
             for req_pair in self.rep[prim].get_req_q():
                 if (req_pair[REQUEST].get_client_request() == request and
-                    req_pair[REQUEST].get_view() == prim and
-                   self.exists_preprep_msg(
-                    req_pair[REQUEST].get_client_request(), prim) and
+                   req_pair[REQUEST].get_view() == prim and
                    self.last_exec() <= req_pair[REQUEST].get_seq_num() <=
                         (self.last_exec() + SIGMA * self.number_of_clients)):
                         # A request should not already exist with the same
                         # sequence number or same client request
-                        if (self.request_already_exists(req_pair)):
+                        if (self.request_already_exists(req_pair[REQUEST])):
                             # Request y[REQUEST] does not fulfill all
                             # conditions, move on to next request in REQ_Q
                             continue
                         return True
+        return False
+
+    def accept_req_prep(self, request: REQUEST, prim: int):
+        """Method description.
+
+        True if a pre-prep msg exists for 3f+1 processors and
+        the content is the same for the processors in the same view and
+        sequence number.
+        """
+        if request.get_client_request() in self.known_pend_reqs():
+            # The request has a Pre_prep-message from the primary
+            # Good to double check, in case there has been a primary change
+            # and there was a pre_prep message from old prim
+            if self.exists_preprep_msg(request.get_client_request(), prim):
+                # A Prep message for the request should not already
+                # exist with the same sequence number or same client request
+                if (self.prep_request_already_exists(request)):
+                    return False
+                # Check so that 3f + 1 processor has this request with a
+                # PRE_PRE message
+                number_of_processors = 0
+                for rs in self.rep:
+                    for req_pair in rs.get_req_q():
+                        # Check if the request is the same and
+                        # that PRE_PREP is in the status set of the request
+                        if (req_pair[REQUEST] == request and
+                           {ReplicationEnums.PRE_PREP} <= req_pair[STATUS]):
+                            number_of_processors += 1
+                if number_of_processors >= (3 * self.number_of_byzantine + 1):
+                    return True
+        return False
+
+    def prep_request_already_exists(self, req: Request):
+        """Method description.
+
+        True if a Prep msg already exists for the request.
+        """
+        # Checks if the request already has as a prep_message or a
+        # commit message
+        for request_pair in self.rep[self.id].get_req_q():
+            # We have found the pair
+            if (request_pair[REQUEST].get_client_request() ==
+                req.get_client_request() and
+               request_pair[REQUEST].get_seq_num() == req.get_seq_num()):
+                # If the request has a status that is something else than just
+                # PRE_PREP, the request already exists with a PREP/COMMIT
+                if(request_pair[STATUS] != {ReplicationEnums.PRE_PREP}):
+                    return True
+        # Checks if the request already has been executed (r_log)
+        for request_pair in self.rep[self.id].get_r_log():
+            if (request_pair[REQUEST].get_client_request() ==
+                req.get_client_request() and
+               request_pair[REQUEST].get_seq_num() == req.get_seq_num()):
+                return True
         return False
 
     def committed_set(self, request: Request):
@@ -575,20 +652,18 @@ class ReplicationModule(AlgorithmModule):
         return processor_set
 
     # Methods added
-    def request_already_exists(self, req_pair):
-        """Checks if request is in REQ_Q or R_LOG.
+    def request_already_exists(self, req: Request):
+        """Checks if request is in REQ_Q or R_LOG of current processor.
 
         Called by accept_req_preprep.
         """
-        req = req_pair[REQUEST]
+        # Checks if the request is pending in req_q
         for request_pair in self.rep[self.id].get_req_q():
-            # If exactly the same, same request with same status.
-            # Ignore since it is the input request.
-            # If not return True.
             if (request_pair[REQUEST].get_client_request() ==
                 req.get_client_request() and
                request_pair[REQUEST].get_seq_num() == req.get_seq_num()):
                 return True
+        # Checks if the request already has been committed
         for request_pair in self.rep[self.id].get_r_log():
             if (request_pair[REQUEST].get_client_request() ==
                 req.get_client_request() and
@@ -660,9 +735,8 @@ class ReplicationModule(AlgorithmModule):
             # then add last executed sequence number
             new_seq = max(self.last_exec(), potential_seq)
             self.rep[self.id].set_seq_num(new_seq)
-
             last_seq_num = self.last_exec()
-            if new_seq > last_seq_num:
+            while new_seq > last_seq_num:
                 # check if missing requests are in request queue
                 last_seq_num += 1
                 if not self.req_with_seq_num_in_req_q(last_seq_num):
@@ -762,7 +836,7 @@ class ReplicationModule(AlgorithmModule):
         """Method description.
 
         Creates PRE_PREP msg for each request not being executed by
-        4f+1 processors.
+        the processors in processor_set.
         """
         # remove requests that does not exist for all
         # processors in processors_set
@@ -777,20 +851,21 @@ class ReplicationModule(AlgorithmModule):
         # assume no duplicate requests in pendReqs
         seen_reqs = {k: v for (k, v) in seen_reqs.items()
                      if v == len(processors_set)}
+        print(seen_reqs.keys())
         self.rep[self.id].set_pend_reqs(list(seen_reqs.keys()))
 
         # find all reqs that only have pre-prep message, need to create new
         reqs_need_pre_prep = list(filter(
-            lambda r: r[STATUS] == {ReplicationEnums.PRE_PREP}),
-            self.rep[self.id].get_req_q()
+            lambda r: r[STATUS] == {ReplicationEnums.PRE_PREP},
+            self.rep[self.id].get_req_q())
         )
 
         for j in processors_set:
             j_req_q = self.rep[j].get_req_q()
             j_reqs_need_pre_prep = list(filter(
                 lambda r: (r[STATUS] == {ReplicationEnums.PRE_PREP} and
-                           r in reqs_need_pre_prep)),
-                j_req_q)
+                           r in reqs_need_pre_prep),
+                j_req_q))
 
             # filter out all pre_prep reqs that are not in j's req q
             reqs_need_pre_prep = list(filter(
@@ -802,6 +877,7 @@ class ReplicationModule(AlgorithmModule):
             if req in reqs_need_pre_prep:
                 # current view is equal to self.id since we are primary
                 req[REQUEST].set_view(self.id)
+
                 # Increment sequence number and assign
                 self.rep[self.id].inc_seq_num()
                 req[REQUEST].set_seq_num(self.rep[self.id].get_seq_num())
@@ -809,10 +885,10 @@ class ReplicationModule(AlgorithmModule):
                 # PRE_PREP - message
                 req[STATUS].add(ReplicationEnums.PREP)
 
-    def find_cons_state(self, processors_set) -> Tuple[List, List]:
+    def find_cons_state(self, processors_states) -> Tuple[List, List]:
         """Method description.
 
-        Returns a consolidated replica state based on the processors_set,
+        Returns a consolidated replica state based on the processors_states,
         the set should have a common (non-empty) prefix and consistency
         among request and pending queues.
         Produces a dummy request if 3f+1 processor have committed a number
@@ -822,14 +898,10 @@ class ReplicationModule(AlgorithmModule):
         r_log entry at this processor.
         NOTE that returning (-1, *) means that something went wrong.
         """
-        if len(processors_set) == 0:
+        if len(processors_states) == 0:
             return (-1, [])
 
-        rep_states = []
-        for processor_id in processors_set:
-            rep_states.append(self.rep[processor_id].get_rep_state())
-
-        prefix_state = self.find_prefix(rep_states)
+        prefix_state = self.find_prefix(processors_states)
         if prefix_state == []:
             return (-1, [])
 
@@ -844,11 +916,11 @@ class ReplicationModule(AlgorithmModule):
                 state = op.execute(state)
             if state == prefix_state:
                 # found correct r_log entries
-                r_log = entries
-                return
+                # entries is tuple -> convert to list
+                r_log = list(entries)
+                break
         if r_log == []:
             return (-1, [])
-
         return (prefix_state, r_log)
 
     def find_prefix(self, rep_states: List):
@@ -885,10 +957,7 @@ class ReplicationModule(AlgorithmModule):
                 replica_structure.get_req_q())
             )
             for req_pair in pre_prep_reqs:
-                key = {
-                    CLIENT_REQ: req_pair[REQUEST].get_client_request(),
-                    SEQUENCE_NO: req_pair[REQUEST].get_seq_num()
-                }
+                key = req_pair[REQUEST].get_client_request()
                 if key in req_exists_count:
                     req_exists_count[key] += 1
                 else:
@@ -898,17 +967,15 @@ class ReplicationModule(AlgorithmModule):
         # for 3f + 1 processors
         for req_pair in self.rep[prim].get_req_q():
             if req_pair[REQUEST].get_view() == prim:
-                key = {
-                    CLIENT_REQ: req_pair[REQUEST].get_client_request(),
-                    SEQUENCE_NO: req_pair[REQUEST].get_seq_num()
-                }
+                key = req_pair[REQUEST].get_client_request()
                 # add dummy requests to req_q to avoid halting
-                if key.get_client_request().is_dummy():
-                    dummy_seq_num = key.get_seq_num()
+                if key.is_dummy():
+                    dummy_seq_num = req_pair[REQUEST].get_seq_num()
                     # make sure dummy seq num does not exist for other req
                     # in req q
                     for r in self.rep[prim].get_req_q():
-                        if r != key and r.get_seq_num() == dummy_seq_num:
+                        if (r[REQUEST].get_client_request() != key and
+                           r[REQUEST].get_seq_num() == dummy_seq_num):
                             return False
 
                     continue
@@ -930,7 +997,7 @@ class ReplicationModule(AlgorithmModule):
                     seen_reqs[req] < (3 * self.number_of_byzantine + 1)):
                 return False
 
-        return self.check_new_v_state(prim)
+        return self.check_new_state_and_r_log(prim)
 
     def check_new_state_and_r_log(self, prim) -> bool:
         """Checks the state and r_log proposed by the new primary."""

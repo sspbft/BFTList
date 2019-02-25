@@ -27,13 +27,17 @@ class Request:
         """Returns the view associated with this request."""
         return self.view
 
-    def set_view(self, view):
+    def set_view(self, view: int):
         """Updates the view of this request."""
         self.view = view
 
     def get_seq_num(self) -> int:
         """Returns the sequence number associated with this request."""
         return self.seq_num
+
+    def set_seq_num(self, seq_num: int):
+        """Returns the sequence number associated with this request."""
+        self.seq_num = seq_num
 
     def __eq__(self, other):
         """Overrides the default implementation."""
