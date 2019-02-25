@@ -75,7 +75,6 @@ class ReplicationModule(AlgorithmModule):
         while True:
             # lines 1-3
             self.lock.acquire()
-            logger.info(f"pend_reqs: {self.rep[self.id].get_pend_reqs()}")
             if (not self.rep[0].get_view_changed() and
                     self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
                                           Function.ALLOW_SERVICE)):
