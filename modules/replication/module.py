@@ -851,6 +851,7 @@ class ReplicationModule(AlgorithmModule):
         # assume no duplicate requests in pendReqs
         seen_reqs = {k: v for (k, v) in seen_reqs.items()
                      if v == len(processors_set)}
+        print(seen_reqs.keys())
         self.rep[self.id].set_pend_reqs(list(seen_reqs.keys()))
 
         # find all reqs that only have pre-prep message, need to create new
@@ -897,13 +898,6 @@ class ReplicationModule(AlgorithmModule):
         r_log entry at this processor.
         NOTE that returning (-1, *) means that something went wrong.
         """
-        # if len(processors_set) == 0:
-        #     return (-1, [])
-
-        # rep_states = []
-        # for processor_id in processors_set:
-        #     rep_states.append(self.rep[processor_id].get_rep_state())
-
         if len(processors_states) == 0:
             return (-1, [])
 
