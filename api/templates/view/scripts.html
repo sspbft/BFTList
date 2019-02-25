@@ -60,7 +60,27 @@
     }
 
     const renderRepData = (id, data) => {
-        // TODO implement
+        let repState = 'Rep state: ', pendReqs = 'Pending reqs: ', reqQ = 'Req queue: ',
+            seqNum = `Seq num: ${data.seq_num}`, prim = `Prim: ${data.prim}`
+        console.log(data)
+
+        repState += `[${data.rep_state.toString()}]`
+
+        data.pend_reqs.forEach(r => {
+            pendReqs += `[${r.operation.type} ${r.operation.args[0]}]`
+        })
+        if (data.pend_reqs.length == 0) pendReqs += '[]'
+
+        data.req_q.forEach(({ request, status }) => {
+            reqQ += `[${request.client_request.operation.type} ${request.client_request.operation.args[0]}-view ${request.view}-seq num ${request.seq_num}-status ${status.toString()}]`
+        })
+        if (data.req_q.length == 0) reqQ += '[]'
+
+        nodeElements[id].data.children[0].innerHTML = repState
+        nodeElements[id].data.children[1].innerHTML = pendReqs
+        nodeElements[id].data.children[2].innerHTML = reqQ
+        nodeElements[id].data.children[3].innerHTML = seqNum
+        nodeElements[id].data.children[4].innerHTML = prim
     }
 
     const renderPriMonData = (id, data) => {
