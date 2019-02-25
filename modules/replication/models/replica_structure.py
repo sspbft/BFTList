@@ -86,7 +86,7 @@ class ReplicaStructure(object):
         return self.pend_reqs
 
     def extend_pend_reqs(self, req: [ClientRequest]):
-        """Adds a request to pend_reqs."""
+        """Adds a list of ClientRequests to pend_reqs."""
         for r in req:
             if r not in self.pend_reqs:
                 self.pend_reqs.append(deepcopy(r))

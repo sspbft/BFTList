@@ -1065,31 +1065,23 @@ class ReplicationModule(AlgorithmModule):
     def get_data(self):
         """Returns current values on local variables."""
         rep = self.rep[self.id]
-        pend_reqs = [
-            ClientRequest(1, None, Operation(OperationEnums.APPEND, 1)),
-            ClientRequest(1, None, Operation(OperationEnums.APPEND, 2))
-        ]
-
-        req_q = [
-            {REQUEST: Request(pend_reqs[0], 0, 1),
-             STATUS: {ReplicationEnums.PRE_PREP}},
-            {REQUEST: Request(pend_reqs[1], 0, 1),
-             STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
-        ]
         return {
             "id": self.id,
             "rep_state": rep.get_rep_state(),
-            # "pend_reqs": rep.get_pend_reqs(),
-            "pend_reqs": pend_reqs,
-            # "req_q": rep.get_req_q(),
+            "pend_reqs": rep.get_pend_reqs(),
             # get status name instead of int
             "req_q": list(map(lambda x: {
                         REQUEST: x[REQUEST],
                         STATUS: set(map(lambda y: y.name, x[STATUS]))
-                    }, req_q)),
+                    }, rep.get_req_q())),
             "last_req": rep.get_last_req(),
             "seq_num": rep.get_seq_num(),
             "con_flag": rep.get_con_flag(),
             "view_changed": rep.get_view_changed(),
             "prim": rep.get_prim()
         }
+
+    def inject_client_req(self, req: ClientRequest):
+        """Injects a client request to pend_reqs."""
+        self.rep[self.id].extend_pend_reqs([req])
+        return self.rep[self.id].get_pend_reqs()
