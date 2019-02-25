@@ -44,7 +44,8 @@ class ViewEstablishmentModule(AlgorithmModule):
 
         if os.getenv("INTEGRATION_TEST"):
             start_state = conf.get_start_state()
-            if start_state is not {} and str(self.id) in start_state:
+            if (start_state is not {} and str(self.id) in start_state and
+               "VIEW_ESTABLISHMENT_MODULE" in start_state[str(self.id)]):
                 data = start_state[str(self.id)]["VIEW_ESTABLISHMENT_MODULE"]
                 if data is not None:
                     if "phs" in data:

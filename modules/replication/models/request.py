@@ -8,7 +8,7 @@ An assigned request takes the form req = ⟨(request) q, (view) v,
 from .client_request import ClientRequest
 
 
-class Request:
+class Request(object):
     """Models a request as used in the Replication module."""
 
     def __init__(self, client_request: ClientRequest, view: int, seq_num: int):

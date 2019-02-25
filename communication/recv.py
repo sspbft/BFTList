@@ -3,7 +3,7 @@
 # standard
 import asyncio
 import io
-import json
+import jsonpickle
 import os
 import logging
 import socket
@@ -81,9 +81,10 @@ class Receiver():
         token = res[:self.token_size]
         payload = res[self.token_size:]
         msg_type, msg_cntr, sender = struct.unpack("iii", token)
+
         try:
             msg_json = self.pack_helper.unpack(payload)[0][0]
-            msg = json.loads(msg_json.decode())
+            msg = jsonpickle.decode(msg_json.decode())
 
             # dispatch message to correct module through resolver
             self.resolver.dispatch_msg(msg)
