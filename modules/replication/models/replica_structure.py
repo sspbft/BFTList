@@ -115,7 +115,7 @@ class ReplicaStructure():
         NOTE that no validation is done on the performed req_q. This is mainly
         used for testing purposes.
         """
-        self.req_q = req_q
+        self.req_q = deepcopy(req_q)
 
     def remove_from_req_q(self, req):
         """Removes all occurrences of req from req_q."""
