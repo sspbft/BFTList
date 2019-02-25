@@ -851,7 +851,6 @@ class ReplicationModule(AlgorithmModule):
         # assume no duplicate requests in pendReqs
         seen_reqs = {k: v for (k, v) in seen_reqs.items()
                      if v == len(processors_set)}
-        print(seen_reqs.keys())
         self.rep[self.id].set_pend_reqs(list(seen_reqs.keys()))
 
         # find all reqs that only have pre-prep message, need to create new
