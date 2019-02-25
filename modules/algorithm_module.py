@@ -6,4 +6,4 @@ class AlgorithmModule:
 
     def run(self):
         """Must be implemented in subclass."""
-        raise NotImplementedError
+        pass

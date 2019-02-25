@@ -16,7 +16,7 @@ from modules.constants import (REQUEST, REPLY, STATUS, X_SET)
 from .request import Request, ClientRequest
 
 
-class ReplicaStructure():
+class ReplicaStructure(object):
     """Models a replica structure as used in the Replication module."""
 
     def __init__(self, id, number_of_clients=1, rep_state=[], r_log=[],

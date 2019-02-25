@@ -1,7 +1,6 @@
 # standard
 import asyncio
 import os
-import json
 import requests
 import psutil
 import time
@@ -10,6 +9,7 @@ from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import subprocess
 import logging
+import jsonpickle
 
 # local
 import conf.config
@@ -110,4 +110,4 @@ def cleanup():
 def write_state_conf_file(state):
     """Dumps a dict to a json file used to inject state to modules."""
     with open(f"{start_state_file_path}", "w") as outfile:
-        json.dump(state, outfile)
+        outfile.write(jsonpickle.encode(state))
