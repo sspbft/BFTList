@@ -16,6 +16,11 @@ class Operation(object):
 
     def __init__(self, _type: OperationEnums, *args):
         """Initializes an operation."""
+        if type(_type) == str:
+            if _type == "APPEND":
+                _type = OperationEnums.APPEND
+            else:
+                raise ValueError(f"_type {_type} is not valid")
         self.type = _type
         self.args = args
 
@@ -36,7 +41,7 @@ class Operation(object):
 
     def __str__(self):
         """Override the default __str__."""
-        return f"Operation - type: {self.type}, args: {self.args}"
+        return f"Operation - type: {self.type.name}, args: {self.args}"
 
     def __eq__(self, other):
         """Overrides the default implementation"""

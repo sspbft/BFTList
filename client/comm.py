@@ -10,9 +10,16 @@ from threading import Thread
 from node import get_nodes
 
 
-def build_payload(op, val):
+def build_payload(op, args):
     """Builds a request object to be sent to all BFTList nodes."""
-    return dict(operation=op, value=val)
+    return {
+        "client_id": 1,
+        "timestamp": int(time.time()),
+        "operation": {
+            "type": op,
+            "args": args
+        }
+    }
 
 
 def send_to_node(node, payload):
@@ -29,16 +36,13 @@ def send_to_node(node, payload):
     payload_json = json.dumps(payload)
     while not sent and fails < 5:
         try:
-            connection.request("POST", "/client/message", payload_json,
+            connection.request("POST", "/inject-client-req", payload_json,
                                headers)
             sent = True
         except Exception:
             fails = fails + 1
             time.sleep(1)
             continue
-
-    response = connection.getresponse()
-    print(response.read().decode())
 
 
 def broadcast(payload):
