@@ -23,7 +23,6 @@ class ReplicaStructure(object):
                  pend_reqs=[], req_q=[], last_req={},
                  seq_num=-1, con_flag=False, view_changed=False, prim=0):
         """Initializes a replica structure with its default state."""
-
         self.id = id
         self.rep_state = deepcopy(rep_state)
         self.r_log = deepcopy(r_log)
