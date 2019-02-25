@@ -62,11 +62,13 @@ class Resolver:
     def replication_exec(self, func):
         """Executes a function on the Replication module."""
         pass
-        # raise NotImplementedError
 
     def primary_monitoring_exec(self, func):
         """Executes a function on the Primary Monitoring module."""
-        raise NotImplementedError
+        if func == Function.NO_VIEW_CHANGE:
+            return True
+        else:
+            raise ValueError("Bad function parameter")
 
     # inter-node communication methods
     def send_to_node(self, node_id, msg_dct):

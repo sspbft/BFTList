@@ -81,6 +81,7 @@ class Receiver():
         token = res[:self.token_size]
         payload = res[self.token_size:]
         msg_type, msg_cntr, sender = struct.unpack("iii", token)
+
         try:
             msg_json = self.pack_helper.unpack(payload)[0][0]
             msg = jsonpickle.decode(msg_json.decode())

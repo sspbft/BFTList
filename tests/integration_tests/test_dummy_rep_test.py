@@ -19,6 +19,9 @@ start_state = {}
 
 for i in range(N):
     start_state[str(i)] = {
+        "VIEW_ESTABLISHMENT_MODULE": {
+            "views": [{"current": 0, "next": 0} for i in range(N)]
+        },
         "REPLICATION_MODULE": {
             "rep": [ReplicaStructure(
                 i,
@@ -52,7 +55,8 @@ class TestDummyRepTest(AbstractIntegrationTest):
                 data = result["data"]["REPLICATION_MODULE"]
                 id = data["id"]
 
-                checks.append(data["rep_state"] == [id])
+                # nodes should probably reset their state
+                checks.append(data["rep_state"] == [])
 
             # if all checks passed, test passed
             if all(checks):

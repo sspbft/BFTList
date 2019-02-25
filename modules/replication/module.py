@@ -7,12 +7,11 @@ from copy import deepcopy
 import time
 import os
 from typing import List, Tuple
-import jsonpickle
 
 # local
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums, OperationEnums
-from modules.constants import (MAXINT, SIGMA, X_SET, REP_STATE,
+from modules.constants import (MAXINT, SIGMA, X_SET,
                                REQUEST, STATUS)
 from resolve.enums import Module, Function, MessageType
 import conf.config as conf
@@ -246,12 +245,13 @@ class ReplicationModule(AlgorithmModule):
                 Function.ALLOW_SERVICE)):
             j = msg["sender"]                           # id of sender
             rep = msg["data"]["own_replica_structure"]  # rep data
+
             if (self.resolver.execute(
                     Module.PRIMARY_MONITORING_MODULE,
                     Function.NO_VIEW_CHANGE)):
                 self.rep[j] = rep
             else:
-                self.rep[j].set_rep_state(rep[REP_STATE])
+                self.rep[j].set_rep_state(rep.get_rep_state())
 
     def receive_msg_from_client(self, msg):
         """Logic for receiving a message from a client."""
@@ -861,7 +861,6 @@ class ReplicationModule(AlgorithmModule):
         # assume no duplicate requests in pendReqs
         seen_reqs = {k: v for (k, v) in seen_reqs.items()
                      if v == len(processors_set)}
-        print(seen_reqs.keys())
         self.rep[self.id].set_pend_reqs(list(seen_reqs.keys()))
 
         # find all reqs that only have pre-prep message, need to create new
