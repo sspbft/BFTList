@@ -249,20 +249,14 @@ class TestReplicationModule(unittest.TestCase):
 
     def test_known_pend_reqs(self):
         replication = ReplicationModule(0, Resolver(), 4, 1, 1)
-        # Node 0 has both dummyRequests in pend queue
-        # Node 1-3 have dummyRequest1 in request queue
+        # Node 1-3 has both dummyRequests in pend queue
         # Node 4-5 have dummyRequest1 in pend queue
         # This means that known pending request are dummyRequest 1
         replication.rep = [ReplicaStructure(
-            0,
+            i,
             pend_reqs=[
                 self.dummyRequest1.get_client_request(),
                 self.dummyRequest2.get_client_request()
-            ]
-        )] + [ReplicaStructure(
-            i,
-            req_q=[
-                {REQUEST: self.dummyRequest1, STATUS:{}}
             ]
         ) for i in range(1,4)] + [ReplicaStructure(
             i,
@@ -281,8 +275,7 @@ class TestReplicationModule(unittest.TestCase):
                 ]
         )] + [ReplicaStructure(
             i,
-            req_q=[
-                {REQUEST: self.dummyRequest1, STATUS:{}}
+            pend_reqs=[self.dummyRequest1.get_client_request()
             ]
         ) for i in range(1,3)] + [ReplicaStructure(i) for i in range(3,6)]
         self.assertEqual(replication.known_pend_reqs(), [])
