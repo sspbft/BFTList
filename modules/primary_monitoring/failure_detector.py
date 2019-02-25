@@ -2,6 +2,7 @@
 
 import time
 from resolve.enums import Function, Module
+from modules.constants import THRESHOLD
 # from modules.enums import PrimaryMonitoringEnums
 
 
@@ -18,18 +19,34 @@ class FailureDetectorModule:
         self.cnt = 0
         self.prim_susp = [False for i in range(n)]
         self.cur_check_req = []
+        self.fd_set = set()
+        self.prim = -1
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
-        # TODO change while to upon token.
+        # TODO change while to upon token from processor_j
         while True:
             time.sleep(1)
 
-        # After line 14, meaning if j == prim:
-            # Call self.check_progress_by_prim(j)
+        # Line 9-11
+        # self.update_beat(processor_j)
 
-        # else:
-            # continue here
+        # Line 13-14
+        new_prim = self.get_current_view(self.id)
+        if self.prim != new_prim:
+            self.reset()
+        self.prim = new_prim
+
+        if self.allow_service():  # TODO and algo5.no_view_change():
+            # TODO if self.prim == processor_j:
+                # self.check_progress_by_prim(processor_j)
+            if self.prim == self.id:
+                self.cnt = 0
+            if(not self.prim_susp[self.id]):
+                self.prim_susp[self.id] = (self.prim not in self.fd_set or
+                                           self.cnt > THRESHOLD)
+        else:
+            self.reset()
 
     # Macros
     def reset(self):
@@ -64,6 +81,11 @@ class FailureDetectorModule:
         return self.resolver.execute(Module.REPLICATION_MODULE,
                                      Function.GET_PEND_REQS)
 
+    def allow_service(self):
+        """Calls allow_service in View Establishment module"""
+        return self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
+                                     Function.ALLOW_SERVICE)
+
     # Added functions
     def check_progress_by_prim(self, prim):
         """Checks for progress done by the primary.
@@ -86,3 +108,20 @@ class FailureDetectorModule:
         # The primary has not made progress, increase our own counter
         else:
             self.cnt += 1
+
+    def update_beat(self, processor_j):
+        """Responsive check of processor_j.
+
+        Line 9-11
+        """
+        self.beat[processor_j] = 0
+        self.beat[self.id] = 0
+
+        new_fd_set = {processor_j, self.id}
+        for other_processor in range(self.number_of_nodes):
+            if other_processor == self.id or other_processor == processor_j:
+                continue
+            self.beat[other_processor] += 1
+            if self.beat[other_processor] < THRESHOLD:
+                new_fd_set.add(other_processor)
+        self.fd_set = new_fd_set

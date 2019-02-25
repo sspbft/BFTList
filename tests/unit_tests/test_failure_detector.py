@@ -39,6 +39,16 @@ class TestFailureDetector(unittest.TestCase):
             Function.GET_PEND_REQS
         )
 
+    def test_call_allow_serivce(self):
+        fail_det = FailureDetectorModule(0, self.resolver, 6, 1)
+        fail_det.resolver.execute = MagicMock(return_value = True)
+
+        self.assertTrue(fail_det.allow_service())
+        fail_det.resolver.execute.assert_called_once_with(
+            Module.VIEW_ESTABLISHMENT_MODULE,
+            Function.ALLOW_SERVICE
+        )
+
     def test_reset(self):
         fail_det = FailureDetectorModule(0, self.resolver, 6, 1)
         # Change the values to non-default once
@@ -92,3 +102,22 @@ class TestFailureDetector(unittest.TestCase):
         fail_det.cur_check_req = []        
         fail_det.check_progress_by_prim(1)
         self.assertEqual(fail_det.cnt, 0)
+
+    def test_update_beat(self):
+        fail_det = FailureDetectorModule(0, self.resolver, 6, 1)
+        fail_det.beat = [i for i in range(6)]
+        fail_det.update_beat(3)
+        
+        # All except Node 0 and 3 should increment with 1,
+        # Node 0 and 3 should be set to 0
+        self.assertEqual(fail_det.beat, [0, 2, 3, 0, 5, 6])
+        self.assertEqual(fail_det.fd_set, {0,1,2,3,4,5})
+
+        fail_det.beat = [i for i in range(5)] + [99]
+        fail_det.update_beat(3)
+        
+        # All except Node 0 and 3 should increment with 1,
+        # Node 0 and 3 should be set to 0
+        # Node 5 is above the threshold and should not be in fd_set
+        self.assertEqual(fail_det.beat, [0, 2, 3, 0, 5, 100])
+        self.assertEqual(fail_det.fd_set, {0,1,2,3,4})

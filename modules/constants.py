@@ -35,3 +35,5 @@ SIGMA = 10  # Threshold for assigning sequence numbers
 V_STATUS = "v_status"
 NEED_CHANGE = "need_change"
 NEED_CHG_SET = "need_chg_set"
+
+THRESHOLD = 100  # Threshold for liveness, beat-variable
