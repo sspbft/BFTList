@@ -3,11 +3,17 @@
     {% for r in item.data.REPLICATION_MODULE.pend_reqs %}
         [{{ r.operation.type }} {{ r.operation.args[0] }}] 
     {% endfor %}
+    {% if item.data.REPLICATION_MODULE.pend_reqs|length == 0 %}
+    []
+    {% endif %}
 </p>
 <p>Req queue: 
     {% for r in item.data.REPLICATION_MODULE.req_q %}
         [{{ r.request.client_request.operation.type }} {{ r.request.client_request.operation.args[0] }}-view {{ r.request.view }}-seq num {{ r.request.seq_num }}-status {{ r.status }}]
     {% endfor %}
+    {% if item.data.REPLICATION_MODULE.req_q|length == 0 %}
+    []
+    {% endif %}
 </p>
 <p>Seq num: {{ item.data.REPLICATION_MODULE.seq_num }}</p>
 <p>Prim: {{ item.data.REPLICATION_MODULE.prim }}</p>
