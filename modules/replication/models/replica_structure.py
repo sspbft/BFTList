@@ -20,11 +20,9 @@ class ReplicaStructure(object):
     """Models a replica structure as used in the Replication module."""
 
     def __init__(self, id, number_of_clients=1, rep_state=[], r_log=[],
-                 pend_reqs=[], req_q=[], last_req=[],
+                 pend_reqs=[], req_q=[], last_req={},
                  seq_num=-1, con_flag=False, view_changed=False, prim=0):
         """Initializes a replica structure with its default state."""
-        if (last_req == []):
-            last_req = [None for i in range(number_of_clients)]
 
         self.id = id
         self.rep_state = deepcopy(rep_state)
@@ -130,7 +128,7 @@ class ReplicaStructure(object):
         self.req_q = [x for x in self.req_q if x[REQUEST] != req]
 
     def get_last_req(self) -> List[Dict]:
-        """Returns a list of the last executed request for each client
+        """Returns a dict of the last executed requests for each client
 
         last_req[i] corresponds to request/reply of the last executed
         request for client with id i --> {REQUEST: req, REPLY: reply}
@@ -183,7 +181,7 @@ class ReplicaStructure(object):
         """Returns True if all processor data is set to default."""
         return (self.rep_state == [] and self.r_log == [] and
                 self.pend_reqs == [] and self.req_q == [] and
-                self.last_req == [] and self.seq_num == 0 and
+                self.last_req == {} and self.seq_num == 0 and
                 self.con_flag is False and self.view_changed is False and
                 self.prim == 0)
 
@@ -201,7 +199,7 @@ class ReplicaStructure(object):
         self.r_log = []
         self.pend_reqs = []
         self.req_q = []
-        self.last_req = []
+        self.last_req = {}
         self.seq_num = -1
         self.con_flag = False
         self.view_changed = False
@@ -214,7 +212,7 @@ class ReplicaStructure(object):
         """
         return (self.rep_state == [] and self.r_log == [] and
                 self.pend_reqs == [] and self.req_q == [] and
-                self.last_req == [] and self.seq_num == -1 and
+                self.last_req == {} and self.seq_num == -1 and
                 self.con_flag is False and self.view_changed is False and
                 self.prim == -1)
 
