@@ -9,6 +9,7 @@ from threading import Lock
 from resolve.enums import Function, Module, MessageType
 from conf.config import get_nodes
 from communication.pack_helper import PackHelper
+from modules.replication.models.client_request import ClientRequest
 
 # globals
 logger = logging.getLogger(__name__)
@@ -128,3 +129,7 @@ class Resolver:
         View Establishment module.
         """
         return self.modules[Module.PRIMARY_MONITORING_MODULE].get_data()
+
+    def inject_client_req(self, req: ClientRequest):
+        """Injects a ClientRequest sent from a client through the API."""
+        return self.modules[Module.REPLICATION_MODULE].inject_client_req(req)

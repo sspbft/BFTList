@@ -3,9 +3,12 @@
 # standard
 import os
 import json
-from flask import Blueprint, jsonify, render_template, current_app as app
+import jsonpickle
+from flask import (Blueprint, jsonify, request, abort,
+                   render_template, current_app as app)
 from flask_cors import cross_origin
 import requests
+import logging
 
 # local
 import conf.config as conf
@@ -16,6 +19,7 @@ from modules.replication.models.operation import Operation
 
 # globals
 routes = Blueprint("routes", __name__)
+logger = logging.getLogger(__name__)
 
 
 class CustomEncoder(json.JSONEncoder):
@@ -37,11 +41,23 @@ def index():
     return jsonify({"status": "running", "service": "BFTList API", "id": _id})
 
 
-@routes.route("/client/message", methods=["POST"])
+@routes.route("/inject-client-req", methods=["POST"])
 def handle_client_message():
     """Route for clients to send messages to a node."""
-    # TODO implement
-    return jsonify({"error": "NOT_IMPLEMENTED"})
+    data = request.get_json()
+    if not ("operation" in data and "client_id" in data and
+            "timestamp" in data and "type" in data["operation"] and
+            "args" in data["operation"]):
+        return abort(400)
+
+    try:
+        op = Operation(data["operation"]["type"], data["operation"]["args"])
+        req = ClientRequest(data["client_id"], data["timestamp"], op)
+        pend_reqs = app.resolver.inject_client_req(req)
+        return jsonify({"pend_reqs": jsonpickle.encode(pend_reqs)})
+    except Exception as e:
+        logger.error(f"Error when injecting client request through API: {e}")
+        return abort(500)
 
 
 @routes.route("/data", methods=["GET"])
@@ -67,7 +83,6 @@ def get_modules_data():
 
 def fetch_data_for_all_nodes():
     """Fetches data from all nodes through their /data endpoint."""
-    # data = [{ node: node, data: json }]
     data = []
     for _, node in conf.get_nodes().items():
         r = requests.get(f"http://{node.ip}:400{node.id}/data")

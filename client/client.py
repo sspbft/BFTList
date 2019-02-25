@@ -2,14 +2,11 @@
 
 from comm import build_payload, broadcast
 
-APPEND = "append"
-PREPEND = "prepend"
-
-ops = [APPEND, PREPEND]
+ops = ["APPEND"]
 
 if __name__ == '__main__':
     print("Welcome to BFT Client shell! Available operations are \
-[append x] and [prepend x]")
+[APPEND x]")
     while True:
         s = input("BFTList Client > ")
         parts = s.split(" ")
