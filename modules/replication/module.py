@@ -480,22 +480,19 @@ class ReplicationModule(AlgorithmModule):
         Returns the set of requests in request queue and in the message queue
         of 3f+1 other processors.
         """
-        request_set = []
-        for req in self.rep[self.id].get_pend_reqs():
-            processor_set = 0
-            for replica_structure in self.rep:
-                if req in replica_structure.get_pend_reqs():
-                    processor_set += 1
-                else:
-                    # Avoid searching this queue if already found in pending
-                    # requests
-                    for request_pair in replica_structure.get_req_q():
-                        if req == request_pair[REQUEST].get_client_request():
-                            processor_set += 1
+        request_count = {}
 
-            if(processor_set >= (3 * self.number_of_byzantine + 1)):
-                request_set.append(req)
-        return request_set
+        for rs in self.rep:
+            for req in rs.get_pend_reqs():
+                if req in request_count:
+                    request_count[req] += 1
+                else:
+                    request_count[req] = 1
+
+        known_reqs = {k: v for (k, v) in request_count.items() if v >= (
+                        3 * self.number_of_byzantine + 1)}
+
+        return list(known_reqs.keys())
 
     def known_reqs(self, status):
         """Method description.
