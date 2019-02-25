@@ -1856,3 +1856,22 @@ class TestReplicationModule(unittest.TestCase):
             ]
         ) for i in range(1,6)]
         self.assertEqual(replication.get_unknown_supported_prep(), [self.dummyRequest2])
+
+
+        # Now not enough are suååort self.dummyRequest2
+        replication.rep = [ReplicaStructure(
+            i,
+            pend_reqs=[self.dummyRequest1],
+            req_q=[
+                {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+            ]
+        ) for i in range(3)] + [ReplicaStructure(
+            i,
+            pend_reqs=[self.dummyRequest1, self.dummyRequest2],
+            req_q=[
+                {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
+                {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
+            ]
+        )for i in range(3,6)]
+
+        self.assertEqual(replication.get_unknown_supported_prep(), [])
