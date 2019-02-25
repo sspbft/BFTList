@@ -27,11 +27,11 @@ class ReplicaStructure(object):
             last_req = [None for i in range(number_of_clients)]
 
         self.id = id
-        self.rep_state = rep_state
-        self.r_log = r_log
-        self.pend_reqs = pend_reqs
-        self.req_q = req_q
-        self.last_req = last_req
+        self.rep_state = deepcopy(rep_state)
+        self.r_log = deepcopy(r_log)
+        self.pend_reqs = deepcopy(pend_reqs)
+        self.req_q = deepcopy(req_q)
+        self.last_req = deepcopy(last_req)
         self.seq_num = seq_num
         self.con_flag = con_flag
         self.view_changed = view_changed

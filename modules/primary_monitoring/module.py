@@ -33,7 +33,10 @@ class PrimaryMonitoringModule(AlgorithmModule):
         self.resolver = resolver
         self.number_of_nodes = n
         self.number_of_byzantine = f
-        self.vcm = [self.get_default_vcm(i) for i in range(n)]
+        self.vcm = [{V_STATUS: enums.OK,
+                    PRIM: -1,
+                    NEED_CHANGE: False,
+                    NEED_CHG_SET: set()} for i in range(n)]
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
