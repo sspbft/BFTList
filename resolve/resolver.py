@@ -5,7 +5,6 @@ import jsonpickle
 import logging
 from threading import Lock
 import os
-import time
 
 # local
 from resolve.enums import Function, Module, MessageType
