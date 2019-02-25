@@ -4,10 +4,11 @@
 import os
 import json
 import jsonpickle
-from flask import (Blueprint, jsonify, request,
+from flask import (Blueprint, jsonify, request, abort,
                    render_template, current_app as app)
 from flask_cors import cross_origin
 import requests
+import logging
 
 # local
 import conf.config as conf
@@ -18,6 +19,7 @@ from modules.replication.models.operation import Operation
 
 # globals
 routes = Blueprint("routes", __name__)
+logger = logging.getLogger(__name__)
 
 
 class CustomEncoder(json.JSONEncoder):
@@ -43,11 +45,19 @@ def index():
 def handle_client_message():
     """Route for clients to send messages to a node."""
     data = request.get_json()
-    op = Operation(data["operation"]["type"], data["operation"]["args"])
-    req = ClientRequest(data["client_id"], data["timestamp"], op)
+    if not ("operation" in data and "client_id" in data and
+            "timestamp" in data and "type" in data["operation"] and
+            "args" in data["operation"]):
+        return abort(400)
 
-    pend_reqs = app.resolver.inject_client_req(req)
-    return jsonify({"pend_reqs": jsonpickle.encode(pend_reqs)})
+    try:
+        op = Operation(data["operation"]["type"], data["operation"]["args"])
+        req = ClientRequest(data["client_id"], data["timestamp"], op)
+        pend_reqs = app.resolver.inject_client_req(req)
+        return jsonify({"pend_reqs": jsonpickle.encode(pend_reqs)})
+    except Exception as e:
+        logger.error(f"Error when injecting client request through API: {e}")
+        return abort(500)
 
 
 @routes.route("/data", methods=["GET"])
