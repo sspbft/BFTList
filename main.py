@@ -52,11 +52,12 @@ def start_modules(resolver):
             PrimaryMonitoringModule(id, resolver, n, f)
     }
 
+    resolver.set_modules(modules)
+
     # start threads and attach to resolver
     for m in modules.values():
         t = Thread(target=m.run)
         t.start()
-    resolver.set_modules(modules)
 
 
 def setup_communication(resolver):

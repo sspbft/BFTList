@@ -73,6 +73,12 @@ async def launch_bftlist(test_name="unknown test", args={}):
         env["NUMBER_OF_CLIENTS"] = "1"
         env["HOSTS_PATH"] = os.path.abspath(RELATIVE_PATH_FIXTURES_HOST)
         env["INTEGRATION_TEST"] = test_name
+        if "FORCE_VIEW" in args:
+            env["FORCE_VIEW"] = args["FORCE_VIEW"]
+        if "ALLOW_SERVICE" in args:
+            env["ALLOW_SERVICE"] = args["ALLOW_SERVICE"]
+        if "FORCE_NO_VIEW_CHANGE" in args:
+            env["FORCE_NO_VIEW_CHANGE"] = args["FORCE_NO_VIEW_CHANGE"]
 
         if "BYZANTINE" in args:
             if node_id in args["BYZANTINE"]["NODES"]:

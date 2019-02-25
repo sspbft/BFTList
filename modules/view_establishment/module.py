@@ -86,7 +86,7 @@ class ViewEstablishmentModule(AlgorithmModule):
                 # Onces a predicates is fulfilled, perfom action if valid case
                 if(self.pred_and_action.auto_max_case(self.phs[self.id]) >=
                         case):
-                    logger.info(f"Phase: {self.phs[self.id]} Case: {case}")
+                    # logger.info(f"Phase: {self.phs[self.id]} Case: {case}")
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
 

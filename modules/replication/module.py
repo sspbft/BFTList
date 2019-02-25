@@ -156,22 +156,21 @@ class ReplicationModule(AlgorithmModule):
                                         ReplicationEnums.PREP
                                     }
                                 }
-
                                 self.rep[self.id].add_to_req_q(req_pair)
 
                     else:
                         # wait for prim or process reqs where 3f+1
                         # agree on seqnum
 
-                        for reqs in self.known_pend_reqs():
+                        for client_req in self.known_pend_reqs():
                             # Check if any request should get PRE_PREP
-                            if self.accept_req_preprep(reqs, prim_id):
+                            if self.accept_req_preprep(client_req, prim_id):
                                 # Find the actual request from prim
                                 for req_pair in self.rep[prim_id].get_req_q():
                                     req = req_pair[REQUEST]
-                                    if (req.get_client_request() == reqs and
-                                        req.get_view() == prim_id and
-                                        self.last_exec() <=
+                                    if (req.get_client_request() ==
+                                        client_req and req.get_view() ==
+                                        prim_id and self.last_exec() <=
                                             req.get_seq_num() <=
                                             (self.last_exec() +
                                                 SIGMA *
@@ -216,12 +215,13 @@ class ReplicationModule(AlgorithmModule):
                     for req_pair in self.known_reqs(
                             {ReplicationEnums.PREP,
                              ReplicationEnums.COMMIT}):
-                        x_set = self.committed_set(req_pair)
+                        x_set = self.committed_set(req_pair[REQUEST])
                         if ((len(x_set) >=
                                 (3 * self.number_of_byzantine) + 1) and
                                 (req_pair[REQUEST].get_seq_num() ==
                                     self.last_exec() + 1)):
-                            self.commit({REQUEST: req_pair, X_SET: x_set})
+                            self.commit({REQUEST: req_pair[REQUEST],
+                                         X_SET: x_set})
             self.lock.release()
             self.send_msg()
             time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
@@ -250,7 +250,7 @@ class ReplicationModule(AlgorithmModule):
         if (self.resolver.execute(
                 Module.VIEW_ESTABLISHMENT_MODULE,
                 Function.ALLOW_SERVICE)):
-            j = msg["sender"]                           # id of sender
+            j = int(msg["sender"])                           # id of sender
             rep = msg["data"]["own_replica_structure"]  # rep data
 
             if (self.resolver.execute(
@@ -304,6 +304,7 @@ class ReplicationModule(AlgorithmModule):
     # Macros
     def flush_local(self):
         """Resets all local variables."""
+        logger.info("flush_local()")
         self.rep = [ReplicaStructure(i) for i in range(self.number_of_nodes)]
         for r in self.rep:
             r.set_to_tee()
@@ -476,10 +477,12 @@ class ReplicationModule(AlgorithmModule):
         """
         x_set_less = False
         for request_pair in self.rep[self.id].get_r_log():
-            if(len(request_pair[X_SET]) <= (3 * self.number_of_byzantine + 1)):
+            if(len(request_pair[X_SET]) < (3 * self.number_of_byzantine + 1)):
                 x_set_less = True
-        return (self.stale_req_seqn() or self.unsup_req() or self.double() or
-                x_set_less)
+        # NOTE that self.unsup_req was originally called as well. Removed
+        # during integration testing of rep mod.
+        # TODO look into this after meeting Feb 26
+        return (self.stale_req_seqn() or self.double() or x_set_less)
 
     def known_pend_reqs(self):
         """Method description.
@@ -655,7 +658,7 @@ class ReplicationModule(AlgorithmModule):
         for replica_structure in self.rep:
             id = replica_structure.get_id()
             # Checks if the processor has reported to commit the request
-            if request in self.msg(ReplicationEnums.COMMIT, id):
+            if request in self.msg({ReplicationEnums.COMMIT}, id):
                 processor_set.add(id)
                 continue
             # Checks if the request is in the processors executed request log
@@ -915,7 +918,7 @@ class ReplicationModule(AlgorithmModule):
             return (-1, [])
 
         prefix_state = self.find_prefix(processors_states)
-        if prefix_state == []:
+        if prefix_state is None:
             return (-1, [])
 
         # create consistent r_log
@@ -932,19 +935,23 @@ class ReplicationModule(AlgorithmModule):
                 # entries is tuple -> convert to list
                 r_log = list(entries)
                 break
-        if r_log == []:
+        if r_log == [] and len(prefix_state) > 0:
             return (-1, [])
         return (prefix_state, r_log)
 
     def find_prefix(self, rep_states: List):
         """Finds the prefix of a list of replica states."""
-        prefix = []
+        prefix = None
 
         # find shortest rep state
         shortest = rep_states[0]
         for i in range(1, len(rep_states)):
             if len(rep_states[i]) < len(shortest):
                 shortest = rep_states[i]
+
+        if len(shortest) == 0:
+            return []
+
         # check for same value in all rep_states at a given index to find
         # prefix
         for i in range(len(shortest)):
@@ -952,6 +959,8 @@ class ReplicationModule(AlgorithmModule):
             for r in rep_states:
                 if r[i] != starting_val:
                     return prefix
+            if prefix is None:
+                prefix = []
             prefix.append(starting_val)
 
         return prefix
@@ -1075,6 +1084,7 @@ class ReplicationModule(AlgorithmModule):
             "seq_num": rep.get_seq_num(),
             "con_flag": rep.get_con_flag(),
             "view_changed": rep.get_view_changed(),
+            "r_log": rep.get_r_log(),
             "prim": rep.get_prim()
         }
 

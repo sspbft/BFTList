@@ -1,5 +1,6 @@
 """
-Dummy integration test for replication module to demo functionality."""
+TODO write me
+"""
 
 # standard
 import asyncio
@@ -10,6 +11,8 @@ from copy import deepcopy
 from . import helpers
 from .abstract_integration_test import AbstractIntegrationTest
 from modules.replication.models.replica_structure import ReplicaStructure
+from modules.replication.models.client_request import ClientRequest
+from modules.replication.models.operation import Operation
 
 # globals
 F = 1
@@ -17,22 +20,27 @@ N = 6
 logger = logging.getLogger(__name__)
 start_state = {}
 
+req = ClientRequest(0, 189276398, Operation(
+    "APPEND",
+    1
+))
+
 for i in range(N):
     start_state[str(i)] = {
+        # force stable view_pair for all nodes
         "VIEW_ESTABLISHMENT_MODULE": {
             "views": [{"current": 0, "next": 0} for i in range(N)]
         },
         "REPLICATION_MODULE": {
-            "rep": [ReplicaStructure(
-                i,
-                rep_state=[j]
-            ) for j in range(N)]
+            "rep": [
+                ReplicaStructure(j, pend_reqs=[req], prim=0)
+            for j in range(N)]
         }
     }
 
-args = {}
+args = { "FORCE_VIEW": "0", "ALLOW_SERVICE": "1", "FORCE_NO_VIEW_CHANGE": "1" }
 
-class TestDummyRepTest(AbstractIntegrationTest):
+class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
     """Checks that a Byzantine node can not trick some nodes to do a view change."""
 
     async def bootstrap(self):
@@ -44,7 +52,7 @@ class TestDummyRepTest(AbstractIntegrationTest):
         calls_left = helpers.MAX_NODE_CALLS
         test_result = False
 
-        await asyncio.sleep(10)
+        await asyncio.sleep(5)
 
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
@@ -56,7 +64,8 @@ class TestDummyRepTest(AbstractIntegrationTest):
                 id = data["id"]
 
                 # nodes should probably reset their state
-                checks.append(data["rep_state"] == [])
+                checks.append(data["rep_state"] == [1])
+                checks.append(data["pend_reqs"] == [])
 
             # if all checks passed, test passed
             if all(checks):

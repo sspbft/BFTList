@@ -4,6 +4,7 @@
 import jsonpickle
 import logging
 from threading import Lock
+import os
 
 # local
 from resolve.enums import Function, Module, MessageType
@@ -30,15 +31,16 @@ class Resolver:
         self.view_est_lock = Lock()
         self.replication_lock = Lock()
 
+    def is_ready(self):
+        """Check function to determine if system is ready."""
+        return self.modules is not None
+
     def set_modules(self, modules):
         """Sets the modules dict of the resolver."""
         self.modules = modules
 
     def execute(self, module, func, *args):
         """API for executing a function on a given module."""
-        if self.modules is None:
-            return -1
-
         if module == Module.VIEW_ESTABLISHMENT_MODULE:
             return self.view_establishment_exec(func, *args)
         elif module == Module.REPLICATION_MODULE:
@@ -52,8 +54,12 @@ class Resolver:
         """Executes a function on the View Establishment module."""
         module = self.modules[Module.VIEW_ESTABLISHMENT_MODULE]
         if func == Function.GET_CURRENT_VIEW:
+            if os.getenv("FORCE_VIEW"):
+                return int(os.getenv("FORCE_VIEW"))
             return module.get_current_view(args[0])
         elif func == Function.ALLOW_SERVICE:
+            if os.getenv("ALLOW_SERVICE"):
+                return True
             return module.allow_service()
         elif func == Function.VIEW_CHANGE:
             return module.view_change()
@@ -67,6 +73,8 @@ class Resolver:
     def primary_monitoring_exec(self, func):
         """Executes a function on the Primary Monitoring module."""
         if func == Function.NO_VIEW_CHANGE:
+            if os.getenv("FORCE_NEW_VIEW_CHANGE"):
+                return True
             return True
         else:
             raise ValueError("Bad function parameter")
