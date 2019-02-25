@@ -11,7 +11,7 @@ from typing import List, Tuple
 # local
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums, OperationEnums
-from modules.constants import (MAXINT, SIGMA, X_SET, REP_STATE,
+from modules.constants import (MAXINT, SIGMA, X_SET,
                                REQUEST, STATUS)
 from resolve.enums import Module, Function, MessageType
 import conf.config as conf
@@ -57,6 +57,15 @@ class ReplicationModule(AlgorithmModule):
         self.need_flush = False
         self.rep = [ReplicaStructure(i, k) for i in range(n)] \
             # type: List[ReplicaStructure]
+
+        if os.getenv("INTEGRATION_TEST"):
+            start_state = conf.get_start_state()
+            if (start_state is not {} and str(self.id) in start_state and
+               "REPLICATION_MODULE" in start_state[str(self.id)]):
+                data = start_state[str(self.id)]["REPLICATION_MODULE"]
+                rep = data["rep"]
+                if rep is not None and len(rep) == n:
+                    self.rep = rep
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -223,7 +232,7 @@ class ReplicationModule(AlgorithmModule):
 
     def send_msg(self):
         """Broadcasts its own replica_structure to other nodes."""
-        for j, in conf.get_other_nodes().keys():
+        for j in conf.get_other_nodes():
             msg = {
                 "type": MessageType.REPLICATION_MESSAGE,
                 "sender": self.id,
@@ -243,12 +252,13 @@ class ReplicationModule(AlgorithmModule):
                 Function.ALLOW_SERVICE)):
             j = msg["sender"]                           # id of sender
             rep = msg["data"]["own_replica_structure"]  # rep data
+
             if (self.resolver.execute(
                     Module.PRIMARY_MONITORING_MODULE,
                     Function.NO_VIEW_CHANGE)):
                 self.rep[j] = rep
             else:
-                self.rep[j].set_rep_state(rep[REP_STATE])
+                self.rep[j].set_rep_state(rep.get_rep_state())
 
     def receive_msg_from_client(self, msg):
         """Logic for receiving a message from a client."""

@@ -20,14 +20,14 @@ class PrimaryMonitoringModule:
     # Macros
     def reset(self):
         """Resets local variables."""
-        raise NotImplementedError
+        pass
 
     # Interface functions
     def suspected(self):
         """Returns true if the processor suspects the primary to be faulty."""
-        raise NotImplementedError
+        pass
 
     # Functions added for inter-module communication
     def get_current_view(self, processor_id):
         """Calls get_current_view method at View Establishment module."""
-        raise NotImplementedError
+        pass

@@ -3,7 +3,7 @@
 # standard
 import os
 import logging
-import json
+import jsonpickle
 
 # local
 from communication.node import Node
@@ -35,8 +35,9 @@ def get_nodes(hosts_path="conf/hosts.txt"):
 def get_other_nodes():
     """Helper that returns all other nodes in the system."""
     all_nodes = get_nodes()
-    own_id = os.getenv("ID")
-    return all_nodes.pop(own_id)
+    own_id = int(os.getenv("ID"))
+    all_nodes.pop(own_id)
+    return all_nodes
 
 
 def get_start_state():
@@ -44,7 +45,8 @@ def get_start_state():
     path = os.path.abspath("./conf/start_state.json")
     try:
         with open(path) as f:
-            data = json.load(f)
+            decoded = f.read().replace('\n', '')
+            data = jsonpickle.decode(decoded)
             return data
     except FileNotFoundError:
         return {}

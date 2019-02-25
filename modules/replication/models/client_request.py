@@ -10,7 +10,7 @@ from .operation import Operation
 from modules.enums import OperationEnums
 
 
-class ClientRequest:
+class ClientRequest(object):
     """Models a request as used in the Replication module."""
 
     def __init__(self, client_id, timestamp, operation: Operation):
