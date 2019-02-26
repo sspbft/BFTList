@@ -190,7 +190,8 @@ class ReplicationModule(AlgorithmModule):
                         #         {ReplicationEnums.PRE_PREP}):
                         #     # Known_reqs gives back request pair with
                         # statuses
-                        #     # that INCLUDES Pre-prep, filter out the onces that
+                        #     that INCLUDES Pre-prep, filter out the onces
+                        # that
                         #     # has a PREP already.
                         #     if (req_pair[STATUS] ==
                         #             {ReplicationEnums.PRE_PREP} and
