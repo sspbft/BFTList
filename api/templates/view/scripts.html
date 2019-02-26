@@ -61,7 +61,7 @@
 
     const renderRepData = (id, data) => {
         let repState = 'Rep state: ', pendReqs = 'Pending reqs: ', reqQ = 'Req queue: ',
-            seqNum = `Seq num: ${data.seq_num}`, prim = `Prim: ${data.prim}`
+            seqNum = `Seq num: ${data.seq_num}`, prim = `Prim: ${data.prim}`, conflict = `Conflict: ${data.con_flag}`
         console.log(data)
 
         repState += `[${data.rep_state.toString()}]`

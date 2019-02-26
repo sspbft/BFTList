@@ -19,6 +19,7 @@ from .models.replica_structure import ReplicaStructure
 from .models.request import Request
 from .models.client_request import ClientRequest
 from .models.operation import Operation
+import modules.byzantine as byz
 
 # globals
 logger = logging.getLogger(__name__)
@@ -137,7 +138,10 @@ class ReplicationModule(AlgorithmModule):
                     Module.PRIMARY_MONITORING_MODULE,
                     Function.NO_VIEW_CHANGE) and
                         self.rep[self.id].get_view_changed() is False):
-                    if prim_id == self.id:
+                    # prepare requests if not byzantine
+                    if (prim_id == self.id and not (byz.is_byzantine() and
+                        byz.get_byz_behavior() ==
+                            byz.STOP_ASSIGNING_SEQNUMS)):
                         for req in self.unassigned_reqs():
                             if self.rep[self.id].get_seq_num() < \
                                     (self.last_exec() +
@@ -538,7 +542,6 @@ class ReplicationModule(AlgorithmModule):
                 x_set_less = True
         # NOTE that self.unsup_req was originally called as well. Removed
         # during integration testing of rep mod.
-        # TODO look into this after meeting Feb 26
         return (self.stale_req_seqn() or self.double() or x_set_less)
 
     def known_pend_reqs(self):
