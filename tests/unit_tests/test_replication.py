@@ -312,12 +312,15 @@ class TestReplicationModule(unittest.TestCase):
             0,
             req_q=[
                 {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}},
-                {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PREP}}
+                {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP,
+                                                       ReplicationEnums.PREP}}
                 ]
         )] + [ReplicaStructure(
             i,
             req_q=[
-                {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.COMMIT}}
+                {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP,
+                                                       ReplicationEnums.PREP,
+                                                       ReplicationEnums.COMMIT}}
                 ]
         ) for i in range(1,6)]
         
@@ -327,9 +330,9 @@ class TestReplicationModule(unittest.TestCase):
 
         # Should return dummyRequest1 eventhough they have different statuses,
         # since the other processor has this request with a status in the 
-        # input stats (PRE_PREP, COMMIT)
+        # input status (PRE_PREP, PREP, COMMIT)
         self.assertEqual(
-            replication.known_reqs({ReplicationEnums.PRE_PREP, ReplicationEnums.COMMIT}),
+            replication.known_reqs({ReplicationEnums.PRE_PREP}),
             [{ REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP} }]
         )
 

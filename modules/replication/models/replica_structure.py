@@ -74,6 +74,13 @@ class ReplicaStructure(object):
         """
         self.r_log = deepcopy(r_log)
 
+    def exist_in_r_log(self, req: Request):
+        """Returns true if request exist in r_log."""
+        for applied_req in self.r_log:
+            if applied_req[REQUEST] == req:
+                return True
+        return False
+
     def get_pend_reqs(self) -> List[ClientRequest]:
         """Returns the requests received from clients, all ClientRequests
 
