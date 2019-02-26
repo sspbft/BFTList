@@ -185,42 +185,99 @@ class ReplicationModule(AlgorithmModule):
                                         # No need to search further
                                         break
 
-                        # Check if any request should be PREP
-                        for req_pair in self.known_reqs(
-                                {ReplicationEnums.PRE_PREP}):
-                            # Known_reqs gives back request pair with statuses
-                            # that INCLUDES Pre-prep, filter out the onces that
-                            # has a PREP already.
-                            if (req_pair[STATUS] ==
-                                    {ReplicationEnums.PRE_PREP} and
-                               self.accept_req_prep(req_pair[REQUEST],
-                               self.rep[self.id].get_prim())):
-                                # Adding PREP to the valid request
-                                req_pair[STATUS].add(ReplicationEnums.PREP)
+                        # # Check if any request should be PREP
+                        # for req_pair in self.known_reqs(
+                        #         {ReplicationEnums.PRE_PREP}):
+                        #     # Known_reqs gives back request pair with
+                        # statuses
+                        #     that INCLUDES Pre-prep, filter out the onces
+                        # that
+                        #     # has a PREP already.
+                        #     if (req_pair[STATUS] ==
+                        #             {ReplicationEnums.PRE_PREP} and
+                        #        self.accept_req_prep(req_pair[REQUEST],
+                        #        self.rep[self.id].get_prim())):
+                        #         # Adding PREP to the valid request
+                        #         req_pair[STATUS].add(ReplicationEnums.PREP)
+
+                        # Request that is pre_preped by 3f + 1
+                        for request in self.supported_reqs(
+                                    {ReplicationEnums.PRE_PREP}):
+                            request_found = False
+                            for req_pair in self.rep[self.id].get_req_q():
+                                if req_pair[REQUEST] == request:
+                                    request_found = True
+                                    if req_pair[STATUS] == {
+                                            ReplicationEnums.PRE_PREP}:
+                                        # Add Prep
+                                        req_pair[STATUS].add(
+                                            ReplicationEnums.PREP)
+                            if not request_found:
+                                # Request is not found in own req_q, the
+                                # request is supported by 3f + 1 other
+                                # processors.
+                                new_req_pair = {REQUEST: request, STATUS: {
+                                    ReplicationEnums.PRE_PREP,
+                                    ReplicationEnums.PREP}}
+                                self.rep[self.id].add_to_req_q(new_req_pair)
 
                         # Find unknown supported PREP-request and add to req_q
-                        for req in self.get_unknown_supported_prep():
-                            new_req_pair = {REQUEST: req, STATUS: {
-                                ReplicationEnums.PRE_PREP,
-                                ReplicationEnums.PREP}}
-                            self.rep[self.id].add_to_req_q(new_req_pair)
+                        # for req in self.get_unknown_supported_prep():
+                        #     new_req_pair = {REQUEST: req, STATUS: {
+                        #         ReplicationEnums.PRE_PREP,
+                        #         ReplicationEnums.PREP}}
+                        #     self.rep[self.id].add_to_req_q(new_req_pair)
 
                     # consider prepped msgs per request,
                     # if 3f+1 agree then commit
-                    for req_pair in self.known_reqs({ReplicationEnums.PREP}):
-                        req_pair[STATUS].add(ReplicationEnums.COMMIT)
-                        self.rep[self.id].remove_from_pend_reqs(
-                            req_pair[REQUEST].get_client_request())
+                    # for req_pair in self.known_reqs({ReplicationEnums.PREP}):
+                    #     req_pair[STATUS].add(ReplicationEnums.COMMIT)
+                    #     self.rep[self.id].remove_from_pend_reqs(
+                    #         req_pair[REQUEST].get_client_request())
 
-                    for req_pair in self.known_reqs(
-                            {ReplicationEnums.PREP,
-                             ReplicationEnums.COMMIT}):
-                        x_set = self.committed_set(req_pair[REQUEST])
+                    for request in self.supported_reqs(
+                            {ReplicationEnums.PREP}):
+                        request_found = False
+                        for req_pair in self.rep[self.id].get_req_q():
+                            if req_pair[REQUEST] == request:
+                                request_found = True
+                                if req_pair[STATUS] == {
+                                        ReplicationEnums.PRE_PREP,
+                                        ReplicationEnums.PREP}:
+                                    # Add Prep
+                                    req_pair[STATUS].add(
+                                        ReplicationEnums.COMMIT)
+                        if not request_found:
+                            # Request is not found in own req_q, the request
+                            # is supported by 3f + 1 other processors.
+                            new_req_pair = {REQUEST: request, STATUS: {
+                                ReplicationEnums.PRE_PREP,
+                                ReplicationEnums.PREP,
+                                ReplicationEnums.COMMIT}}
+                            self.rep[self.id].add_to_req_q(new_req_pair)
+                        self.rep[self.id].remove_from_pend_reqs(
+                            request.get_client_request())
+
+                    # for req_pair in self.known_reqs(
+                    #         {ReplicationEnums.PREP,
+                    #          ReplicationEnums.COMMIT}):
+                    #     x_set = self.committed_set(req_pair[REQUEST])
+                    #     if ((len(x_set) >=
+                    #             (3 * self.number_of_byzantine) + 1) and
+                    #             (req_pair[REQUEST].get_seq_num() ==
+                    #                 self.last_exec() + 1)):
+                    #         self.commit({REQUEST: req_pair[REQUEST],
+                    #                      X_SET: x_set})
+
+                    for request in self.supported_reqs(
+                        {ReplicationEnums.PREP,
+                         ReplicationEnums.COMMIT}):
+                        x_set = self.committed_set(request)
                         if ((len(x_set) >=
                                 (3 * self.number_of_byzantine) + 1) and
-                                (req_pair[REQUEST].get_seq_num() ==
+                                (request.get_seq_num() ==
                                     self.last_exec() + 1)):
-                            self.commit({REQUEST: req_pair[REQUEST],
+                            self.commit({REQUEST: request,
                                          X_SET: x_set})
             self.lock.release()
             self.send_msg()
@@ -518,16 +575,45 @@ class ReplicationModule(AlgorithmModule):
         request_set = []
         for req_pair in self.rep[self.id].get_req_q():
             processor_set = 0
-            if req_pair[STATUS] <= status or status <= req_pair[STATUS]:
+            if status <= req_pair[STATUS]:
                 for replication_structure in self.rep:
                     for request_pair in replication_structure.get_req_q():
                         if(req_pair[REQUEST] == request_pair[REQUEST] and
-                           (request_pair[STATUS] <= status or
-                           status <= request_pair[STATUS])):
+                           status <= request_pair[STATUS]):
                             processor_set += 1
             if processor_set >= (3 * self.number_of_byzantine + 1):
                 request_set.append(req_pair)
         return request_set
+
+    def supported_reqs(self, status):
+        """Returns all reqs that exist in the r_log
+
+        or req_q with status "status" of 3f+1 processors.
+        """
+        known_reqs = {}
+
+        for replica_structure in self.rep:
+            for req_pair in replica_structure.get_req_q():
+                if status <= req_pair[STATUS]:
+                    if req_pair[REQUEST] in known_reqs:
+                        known_reqs[req_pair[REQUEST]] += 1
+                    else:
+                        known_reqs[req_pair[REQUEST]] = 1
+
+            for applied_req in replica_structure.get_r_log():
+                    if applied_req[REQUEST] in known_reqs:
+                        known_reqs[applied_req[REQUEST]] += 1
+                    else:
+                        known_reqs[applied_req[REQUEST]] = 1
+
+        known_reqs = {k: v for (k, v) in known_reqs.items()
+                      if v >= (3 * self.number_of_byzantine + 1)}
+
+        # Filter out all request that processor_i has already applied
+        for applied_req in self.rep[self.id].get_r_log():
+            if applied_req[REQUEST] in known_reqs:
+                del known_reqs[applied_req[REQUEST]]
+        return list(known_reqs.keys())
 
     def delayed(self):
         """Method description.
