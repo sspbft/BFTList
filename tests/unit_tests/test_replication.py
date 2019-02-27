@@ -137,18 +137,22 @@ class TestReplicationModule(unittest.TestCase):
         self.assertFalse(replication.conflict())
 
     def test_com_pref_states(self):
+        # Not mocking the r_log 
         replication = ReplicationModule(0, Resolver(), 6, 1, 1)
-        replication.rep[0].set_rep_state([{"op": "add", "val": 0}])
-        replication.rep[1].set_rep_state([{"op": "add", "val": 0}])
-        replication.rep[2].set_rep_state([{"op": "add", "val": 1}])
-        replication.rep[3].set_rep_state([{"op": "add", "val": 0}, {"op": "add", "val": 2}])
-        replication.rep[4].set_rep_state([{"op": "add", "val": 3}])
-        replication.rep[5].set_rep_state([{"op": "add", "val": 2}])
+        replication.rep[0].set_rep_state([0])
+        replication.rep[1].set_rep_state([0])
+        replication.rep[2].set_rep_state([1])
+        replication.rep[3].set_rep_state([0, 2])
+        replication.rep[4].set_rep_state([3])
+        replication.rep[5].set_rep_state([2])
 
-        self.assertEqual(replication.com_pref_states(2), [[{"op": "add", "val": 0}], [{"op": "add", "val": 0}]])
-        self.assertEqual(replication.com_pref_states(3), [[{"op": "add", "val": 0}], [{"op": "add", "val": 0}],[{"op": "add", "val": 0}, {"op": "add", "val": 2}]])
+        target_tuple_1 = ([[0], [0]], [[], []])
+        target_tuple_2 = ([[0], [0], [0, 2]], [[], [], []])
+        target_tuple_3 = ([], [])
+        self.assertEqual(replication.com_pref_states(2), target_tuple_1)
+        self.assertEqual(replication.com_pref_states(3), target_tuple_2)
         # no more than 3 processors have a common prefix
-        self.assertEqual(replication.com_pref_states(4), [])
+        self.assertEqual(replication.com_pref_states(4), target_tuple_3)
 
     def test_get_ds_state(self):
         replication = ReplicationModule(0, Resolver(), 6, 1, 1)
@@ -721,23 +725,6 @@ class TestReplicationModule(unittest.TestCase):
             replication.id,
             pend_reqs=[self.dummyRequest1.get_client_request()]
         ))
-
-    # def test_reqs_to_prep(self):
-    #     replication = ReplicationModule(0, Resolver(), 6, 1, 1)
-    #     # DummyRequest1 exists in unassigned_reqs
-    #     replication.unassigned_reqs = MagicMock(return_value = [self.dummyRequest1])
-    #     self.assertFalse(replication.reqs_to_prep(self.dummyRequest1))
-
-    #     # DummyRequest1 does not exist in unassigned_reqs but in rep[REQ_Q]
-    #     replication.unassigned_reqs = MagicMock(return_value = [])
-    #     replication.rep[replication.id].set_req_q([
-    #         {REQUEST: self.dummyRequest1, STATUS: ReplicationEnums.PRE_PREP}
-    #         ])
-    #     self.assertFalse(replication.reqs_to_prep(self.dummyRequest1))
-
-    #     # DummyRequest2 is accepted
-    #     replication.accept_req_preprep = MagicMock(return_value = True)
-    #     self.assertTrue(replication.reqs_to_prep(self.dummyRequest2))
 
     def test_commit(self):
         replication = ReplicationModule(0, Resolver(), 6, 1, 2)
@@ -1647,22 +1634,21 @@ class TestReplicationModule(unittest.TestCase):
         ) for i in range(6)]
 
         processor_states = ([[1,2],[1,2], [1,2], [1,2], [1,2], [1,2]], [r_log_entries for i in range(6)])
-        print(processor_states)
-
         target = ([1,2], r_log_entries)
         self.assertEqual(replication.find_cons_state(processor_states), target)
 
         # Empty set should return "TEE"
-        self.assertEqual(replication.find_cons_state([]), (-1, []))
+        self.assertEqual(replication.find_cons_state(([],[])), (-1, []))
 
         # Empty R_log should return "TEE"
         # Their r_log does not match the common prefix     
-        replication.rep = [ReplicaStructure(
-            i,
-            rep_state = [1,2],
-            r_log = [{REQUEST: self.dummyRequest1, REPLY: [1]}],
-            prim=1
-        ) for i in range(6)]
+        # replication.rep = [ReplicaStructure(
+        #     i,
+        #     rep_state = [1,2],
+        #     r_log = [{REQUEST: self.dummyRequest1, X_SET: {1}}],
+        #     prim=1
+        # ) for i in range(6)]
+        processor_states = ([[1,2] for i in range(6)], [[{REQUEST: self.dummyRequest1, X_SET: {1}}] for i in range(6)])
         self.assertEqual(replication.find_cons_state(processor_states), (-1, []))   
 
         # Empty prefix_state should return "TEE"
@@ -1680,7 +1666,8 @@ class TestReplicationModule(unittest.TestCase):
         ) for i in range(3,6)]
 
         processor_states = [[1,2] for i in range(3)] + [[2,4] for i in range(3,6)]
-        self.assertEqual(replication.find_cons_state(processor_states), (-1, []))
+        processor_tuple = (processor_states, [r_log_entries for i in range(6)])
+        self.assertEqual(replication.find_cons_state(processor_tuple), (-1, []))
 
 
 

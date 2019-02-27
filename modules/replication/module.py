@@ -184,22 +184,7 @@ class ReplicationModule(AlgorithmModule):
                                         # No need to search further
                                         break
 
-                        # # Check if any request should be PREP
-                        # for req_pair in self.known_reqs(
-                        #         {ReplicationEnums.PRE_PREP}):
-                        #     # Known_reqs gives back request pair with
-                        # statuses
-                        #     that INCLUDES Pre-prep, filter out the onces
-                        # that
-                        #     # has a PREP already.
-                        #     if (req_pair[STATUS] ==
-                        #             {ReplicationEnums.PRE_PREP} and
-                        #        self.accept_req_prep(req_pair[REQUEST],
-                        #        self.rep[self.id].get_prim())):
-                        #         # Adding PREP to the valid request
-                        #         req_pair[STATUS].add(ReplicationEnums.PREP)
-
-                        # Request that is pre_preped by 3f + 1
+                        # Find to be PREP:ed
                         for request in self.supported_reqs(
                                     {ReplicationEnums.PRE_PREP}):
                             request_found = False
@@ -220,20 +205,7 @@ class ReplicationModule(AlgorithmModule):
                                     ReplicationEnums.PREP}}
                                 self.rep[self.id].add_to_req_q(new_req_pair)
 
-                        # Find unknown supported PREP-request and add to req_q
-                        # for req in self.get_unknown_supported_prep():
-                        #     new_req_pair = {REQUEST: req, STATUS: {
-                        #         ReplicationEnums.PRE_PREP,
-                        #         ReplicationEnums.PREP}}
-                        #     self.rep[self.id].add_to_req_q(new_req_pair)
-
-                    # consider prepped msgs per request,
-                    # if 3f+1 agree then commit
-                    # for req_pair in self.known_reqs({ReplicationEnums.PREP}):
-                    #     req_pair[STATUS].add(ReplicationEnums.COMMIT)
-                    #     self.rep[self.id].remove_from_pend_reqs(
-                    #         req_pair[REQUEST].get_client_request())
-
+                    # Find request to be COMMIT:ed
                     for request in self.supported_reqs(
                             {ReplicationEnums.PREP}):
                         request_found = False
@@ -243,7 +215,7 @@ class ReplicationModule(AlgorithmModule):
                                 if req_pair[STATUS] == {
                                         ReplicationEnums.PRE_PREP,
                                         ReplicationEnums.PREP}:
-                                    # Add Prep
+                                    # Add commit
                                     req_pair[STATUS].add(
                                         ReplicationEnums.COMMIT)
                         if not request_found:
@@ -257,17 +229,7 @@ class ReplicationModule(AlgorithmModule):
                         self.rep[self.id].remove_from_pend_reqs(
                             request.get_client_request())
 
-                    # for req_pair in self.known_reqs(
-                    #         {ReplicationEnums.PREP,
-                    #          ReplicationEnums.COMMIT}):
-                    #     x_set = self.committed_set(req_pair[REQUEST])
-                    #     if ((len(x_set) >=
-                    #             (3 * self.number_of_byzantine) + 1) and
-                    #             (req_pair[REQUEST].get_seq_num() ==
-                    #                 self.last_exec() + 1)):
-                    #         self.commit({REQUEST: req_pair[REQUEST],
-                    #                      X_SET: x_set})
-
+                    # Find all request that should be executed
                     for request in self.supported_reqs(
                         {ReplicationEnums.PREP,
                          ReplicationEnums.COMMIT}):
@@ -325,13 +287,6 @@ class ReplicationModule(AlgorithmModule):
         """Replying with last exec req to client."""
         # TODO implement
         pass
-
-    # def reqs_to_prep(self, req_pair):
-    #     """Helper method to filter out requests to be PREP."""
-    #     if req_pair[STATUS] != {ReplicationEnums.PRE_PREP}:
-    #         return False
-    #     return self.accept_req_prep(req_pair[REQUEST],
-    #                                 self.rep[self.id].get_prim())
 
     def commit(self, req_pair):
         """Commits a request."""
@@ -428,11 +383,10 @@ class ReplicationModule(AlgorithmModule):
     def com_pref_states(self, required_processors) -> Tuple[List, List]:
         """Method description.
 
-        Returns a set of replica states, and corresponding r_log
+        Returns a set of replica states, and corresponding r_logs
         which has the longest prefix at at least required_processors.
         Returns empty if non-existing.
         """
-        # all_replica_states = []
         dct = {}
         # Get all replica states
         for replica_structure in self.rep:
@@ -440,18 +394,15 @@ class ReplicationModule(AlgorithmModule):
                 "REP_STATE": replica_structure.get_rep_state(),
                 "R_LOG": replica_structure.get_r_log()
             }
-            # all_replica_states.append(replica_structure.get_rep_state())
         # Find a set of replica states that all are prefixes of each other
         # All possible combinations (of size required_processors) of replica
         # states
         candidates = []
-        # for S in itertools.combinations(
-        #                 all_replica_states, required_processors):
-        for S in itertools.combinations(
+        for processor_set in itertools.combinations(
                     dct, required_processors):
             all_states_are_prefixes = True
             # Check if prefixes for all combinations in the set of processors
-            for id_A, id_B in itertools.combinations(S, 2):
+            for id_A, id_B in itertools.combinations(processor_set, 2):
                 if not self.prefixes(dct[id_A]["REP_STATE"],
                                      dct[id_B]["REP_STATE"]):
                     # Move on to next combination of replica states
@@ -459,11 +410,11 @@ class ReplicationModule(AlgorithmModule):
                     break
             # All replica states of the processors were prefixes to each other
             if(all_states_are_prefixes):
-                candidates.append(list(S))
+                candidates.append(list(processor_set))
 
         # Found all possible candidates of processors
         # Want to return the ones with the longest prefix of rep_states
-        longest_prefix_found = 0
+        longest_prefix_found = -1
         returning_processors = []
         for processors in candidates:
             states = []
@@ -473,7 +424,7 @@ class ReplicationModule(AlgorithmModule):
             if length > longest_prefix_found:
                 longest_prefix_found = length
                 returning_processors = processors
-        
+
         returning_states = []
         returning_r_log = []
         # Get all rep_states and r_log of the processors
@@ -567,8 +518,7 @@ class ReplicationModule(AlgorithmModule):
             if(len(request_pair[X_SET]) < (3 * self.number_of_byzantine + 1)):
                 x_set_less = True
         # NOTE that self.unsup_req was originally called as well. Removed
-        # during integration testing of rep mod.
-        # TODO look into this after meeting Feb 26
+        # during integration testing of rep mod and discussion at meeting 26/2
         return (self.stale_req_seqn() or self.double() or x_set_less)
 
     def known_pend_reqs(self):
@@ -1035,25 +985,12 @@ class ReplicationModule(AlgorithmModule):
 
         if len(processors_states) == 0:
             return (-1, [])
-
         prefix_state = self.find_prefix(processors_states)
         if prefix_state is None:
             return (-1, [])
         # Find corresponding r_log
         r_log = self.get_corresponding_r_log(processors_r_log, prefix_state)
-        # for single_r_log in processors_r_log:
-        #     for entries in itertools.combinations(
-        #             single_r_log, len(prefix_state)):
-        #         # execute all reqs in this combination
-        #         state = []
-        #         for e in entries:
-        #             op = e[REQUEST].get_client_request().get_operation()
-        #             state = op.execute(state)
-        #         if state == prefix_state:
-        #             # found correct r_log entries
-        #             # entries is tuple -> convert to list
-        #             r_log = list(entries)
-        #             break
+        # Check if inconsistency between r_log and rep_state
         if r_log == [] and len(prefix_state) > 0:
             return (-1, [])
         return (prefix_state, r_log)

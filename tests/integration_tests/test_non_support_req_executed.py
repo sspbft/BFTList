@@ -101,9 +101,6 @@ class TestNonSupportedReqExecutedAtOneNode(AbstractIntegrationTest):
                 # nodes should probably reset their state
                 checks.append(data["rep_state"] == target_rep_state)
                 checks.append(len(data["r_log"]) == len(target_r_log))
-                #checks.append(data["r_log"][0][REQUEST] == target_r_log[0][REQUEST] or 
-                               #data["r_log"][0][REQUEST] == target_r_log[1][REQUEST])
-                # checks.append(data["r_log"][1][REQUEST] == target_r_log[1][REQUEST])
 
             # if all checks passed, test passed
             if all(checks):
