@@ -64,7 +64,6 @@ class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
     async def bootstrap(self):
         """Sets up BFTList for the test."""
         helpers.write_state_conf_file(start_state)
-        print(helpers.get_json_for_r_log_entry(req_1, [1,2,3,4,5]))
         return await helpers.launch_bftlist(__name__, args)
 
     async def validate(self):

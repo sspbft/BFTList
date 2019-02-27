@@ -37,7 +37,7 @@ for i in range(N):
         }
     }
 
-class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
+class TestNodesResetsUponStaleInfo(AbstractIntegrationTest):
     """Performs health check on all nodes base endpoint (/)."""
 
     async def bootstrap(self):
