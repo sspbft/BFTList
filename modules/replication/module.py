@@ -109,7 +109,6 @@ class ReplicationModule(AlgorithmModule):
             Y = self.get_ds_state()
             if X[0] == -1 and Y[0] != -1:
                 X = Y
-
             # lines 11 - 14
             # TODO check if X[1] should be a prefix of self.rep[self.id].r_log?
             # https://bit.ly/2Iu6I0E
@@ -426,32 +425,63 @@ class ReplicationModule(AlgorithmModule):
             return True
         return False
 
-    def com_pref_states(self, required_processors):
+    def com_pref_states(self, required_processors) -> Tuple[List, List]:
         """Method description.
 
-        Returns a set of replica states which has a prefix at at least
-        required_processors. Returns empty if not.
+        Returns a set of replica states, and corresponding r_log
+        which has the longest prefix at at least required_processors.
+        Returns empty if non-existing.
         """
-        all_replica_states = []
+        # all_replica_states = []
+        dct = {}
         # Get all replica states
         for replica_structure in self.rep:
-            all_replica_states.append(replica_structure.get_rep_state())
+            dct[replica_structure.get_id()] = {
+                "REP_STATE": replica_structure.get_rep_state(),
+                "R_LOG": replica_structure.get_r_log()
+            }
+            # all_replica_states.append(replica_structure.get_rep_state())
         # Find a set of replica states that all are prefixes of each other
         # All possible combinations (of size required_processors) of replica
         # states
+        candidates = []
+        # for S in itertools.combinations(
+        #                 all_replica_states, required_processors):
         for S in itertools.combinations(
-                        all_replica_states, required_processors):
+                    dct, required_processors):
             all_states_are_prefixes = True
-            # Check if prefixes for all combinations in the set
-            for rep_state_A, rep_state_B in itertools.combinations(S, 2):
-                if not self.prefixes(rep_state_A, rep_state_B):
+            # Check if prefixes for all combinations in the set of processors
+            for id_A, id_B in itertools.combinations(S, 2):
+                if not self.prefixes(dct[id_A]["REP_STATE"],
+                                     dct[id_B]["REP_STATE"]):
                     # Move on to next combination of replica states
                     all_states_are_prefixes = False
                     break
-            # All replica states where prefixes to each other
+            # All replica states of the processors were prefixes to each other
             if(all_states_are_prefixes):
-                return list(S)
-        return []
+                candidates.append(list(S))
+
+        # Found all possible candidates of processors
+        # Want to return the ones with the longest prefix of rep_states
+        longest_prefix_found = 0
+        returning_processors = []
+        for processors in candidates:
+            states = []
+            for id in processors:
+                states.append(dct[id]["REP_STATE"])
+            length = len(self.find_prefix(states))
+            if length > longest_prefix_found:
+                longest_prefix_found = length
+                returning_processors = processors
+        
+        returning_states = []
+        returning_r_log = []
+        # Get all rep_states and r_log of the processors
+        for id in returning_processors:
+            returning_states.append(dct[id]["REP_STATE"])
+            returning_r_log.append(dct[id]["R_LOG"])
+
+        return (returning_states, returning_r_log)
 
     def get_ds_state(self) -> Tuple[List, List]:
         """Method description.
@@ -987,7 +1017,7 @@ class ReplicationModule(AlgorithmModule):
                 # PRE_PREP - message
                 req[STATUS].add(ReplicationEnums.PREP)
 
-    def find_cons_state(self, processors_states) -> Tuple[List, List]:
+    def find_cons_state(self, processors_tuple) -> Tuple[List, List]:
         """Method description.
 
         Returns a consolidated replica state based on the processors_states,
@@ -1000,30 +1030,53 @@ class ReplicationModule(AlgorithmModule):
         r_log entry at this processor.
         NOTE that returning (-1, *) means that something went wrong.
         """
+        processors_states = processors_tuple[0]
+        processors_r_log = processors_tuple[1]
+
         if len(processors_states) == 0:
             return (-1, [])
 
         prefix_state = self.find_prefix(processors_states)
         if prefix_state is None:
             return (-1, [])
-
-        # create consistent r_log
-        r_log = []
-        for entries in itertools.combinations(
-                self.rep[self.id].get_r_log(), len(prefix_state)):
-            # execute all reqs in this combination
-            state = []
-            for e in entries:
-                op = e[REQUEST].get_client_request().get_operation()
-                state = op.execute(state)
-            if state == prefix_state:
-                # found correct r_log entries
-                # entries is tuple -> convert to list
-                r_log = list(entries)
-                break
+        # Find corresponding r_log
+        r_log = self.get_corresponding_r_log(processors_r_log, prefix_state)
+        # for single_r_log in processors_r_log:
+        #     for entries in itertools.combinations(
+        #             single_r_log, len(prefix_state)):
+        #         # execute all reqs in this combination
+        #         state = []
+        #         for e in entries:
+        #             op = e[REQUEST].get_client_request().get_operation()
+        #             state = op.execute(state)
+        #         if state == prefix_state:
+        #             # found correct r_log entries
+        #             # entries is tuple -> convert to list
+        #             r_log = list(entries)
+        #             break
         if r_log == [] and len(prefix_state) > 0:
             return (-1, [])
         return (prefix_state, r_log)
+
+    def get_corresponding_r_log(self, processors_r_log, prefix_state):
+        """Returns the corresponding r_log to the prefix_state.
+
+        Processors_r_log is a list of r_logs corresponding to the processors
+        which rep_state has prefix_state as prefix.
+        """
+        for single_r_log in processors_r_log:
+            for entries in itertools.combinations(
+                    single_r_log, len(prefix_state)):
+                # execute all reqs in this combination
+                state = []
+                for e in entries:
+                    op = e[REQUEST].get_client_request().get_operation()
+                    state = op.execute(state)
+                if state == prefix_state:
+                    # found correct r_log entries
+                    # entries is tuple -> convert to list
+                    return list(entries)
+        return []
 
     def find_prefix(self, rep_states: List):
         """Finds the prefix of a list of replica states."""

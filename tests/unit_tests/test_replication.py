@@ -1635,8 +1635,8 @@ class TestReplicationModule(unittest.TestCase):
         replication = ReplicationModule(0, Resolver(), 6, 1, 1)
         # Let prim == 1
         r_log_entries = [
-            {REQUEST: self.dummyRequest1, REPLY: [1]},
-            {REQUEST: self.dummyRequest2, REPLY: [1,2]}]
+            {REQUEST: self.dummyRequest1, X_SET: {0,1,2,3,4,5}},
+            {REQUEST: self.dummyRequest2, X_SET: {0,1,2,3,4,5}}]
 
         # all replicas has the same state and r_log
         replication.rep = [ReplicaStructure(
@@ -1646,7 +1646,8 @@ class TestReplicationModule(unittest.TestCase):
             prim=1
         ) for i in range(6)]
 
-        processor_states = [[1,2] for i in range(6)]
+        processor_states = ([[1,2],[1,2], [1,2], [1,2], [1,2], [1,2]], [r_log_entries for i in range(6)])
+        print(processor_states)
 
         target = ([1,2], r_log_entries)
         self.assertEqual(replication.find_cons_state(processor_states), target)
