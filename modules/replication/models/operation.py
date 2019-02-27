@@ -52,4 +52,4 @@ class Operation(object):
 
     def to_dct(self):
         """Converts an operation to a corresponding dictionary."""
-        return {"type": self.type.name, "args": self.args}
+        return {"type": self.type.name, "args": list(self.args)}

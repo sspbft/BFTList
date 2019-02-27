@@ -57,4 +57,4 @@ class ClientRequest(object):
     def to_dct(self):
         """Converts a client request to a corresponding dictionary."""
         return {"client_id": self.client_id, "timestamp": self.timestamp,
-                "operation": self.operation}
+                "operation": self.operation.to_dct()}
