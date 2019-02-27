@@ -5,9 +5,6 @@
     <h1>BFTList global view</h1>
     <p>Another day, another algorithm</p>
 
-    <!-- hide refresh button for now, not needed -->
-    <!--<button id="refreshButton">Refresh view</button> -->
-
     {% if data.test_data %}
     <div id="test-info">
         <h3 id="test-name">{{ data.test_data.test_name }}</h3>
@@ -22,7 +19,7 @@
                 <p>Hostname {{ item.node.hostname }}</p>
                 <p>IP:port {{ item.node.ip }}:{{ item.node.port }}</p></p>
                 <span id="byz-behavior-{{ item.node.id }}"></span>
-                
+                <img class="crown" id="crown-{{ item.node.id }}" src="/static/crown.png" width=150 />
             </div>
             
             <div class="data" id="data-node-{{ item.node.id }}">

@@ -57,8 +57,11 @@ class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
                 views = data["VIEW_ESTABLISHMENT_MODULE"]["views"]
                 vp_target = {"current": 2, "next": 2}
 
-                for vp in views:
-                    checks.append(vp == vp_target)
+                if calls_left > 1:
+                    for vp in views:
+                        checks.append(vp == vp_target)
+                else:
+                    self.assertEqual(vp, vp_target)
 
             # test passed if all checks returned true
             if all(checks):
