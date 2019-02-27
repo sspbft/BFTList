@@ -117,3 +117,10 @@ def write_state_conf_file(state):
     """Dumps a dict to a json file used to inject state to modules."""
     with open(f"{start_state_file_path}", "w") as outfile:
         outfile.write(jsonpickle.encode(state))
+
+def get_json_for_r_log_entry(req, x_set):
+    """Returns a dict used to match r_log entries returned through API."""
+    return {
+        "request": req.to_dct(),
+        "x_set": x_set
+    }

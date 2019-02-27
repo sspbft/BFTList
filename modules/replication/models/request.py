@@ -60,5 +60,5 @@ class Request(object):
 
     def to_dct(self):
         """Converts a request to a corresponding dictionary."""
-        return {"client_request": self.client_request, "view": self.view,
-                "seq_num": self.seq_num}
+        return {"client_request": self.client_request.to_dct(),
+                "view": self.view, "seq_num": self.seq_num}

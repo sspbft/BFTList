@@ -281,5 +281,6 @@ class ViewEstablishmentModule(AlgorithmModule):
             "vChange": self.pred_and_action.vChange,
             "witnesses": self.witnesses,
             "witnesses_set": self.witnesses_set,
-            "echo": self.echo
+            "echo": self.echo,
+            "primary": self.get_current_view(self.id)
         }
