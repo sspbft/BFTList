@@ -1,13 +1,24 @@
 """Module containing helpers and enums related to Byzantine behaviour."""
 
+# standard
 import logging
 import os
 
+# globals
 logger = logging.getLogger(__name__)
+
+# byzantine behaviors
 UNRESPONSIVE = "UNRESPONSIVE"
 DIFFERENT_VIEWS = "DIFFERENT_VIEWS"
 FORCING_RESET = "FORCING_RESET"
-BYZ_BEHAVIORS = [UNRESPONSIVE, DIFFERENT_VIEWS, FORCING_RESET]
+STOP_ASSIGNING_SEQNUMS = "STOP_ASSIGNING_SEQNUMS"
+
+BYZ_BEHAVIORS = [
+    UNRESPONSIVE,
+    DIFFERENT_VIEWS,
+    FORCING_RESET,
+    STOP_ASSIGNING_SEQNUMS
+]
 
 
 def is_byzantine():
