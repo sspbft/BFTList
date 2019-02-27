@@ -76,6 +76,7 @@ class TestNodeConvergeAfterReset(AbstractIntegrationTest):
             await asyncio.sleep(2)
             calls_left -= 1
             
+        self.assertTrue(test_result)
 
     @helpers.suppress_warnings
     def test(self):
