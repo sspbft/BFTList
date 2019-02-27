@@ -78,6 +78,7 @@ class TestNodeConvergeAfterReset(AbstractIntegrationTest):
         
         self.assertTrue(test_result)
             
+        self.assertTrue(test_result)
 
     @helpers.suppress_warnings
     def test(self):

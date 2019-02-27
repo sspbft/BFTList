@@ -273,11 +273,10 @@ class TestPredicatesAndAction(unittest.TestCase):
         self.resolver.execute = MagicMock(return_value = True)
         self.assertTrue(pred_module.need_reset())
 
-        self.resolver.execute = MagicMock(return_value = False)
-        self.assertFalse(pred_module.need_reset())
-
         pred_module.stale_v = MagicMock(return_value = False)
-        self.resolver.execute = MagicMock(return_value = True)
+        self.assertTrue(pred_module.need_reset())
+
+        self.resolver.execute = MagicMock(return_value = False)
         self.assertFalse(pred_module.need_reset())
 
     def test_reset_all(self):

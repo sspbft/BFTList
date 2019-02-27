@@ -200,7 +200,7 @@ class PredicatesAndAction():
     # Interface functions
     def need_reset(self):
         """True if the replication module requires a reset."""
-        return (self.stale_v(self.id) and self.resolver.execute(
+        return (self.stale_v(self.id) or self.resolver.execute(
                 module=Module.REPLICATION_MODULE,
                 func=Function.REPLICA_FLUSH
                 ))
@@ -269,7 +269,11 @@ class PredicatesAndAction():
                         # Assert that the processor doesn't end up in
                         # phase 1 with CURRENT = NEXT
                         if (self.views[self.id][CURRENT] != view_pair[NEXT] and
-                           self.views[self.id][NEXT] != view_pair[NEXT]):
+                           (self.views[self.id][NEXT] != view_pair[NEXT] or
+                                # If own view is RST_PAIR and the other is not,
+                                # the view_pair might be adoptable
+                                # Own view should not remain in rst_pair
+                           self.views[self.id] == self.RST_PAIR)):
                             # Assert that the view_pair is transit adoptable
                             if self.transit_adopble(
                                processor_id, 0, enums.FOLLOW):

@@ -1,8 +1,5 @@
 """
-Case 6.1
-The systems starts in a safe state but the primary is acting Byzantine and
-stops assigning seqnums/stops propagating requests. No progress should be
-made due to primary monitoring module not being included in this test right now.
+Case 5
 """
 
 # standard
@@ -17,8 +14,8 @@ from modules.replication.models.replica_structure import ReplicaStructure
 from modules.replication.models.client_request import ClientRequest
 from modules.replication.models.request import Request
 from modules.replication.models.operation import Operation
-from modules.constants import REQUEST, STATUS, MAXINT, SIGMA, X_SET, REPLY
-from modules.enums import ReplicationEnums as enums
+from modules.enums import ReplicationEnums as re
+from modules.constants import REQUEST, X_SET, STATUS
 
 # globals
 F = 1
@@ -26,39 +23,59 @@ N = 6
 logger = logging.getLogger(__name__)
 start_state = {}
 
-client_req_1 = ClientRequest(0, 0, Operation("APPEND", 1))
-client_req_2 = ClientRequest(0, 1, Operation("APPEND", 2))
-client_req_3 = ClientRequest(0, 3, Operation("APPEND", 3))
-req_1 = Request(client_req_1, 0, 1)
+req1 = Request((ClientRequest(0, 189276398, Operation(
+    "APPEND",
+    1
+))), 0, 1)
+
+req2 = Request((ClientRequest(0, 189276399, Operation(
+    "APPEND",
+    2
+))), 0, 2)
+
+req3 = Request((ClientRequest(0, 189276402, Operation(
+    "APPEND",
+    3
+))), 0, 3)
+
+target_rep_state=[1,2]
+target_r_log=[
+                {REQUEST: req1, X_SET: {0,1,2,3,4,5}},
+                {REQUEST: req2, X_SET: {0,1,2,3,4,5}}
+                ]
 
 for i in range(N):
     start_state[str(i)] = {
+        # force stable view_pair for all nodes
+        "VIEW_ESTABLISHMENT_MODULE": {
+            "views": [{"current": 0, "next": 0} for i in range(N)]
+        },
         "REPLICATION_MODULE": {
-            "rep": [
-                ReplicaStructure(
-                    j,
-                    rep_state=[1],
-                    r_log=[{REQUEST: req_1, X_SET: {0,1,2,3,4,5}}],
-                    pend_reqs=[client_req_2, client_req_3],
-                    last_req={0: {REQUEST: req_1, REPLY: [1]}}
-                ) for j in range(N)
-            ]
+            "rep": [ReplicaStructure(0, rep_state=[1,2,3],
+                    r_log=[
+                        {REQUEST: req1, X_SET: {0,1,2,3,4,5}},
+                        {REQUEST: req2, X_SET: {0,1,2,3,4,5}},
+                        {REQUEST: req3, X_SET: {0,1}},
+                    ],
+                    prim=0
+                    ),
+                    ReplicaStructure(1, rep_state=target_rep_state,
+                    r_log=target_r_log,
+                    req_q=[
+                        {REQUEST: req3, STATUS: {re.PRE_PREP, re.PREP, re.COMMIT}}
+                    ],
+                    prim=0
+                    )] + [
+                    ReplicaStructure(j, rep_state=target_rep_state,
+                    r_log=target_r_log,
+                    prim=0)
+                    for j in range(2,N)]
         }
     }
-for s in start_state:
-    start_state[s]["REPLICATION_MODULE"]["rep"][0].set_seq_num(1)
 
-args = {
-    "FORCE_VIEW": "0",
-    "ALLOW_SERVICE": "1",
-    "FORCE_NO_VIEW_CHANGE": "1",
-    "BYZANTINE": {
-        "NODES": [0],
-        "BEHAVIOR": "STOP_ASSIGNING_SEQNUMS"
-    }
-}
+args = { "FORCE_VIEW": "0", "ALLOW_SERVICE": "1", "FORCE_NO_VIEW_CHANGE": "1" }
 
-class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
+class TestNonSupportedReqExecutedAtOneNode(AbstractIntegrationTest):
     """Checks that a Byzantine node can not trick some nodes to do a view change."""
 
     async def bootstrap(self):
@@ -81,9 +98,9 @@ class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
                 data = result["data"]["REPLICATION_MODULE"]
                 id = data["id"]
 
-                checks.append(data["rep_state"] == [1])
-                checks.append(len(data["r_log"]) == 1)
-                checks.append(len(data["pend_reqs"]) == 2)
+                # nodes should probably reset their state
+                checks.append(data["rep_state"] == target_rep_state)
+                checks.append(len(data["r_log"]) == len(target_r_log))
 
             # if all checks passed, test passed
             if all(checks):

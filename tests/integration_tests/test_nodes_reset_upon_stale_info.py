@@ -37,7 +37,7 @@ for i in range(N):
         }
     }
 
-class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
+class TestNodesResetsUponStaleInfo(AbstractIntegrationTest):
     """Performs health check on all nodes base endpoint (/)."""
 
     async def bootstrap(self):
@@ -62,11 +62,10 @@ class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
                 witnesses = data["witnesses"]
                 witnesses_set = data["witnesses_set"]
 
-                vp_target = {"current": 0, "next": 0}
+                vp_target = [{"current": 0, "next": 0} for i in range(N)]
                 phases_target = [0 for i in range(N)]
 
-                for i,vp in enumerate(views):
-                    checks.append(vp == vp_target)
+                checks.append(views == vp_target)
                 checks.append(phases == phases_target)
                 checks.append(vChange == False)
 
@@ -78,7 +77,8 @@ class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
             # sleep for 2 seconds and the re-try
             await asyncio.sleep(2)
             calls_left -= 1
-            
+        
+        self.assertTrue(test_result)
 
     @helpers.suppress_warnings
     def test(self):
