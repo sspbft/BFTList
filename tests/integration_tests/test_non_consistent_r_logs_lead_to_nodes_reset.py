@@ -1,8 +1,9 @@
 """
-Case 1
-There is one request in pending requests that should be propagated through
-all different stages before being applied without issue, since no nodes
-are acting Byzantine.
+Case 3
+
+The replicas does not have a common prefix in replica state, hence find_con_state
+should return -1 (indicating something is messed up) and the conflict flag should be
+set to True. The nodes will then go through a flushlocal and clean the rep_state and r_log.
 """
 
 # standard
@@ -15,7 +16,10 @@ from . import helpers
 from .abstract_integration_test import AbstractIntegrationTest
 from modules.replication.models.replica_structure import ReplicaStructure
 from modules.replication.models.client_request import ClientRequest
+from modules.replication.models.request import Request
 from modules.replication.models.operation import Operation
+from modules.enums import ReplicationEnums as re
+from modules.constants import REQUEST, X_SET
 
 # globals
 F = 1
@@ -23,10 +27,18 @@ N = 6
 logger = logging.getLogger(__name__)
 start_state = {}
 
-req = ClientRequest(0, 189276398, Operation(
+req1 = Request((ClientRequest(0, 189276398, Operation(
     "APPEND",
     1
-))
+))), 0, 1)
+req2 = Request((ClientRequest(0, 189276399, Operation(
+    "APPEND",
+    2
+))), 0, 2)
+req3 = Request((ClientRequest(0, 189276402, Operation(
+    "APPEND",
+    3
+))), 0, 3)
 
 for i in range(N):
     start_state[str(i)] = {
@@ -36,14 +48,19 @@ for i in range(N):
         },
         "REPLICATION_MODULE": {
             "rep": [
-                ReplicaStructure(j, pend_reqs=[req], prim=0)
-            for j in range(N)]
+                ReplicaStructure(0, rep_state=[1],r_log=[{REQUEST: req1, X_SET:{0,2,3,5}}], prim=0),
+                ReplicaStructure(1, rep_state=[1], r_log=[{REQUEST: req1, X_SET:{1,2,3,0}}], prim=0),
+                ReplicaStructure(2, rep_state=[2], r_log=[{REQUEST: req2, X_SET:{1,2,3,4}}], prim=0),
+                ReplicaStructure(3, rep_state=[3], r_log=[{REQUEST: req3, X_SET:{0,2,3,5}}], prim=0),
+                ReplicaStructure(4, rep_state=[2], r_log=[{REQUEST: req2, X_SET:{0,2,3,4}}], prim=0),
+                ReplicaStructure(5, rep_state=[3], r_log=[{REQUEST: req3, X_SET:{0,2,3,5}}], prim=0),
+            ]
         }
     }
 
 args = { "FORCE_VIEW": "0", "ALLOW_SERVICE": "1", "FORCE_NO_VIEW_CHANGE": "1" }
 
-class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
+class TestNonConsistentRLogLeadToReset(AbstractIntegrationTest):
     """Checks that a Byzantine node can not trick some nodes to do a view change."""
 
     async def bootstrap(self):
@@ -67,8 +84,8 @@ class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
                 id = data["id"]
 
                 # nodes should probably reset their state
-                checks.append(data["rep_state"] == [1])
-                checks.append(data["pend_reqs"] == [])
+                checks.append(data["rep_state"] == [])
+                checks.append(data["r_log"] == [])
 
             # if all checks passed, test passed
             if all(checks):
