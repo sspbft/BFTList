@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 
 def create_app(resolver):
     """Creates the Flask app and injects a resolver."""
-    app = Flask("BFTList API", template_folder="api/templates")
+    app = Flask(
+        "BFTList API",
+        template_folder="api/templates",
+        static_folder="api/static"
+    )
     app.resolver = resolver
     app.register_blueprint(routes)
     CORS(app)

@@ -1,5 +1,6 @@
 <script>
     const BYZ_CLASSNAME = 'byzantine'
+    const PRIM_CLASSNAME = 'primary'
 
     let nodeElements = {}
     let fetchIntervals = [], failedReqs = []
@@ -62,7 +63,6 @@
     const renderRepData = (id, data) => {
         let repState = 'Rep state: ', pendReqs = 'Pending reqs: ', reqQ = 'Req queue: ',
             seqNum = `Seq num: ${data.seq_num}`, prim = `Prim: ${data.prim}`, conflict = `Conflict: ${data.con_flag}`
-        console.log(data)
 
         repState += `[${data.rep_state.toString()}]`
 
@@ -96,6 +96,13 @@
                 res.byzantine
                     ? renderByzantineNode(res.node_id, res.byzantine_behavior)
                     : renderNormalNode(res.node_id)
+
+                if (res.node_id == res.VIEW_ESTABLISHMENT_MODULE.primary) {
+                    nodeElements[res.node_id].node.classList.add(PRIM_CLASSNAME)
+                } else {
+                    nodeElements[res.node_id].node.classList.remove(PRIM_CLASSNAME)
+                }
+
                 switch(view) {
                     case 'view-est':
                         renderViewEstData(res.node_id, res.VIEW_ESTABLISHMENT_MODULE)

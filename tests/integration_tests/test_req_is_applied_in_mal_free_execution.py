@@ -67,8 +67,12 @@ class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
                 id = data["id"]
 
                 # nodes should probably reset their state
+                if len(data["r_log"]) == 0:
+                    checks.append(False)
+                    continue
                 checks.append(data["rep_state"] == [1])
                 checks.append(data["pend_reqs"] == [])
+                checks.append(len(data["r_log"]) > 0)
 
             # if all checks passed, test passed
             if all(checks):

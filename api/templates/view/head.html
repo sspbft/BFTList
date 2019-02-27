@@ -55,6 +55,18 @@
             justify-content: center;
             flex-direction: column;
             text-align: center;
+            position: relative;
+        }
+
+        .crown {
+            position: absolute;
+            top: 0;
+            transform: translateY(-82%);
+            display: none;
+        }
+
+        .node.primary .crown {
+            display: block;
         }
 
         .node.byzantine {
