@@ -270,7 +270,7 @@ class PredicatesAndAction():
                         # phase 1 with CURRENT = NEXT
                         if (self.views[self.id][CURRENT] != view_pair[NEXT] and
                            (self.views[self.id][NEXT] != view_pair[NEXT] or
-                                # If own view is RST_PAIR and the other is not, 
+                                # If own view is RST_PAIR and the other is not,
                                 # the view_pair might be adoptable
                                 # Own view should not remain in rst_pair
                            self.views[self.id] == self.RST_PAIR)):
