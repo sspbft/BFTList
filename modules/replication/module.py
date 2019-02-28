@@ -279,7 +279,7 @@ class ReplicationModule(AlgorithmModule):
         for j in conf.get_other_nodes():
             if (byz.is_byzantine() and byz.get_byz_behavior() ==
                     byz.ASSIGN_DIFFERENT_SEQNUMS and
-                    j % 2 == 0):
+                    j % 2 == 1):
                 msg = {
                     "type": MessageType.REPLICATION_MESSAGE,
                     "sender": self.id,
@@ -1041,7 +1041,6 @@ class ReplicationModule(AlgorithmModule):
                 state = []
                 for e in entries:
                     op = e[REQUEST].get_client_request().get_operation()
-                    print(str(e[REQUEST]))
                     if type(op) is not Operation:
                         raise ValueError(f"Operation {op} in r_log entry is \
                                             not of type Operation")

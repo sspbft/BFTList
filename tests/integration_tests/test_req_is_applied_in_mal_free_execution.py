@@ -29,16 +29,6 @@ req = ClientRequest(0, 189276398, Operation(
     "APPEND",
     1
 ))
-req1 = ClientRequest(0, 189276399, Operation(
-    "APPEND",
-    2
-))
-req2 = ClientRequest(0, 189276399, Operation(
-    "APPEND",
-    0
-))
-
-last_request = {REQUEST: Request(req2, 0, 0), REPLY: [0]}
 
 for i in range(N):
     start_state[str(i)] = {
@@ -48,8 +38,7 @@ for i in range(N):
         },
         "REPLICATION_MODULE": {
             "rep": [
-                ReplicaStructure(j, pend_reqs=[req, req1],
-                last_req={0: last_request},
+                ReplicaStructure(j, pend_reqs=[req],
                 prim=0)
             for j in range(N)]
         }

@@ -30,6 +30,7 @@ client_req_1 = ClientRequest(0, 189276398, Operation("APPEND", 1))
 client_req_2 = ClientRequest(0, 189276400, Operation("APPEND", 2))
 client_req_3 = ClientRequest(0, 189276450, Operation("APPEND", 3))
 req_1 = Request(client_req_1, 0, 1)
+req_2 = Request(client_req_1, 0, 1)
 
 for i in range(N):
     start_state[str(i)] = {
@@ -40,7 +41,7 @@ for i in range(N):
                     rep_state=[1],
                     r_log=[{REQUEST: req_1, X_SET: {0,1,2,3,4,5}}],
                     pend_reqs=[client_req_2, client_req_3],
-                    last_req={0: {REQUEST: req_1, REPLY: [1]}},
+                    last_req=[{REQUEST: req_2, REPLY: [1]}],
                     prim=0
                 ) for j in range(N)
             ]
@@ -53,10 +54,10 @@ args = {
     "FORCE_VIEW": "0",
     "ALLOW_SERVICE": "1",
     "FORCE_NO_VIEW_CHANGE": "1",
-    # "BYZANTINE": {
-    #     "NODES": [0],
-    #     "BEHAVIOR": "ASSIGN_DIFFERENT_SEQNUMS"
-    # }
+    "BYZANTINE": {
+        "NODES": [0],
+        "BEHAVIOR": "ASSIGN_DIFFERENT_SEQNUMS"
+    }
 }
 
 class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
@@ -84,7 +85,6 @@ class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
 
                 checks.append(data["rep_state"] == [1])
                 checks.append(len(data["r_log"]) == 1)
-                checks.append(len(data["pend_reqs"]) == 2)
 
             # if all checks passed, test passed
             if all(checks):
