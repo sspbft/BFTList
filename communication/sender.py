@@ -3,7 +3,7 @@
 # standard
 import asyncio
 import logging
-import socketio
+import zmq
 from queue import Queue
 import jsonpickle
 
@@ -29,7 +29,10 @@ class Sender():
         self.recv_ip = recv_ip
         self.recv_port = recv_port
 
-        self.sio = socketio.Client()
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.REQ)
+        self.socket.connect(f"tcp://{self.recv_ip}:{self.recv_port}")
+
         self.msg_queue = Queue()
         self.counter = 1
         self.cap = 2**31
@@ -48,34 +51,17 @@ class Sender():
         msg = self.msg_queue.get()
         return msg
 
-    def on_message(self, msg):
-        """Called when a message is received from the server."""
-        msg = jsonpickle.decode(msg)
-
-    def on_connect(self):
-        """Called when connected to the server (Receiver)."""
-        # logger.info(f"Connected to {self.recv_ip}:{self.recv_port}")
-        logger.info(f"Connected to {self.recv_id}")
-
-    def on_disconnect(self):
-        """Called when disconnected from the server (Receiver)."""
-        logger.info(f"Disconnected from {self.recv_ip}:{self.recv_port}")
-
     async def start(self):
         """Main loop for the sender channel."""
-        # set up handlers
-        self.sio.on("message", handler=self.on_message)
-        self.sio.on("connect", handler=self.on_connect)
-        self.sio.on("disconnect", handler=self.on_disconnect)
-
-        logger.info(f"{self.id}_{self.recv_id} set up")
 
         while True:
             msg = self.get_msg_from_queue()
             if msg is None:
                 await asyncio.sleep(0.1)
             else:
-                await self.send(msg)
+                reply = await self.send(msg)
+                if reply.get_counter() != self.counter:
+                    raise ValueError("did not get same counter back")
                 self.counter += 1 % self.cap
 
     async def send(self, data):
@@ -85,20 +71,14 @@ class Sender():
         it over the socket.
         """
         msgs_sent.labels(self.id).inc()
-        await asyncio.sleep(0.1)
-        print(data)
-        # msg_json = jsonpickle.encode(msg)
+        # await asyncio.sleep(0.1)
         msg = Message(MessageEnum.SENDER_MESSAGE, self.counter, self.id, data)
-        # logger.info(f"sending msg to {self.recv_id}")
-        self.sio.send(msg.as_json())
-
-    async def connect(self):
-        """Blocking func that connects the client to the specified server."""
-        while self.sio.eio.state != "connected":
-            logger.debug(f"trying to connect to http://{self.recv_ip}:{self.recv_port}")
-            try:
-                self.sio.connect(f"http://{self.recv_ip}:{self.recv_port}")
-            except socketio.exceptions.ConnectionError:
-                logger.error("Connection denied")
-            # await asyncio.sleep(1)
-        logger.info(f"Connection established {self.id}_{self.recv_id}")
+        self.socket.send(msg.as_bytes())
+        reply_bytes = self.socket.recv()
+        try:
+            reply_json = reply_bytes.decode()
+            reply = jsonpickle.decode(reply_json)
+            return reply
+        except Exception as e:
+            logger.error(f"error when decoding: {e}")
+            return None

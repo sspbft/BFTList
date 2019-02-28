@@ -2,8 +2,7 @@
 
 # standard
 import logging
-import socketio
-import eventlet
+import zmq
 from queue import Queue
 import jsonpickle
 
@@ -29,56 +28,24 @@ class Receiver():
         self.port = port
         self.resolver = resolver
 
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.REP)
+        self.socket.bind(f"tcp://*:{self.port}")
+
         self.msg_queue = Queue()
         self.clients = 0
-        self.sio = socketio.Server()
-        self.app = socketio.WSGIApp(self.sio)
-
-    def add_msg_to_queue(self, msg):
-        """Adds the message to the FIFO queue for this sender channel."""
-        self.msg_queue.put(msg)
-
-    async def get_msg_from_queue(self):
-        """Gets the next message from the queue.
-
-        Will block until there is a message to send.
-        """
-        while self.msg_queue.empty():
-            continue
-        msg = self.msg_queue.get()
-        return msg
-
-    def on_connect(self, sid, environ):
-        """TODO write me."""
-        self.clients += 1
-        logger.info(f"Node {sid} connected, {self.clients} connected clients")
-        pass
-
-    def on_message(self, sid, msg):
-        """TODO write me."""
-        msg = jsonpickle.decode(msg)
-        logger.info(f"got msg from node {msg.get_sender_id()}")
-        self.resolver.dispatch_msg(msg.get_data())
-
-    def on_disconnect(self, sid):
-        """TODO write me."""
-        self.clients -= 1
-        logger.info(f"Node {sid} disconnected, {self.clients} connected " +
-                    "clients")
 
     def start(self):
-        """Starts the socketio server."""
-        logger.info(f"Running socketio server on {self.ip}:{self.port}")
-        self.sio.on("connect", self.on_connect)
-        self.sio.on("message", self.on_message)
-        self.sio.on("disconnect", self.on_disconnect)
+        """Starts the zeromq server."""
+        while True:
+            msg_bytes = self.socket.recv()
+            msg_json = msg_bytes.decode()
+            msg = jsonpickle.decode(msg_json)
+            self.resolver.dispatch_msg(msg.get_data())
+            self.ack(msg.get_counter())
 
-        logger.info("Receiver configured and set up")
-        eventlet.wsgi.server(eventlet.listen(('', self.port)), self.app,
-                             log_output=False)
-
-    def ack(self, counter, data={}):
+    def ack(self, counter):
         """Sends a message over the specified channel."""
         msgs_sent.labels(self.id).inc(1)
-        msg = Message(MessageEnum.RECEIVER_MESSAGE, counter, self.id, data)
-        self.sio.send(msg.as_json())
+        msg = Message(MessageEnum.RECEIVER_MESSAGE, counter, self.id)
+        self.socket.send(msg.as_bytes())

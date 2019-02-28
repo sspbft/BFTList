@@ -8,14 +8,11 @@ class MessageEnum:
 
 
 class Message:
-    def __init__(self, type, counter, sender_id, data):
+    def __init__(self, type, counter, sender_id, data={}):
         self.type = type
         self.counter = counter
         self.sender_id = sender_id
         self.data = data
-    
-    def as_json(self):
-        return jsonpickle.encode(self)
     
     def get_type(self):
         return self.type
@@ -28,3 +25,11 @@ class Message:
 
     def get_data(self):
         return self.data
+
+    def as_json(self):
+        """Returns JSON string representing this object."""
+        return jsonpickle.encode(self)
+
+    def as_bytes(self):
+        """Returns byte representation of JSON string."""
+        return str.encode(self.as_json())

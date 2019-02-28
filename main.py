@@ -72,17 +72,17 @@ def setup_communication(resolver):
 
     # setup sender channel to other nodes
     senders = {}
-    tasks = []
+    # tasks = []
     for _, node in nodes.items():
         if id != node.id:
             sender = Sender(id, node.id, node.ip, node.port)
-            tasks.append(sender.connect())
+            # tasks.append(sender.connect())
             senders[node.id] = sender
 
             # loop.create_task(sender.start())
             # Thread(target=sender.start).run()
 
-    asyncio.gather(*tasks)
+    # asyncio.gather(*tasks)
 
     logger.info("all senders connected")
 
@@ -90,7 +90,7 @@ def setup_communication(resolver):
     resolver.receiver = receiver
 
     # run sender loop forever in each sender
-    tasks = [senders[id].start() for id in senders]
+    # tasks = [senders[id].start() for id in senders]
     # asyncio.gather(*tasks)  # will block forever
 
     loop = asyncio.get_event_loop()
