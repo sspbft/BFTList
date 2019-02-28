@@ -1305,7 +1305,7 @@ class TestReplicationModule(unittest.TestCase):
         # append 1..5
         for i in range(5):
             op = Operation(OperationEnums.APPEND, i)
-            client_req = ClientRequest(0, None, op)
+            client_req = ClientRequest(0, i, op)
             req = Request(client_req, 0, i)
             replication.apply(req)
 

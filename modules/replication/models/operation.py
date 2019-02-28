@@ -23,7 +23,7 @@ class Operation(object):
                 raise ValueError(f"op_type {op_type} is not valid")
         if type(op_type) != OperationEnums:
             raise ValueError(f"op_type {op_type} is not a OperationEnum")
-        self.op_type = OperationEnums.APPEND  # _type
+        self.op_type = op_type
         self.args = args
 
     def get_type(self):
