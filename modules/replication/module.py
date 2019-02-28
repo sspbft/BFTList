@@ -137,7 +137,7 @@ class ReplicationModule(AlgorithmModule):
                     Module.PRIMARY_MONITORING_MODULE,
                     Function.NO_VIEW_CHANGE) and
                         self.rep[self.id].get_view_changed() is False):
-                    # prepare requests if not byzantine
+                    # prepare requests
                     if (prim_id == self.id and not (byz.is_byzantine() and
                         byz.get_byz_behavior() ==
                             byz.STOP_ASSIGNING_SEQNUMS)):
@@ -145,7 +145,17 @@ class ReplicationModule(AlgorithmModule):
                             if self.rep[self.id].get_seq_num() < \
                                     (self.last_exec() +
                                         (SIGMA * self.number_of_clients)):
-                                self.rep[self.id].inc_seq_num()
+                                if (byz.is_byzantine() and
+                                        byz.get_byz_behavior() ==
+                                        byz.SEQNUM_OUT_BOUND):
+                                    self.rep[self.id].set_seq_num(
+                                        self.rep[self.id].get_seq_num() +
+                                        SIGMA * self.number_of_clients + 1
+                                    )
+                                elif not (byz.is_byzantine() and
+                                          byz.get_byz_behavior() ==
+                                          byz.REUSE_SEQNUMS):
+                                    self.rep[self.id].inc_seq_num()
                                 req = Request(
                                     req,
                                     prim_id,
@@ -173,7 +183,7 @@ class ReplicationModule(AlgorithmModule):
                                     req = req_pair[REQUEST]
                                     if (req.get_client_request() ==
                                         client_req and req.get_view() ==
-                                        prim_id and self.last_exec() <=
+                                        prim_id and self.last_exec() <
                                             req.get_seq_num() <=
                                             (self.last_exec() +
                                                 SIGMA *
@@ -653,7 +663,7 @@ class ReplicationModule(AlgorithmModule):
             for req_pair in self.rep[prim].get_req_q():
                 if (req_pair[REQUEST].get_client_request() == request and
                    req_pair[REQUEST].get_view() == prim and
-                   self.last_exec() <= req_pair[REQUEST].get_seq_num() <=
+                   self.last_exec() < req_pair[REQUEST].get_seq_num() <=
                         (self.last_exec() + SIGMA * self.number_of_clients)):
                         # A request should not already exist with the same
                         # sequence number or same client request

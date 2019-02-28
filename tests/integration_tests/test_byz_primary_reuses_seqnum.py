@@ -1,7 +1,7 @@
 """
-Case 6.1
+Case 6.2a
 The systems starts in a safe state but the primary is acting Byzantine and
-stops assigning seqnums/stops propagating requests. No progress should be
+assigns seqnums that has already been used. No progress should be
 made due to primary monitoring module not being included in this test right now.
 """
 
@@ -54,11 +54,11 @@ args = {
     "FORCE_NO_VIEW_CHANGE": "1",
     "BYZANTINE": {
         "NODES": [0],
-        "BEHAVIOR": "STOP_ASSIGNING_SEQNUMS"
+        "BEHAVIOR": "REUSE_SEQNUMS"
     }
 }
 
-class TestByzStopsAssigningSeqNum(AbstractIntegrationTest):
+class TestByzReusesSeqNum(AbstractIntegrationTest):
     """Checks that a Byzantine node can not trick some nodes to do a view change."""
 
     async def bootstrap(self):
@@ -84,6 +84,8 @@ class TestByzStopsAssigningSeqNum(AbstractIntegrationTest):
                 checks.append(data["rep_state"] == [1])
                 checks.append(len(data["r_log"]) == 1)
                 checks.append(len(data["pend_reqs"]) == 2)
+                if id != 0:
+                    checks.append(len(data["req_q"]) == 0)
 
             # if all checks passed, test passed
             if all(checks):

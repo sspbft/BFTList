@@ -1,5 +1,7 @@
 """
 Case 5
+Node 0 has executed an unsupported request, only node 1 has the request in it's req_q.
+Node 0 will do a reset and then catch up with the rest of the nodes.
 """
 
 # standard
