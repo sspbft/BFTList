@@ -67,6 +67,8 @@ class ReplicationModule(AlgorithmModule):
                 rep = data["rep"]
                 if rep is not None and len(rep) == n:
                     self.rep = rep
+                if byz.is_byzantine():
+                    self.byz_rep = rep[self.id]
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -128,7 +130,6 @@ class ReplicationModule(AlgorithmModule):
                 self.flush_local()
 
             self.rep[self.id].extend_pend_reqs(self.known_pend_reqs())
-
             # line 15 - 25
             if (self.resolver.execute(
                     Module.VIEW_ESTABLISHMENT_MODULE,
@@ -145,6 +146,27 @@ class ReplicationModule(AlgorithmModule):
                             if self.rep[self.id].get_seq_num() < \
                                     (self.last_exec() +
                                         (SIGMA * self.number_of_clients)):
+                                if (byz.is_byzantine() and
+                                    byz.get_byz_behavior() ==
+                                        byz.ASSIGN_DIFFERENT_SEQNUMS):
+                                    self.byz_rep.set_seq_num(
+                                        self.byz_rep.get_seq_num() + 3)
+                                    byz_req = Request(
+                                        deepcopy(req),
+                                        prim_id,
+                                        self.byz_rep.get_seq_num()
+                                    )
+                                    logger.info(byz_req.get_client_request())
+                                    byz_req_pair = {
+                                        REQUEST: deepcopy(byz_req),
+                                        STATUS: {
+                                            ReplicationEnums.PRE_PREP,
+                                            ReplicationEnums.PREP
+                                        }
+                                    }
+                                    logger.info(f"Adding Byz: {byz_req}")
+                                    self.byz_rep.add_to_req_q(byz_req_pair)
+
                                 self.rep[self.id].inc_seq_num()
                                 req = Request(
                                     req,
@@ -255,11 +277,20 @@ class ReplicationModule(AlgorithmModule):
     def send_msg(self):
         """Broadcasts its own replica_structure to other nodes."""
         for j in conf.get_other_nodes():
-            msg = {
-                "type": MessageType.REPLICATION_MESSAGE,
-                "sender": self.id,
-                "data": {"own_replica_structure": self.rep[self.id]}
-            }
+            if (byz.is_byzantine() and byz.get_byz_behavior() ==
+                    byz.ASSIGN_DIFFERENT_SEQNUMS and
+                    j % 2 == 0):
+                msg = {
+                    "type": MessageType.REPLICATION_MESSAGE,
+                    "sender": self.id,
+                    "data": {"own_replica_structure": self.byz_rep}
+                }
+            else:
+                msg = {
+                    "type": MessageType.REPLICATION_MESSAGE,
+                    "sender": self.id,
+                    "data": {"own_replica_structure": self.rep[self.id]}
+                }
             self.resolver.send_to_node(j, msg)
 
     def receive_rep_msg(self, msg):
@@ -435,7 +466,6 @@ class ReplicationModule(AlgorithmModule):
         for id in returning_processors:
             returning_states.append(dct[id]["REP_STATE"])
             returning_r_log.append(dct[id]["R_LOG"])
-
         return (returning_states, returning_r_log)
 
     def get_ds_state(self) -> Tuple[List, List]:
@@ -542,7 +572,6 @@ class ReplicationModule(AlgorithmModule):
 
         known_reqs = {k: v for (k, v) in request_count.items() if v >= (
                         3 * self.number_of_byzantine + 1)}
-
         return list(known_reqs.keys())
 
     def known_reqs(self, status):
@@ -1012,6 +1041,10 @@ class ReplicationModule(AlgorithmModule):
                 state = []
                 for e in entries:
                     op = e[REQUEST].get_client_request().get_operation()
+                    print(str(e[REQUEST]))
+                    if type(op) is not Operation:
+                        raise ValueError(f"Operation {op} in r_log entry is \
+                                            not of type Operation")
                     state = op.execute(state)
                 if state == prefix_state:
                     # found correct r_log entries
