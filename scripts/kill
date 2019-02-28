@@ -1,7 +1,6 @@
-kill $(ps aux | grep 'python main.py' | awk '{print $2}')
-kill -9 $(lsof -i:4000 -t)
-kill -9 $(lsof -i:4001 -t)
-kill -9 $(lsof -i:5000 -t)
-kill -9 $(lsof -i:5001 -t)
-kill -9 $(lsof -i:6000 -t)
-kill -9 $(lsof -i:6001 -t)
+for i in 0 1 2 3 4 5
+do
+    kill -9 $(lsof -i:400$i -t)
+    kill -9 $(lsof -i:500$i -t)
+    kill -9 $(lsof -i:600$i -t)
+done

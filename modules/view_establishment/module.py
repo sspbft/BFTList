@@ -90,10 +90,11 @@ class ViewEstablishmentModule(AlgorithmModule):
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
 
-            self.lock.release()
             # Send message to all other processors
             self.send_msg()
-            time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
+            self.lock.release()
+
+            time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.1)
 
             # Stopping the while loop, used for testing purpose
             if(not self.run_forever):

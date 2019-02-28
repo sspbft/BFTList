@@ -10,7 +10,8 @@ from threading import Thread
 from prometheus_client import start_http_server
 
 # local
-from communication import send, recv
+from communication.sender import Sender
+from communication.receiver import Receiver
 import conf.config as config
 from api.server import start_server
 from modules.view_establishment.module import ViewEstablishmentModule
@@ -62,26 +63,44 @@ def start_modules(resolver):
 
 def setup_communication(resolver):
     """Sets up the communication using asyncio event loop."""
-    loop = asyncio.get_event_loop()
     nodes = config.get_nodes()
+
+    # setup receiver to receive messages from other nodes
+    receiver = Receiver(id, nodes[id].ip, nodes[id].port, resolver)
+    t = Thread(target=receiver.start)
+    t.start()
 
     # setup sender channel to other nodes
     senders = {}
+    tasks = []
     for _, node in nodes.items():
         if id != node.id:
-            sender = send.Sender(node.ip, node.port)
-            loop.create_task(sender.start())
+            sender = Sender(id, node.id, node.ip, node.port)
+            tasks.append(sender.connect())
             senders[node.id] = sender
 
-    # setup receiver channel from other nodes
-    receiver = recv.Receiver(nodes[id].ip, nodes[id].port, resolver)
-    loop.create_task(receiver.tcp_listen())
+            # loop.create_task(sender.start())
+            # Thread(target=sender.start).run()
+
+    asyncio.gather(*tasks)
+
+    logger.info("all senders connected")
 
     resolver.senders = senders
     resolver.receiver = receiver
 
+    # run sender loop forever in each sender
+    tasks = [senders[id].start() for id in senders]
+    # asyncio.gather(*tasks)  # will block forever
+
+    loop = asyncio.get_event_loop()
+    for i in senders:
+        loop.create_task(senders[i].start())
+    
     loop.run_forever()
     loop.close()
+    # for t in tasks:
+    #     asyncio.ensure_future(t)
 
 
 def setup_metrics():
@@ -104,7 +123,8 @@ def setup_logging():
     logging.basicConfig(format=FORMAT, level=level)
 
     # only log ERROR messages from external loggers
-    externals = ["werkzeug", "asyncio"]
+    externals = ["werkzeug", "asyncio, engineio", "engineio.client",
+                 "engineio.server", "socketio.client", "socketio.server"]
     for e in externals:
         logging.getLogger(e).setLevel(logging.ERROR)
 
@@ -123,3 +143,4 @@ if __name__ == "__main__":
     start_api(resolver)
     # always run last, due to asyncio loop run_forever
     setup_communication(resolver)
+    # asyncio.run(setup_communication(resolver))
