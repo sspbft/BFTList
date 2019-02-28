@@ -105,9 +105,13 @@ class ReplicaStructure(object):
         """Sets the pend_reqs for this processor."""
         self.pend_reqs = deepcopy(pend_reqs)
 
-    def set_req_q(self, req_pairs: List):
-        """Sets the pend_reqs for this processor."""
-        self.req_q = deepcopy(req_pairs)
+    def set_req_q(self, req_q: List[Dict]):
+        """Sets the req_q for this processor.
+
+        NOTE that no validation is done on the performed req_q. This is mainly
+        used for testing purposes.
+        """
+        self.req_q = deepcopy(req_q)
 
     def get_req_q(self) -> List[Dict]:
         """Returns the requests that are in process along with their status."""

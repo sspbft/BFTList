@@ -2,13 +2,9 @@
 
 # standard
 from typing import List
-import logging
 
 # local
 from modules.enums import OperationEnums
-
-# global
-logger = logging.getLogger(__name__)
 
 
 class Operation(object):
@@ -29,8 +25,9 @@ class Operation(object):
             raise ValueError(f"op_type {op_type} is not a OperationEnum")
         self.op_type = OperationEnums.APPEND  # _type
         self.args = args
-    
+
     def get_type(self):
+        """Returns the type of operation to execute."""
         return self.op_type
 
     # BFTList only supports list operations for now
@@ -44,10 +41,7 @@ class Operation(object):
         elif self.op_type == OperationEnums.NO_OP:
             pass
         else:
-            # raise ValueError(f"Bad operation {self.type}")
-            # logger.error(f"Bad operation {self.type}")
-            lst.append(self.args[0])
-
+            raise ValueError(f"Bad operation {self.type}")
         return lst
 
     def __str__(self):
