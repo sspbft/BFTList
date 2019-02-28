@@ -1350,7 +1350,7 @@ class TestReplicationModule(unittest.TestCase):
 
     def test_renew_reqs(self):
         replication = ReplicationModule(0, Resolver(), 6, 1, 1)
-        request3 = ClientRequest(0, None, None)
+        request3 = ClientRequest(0, 12313, None)
         req_q = [
                 {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}},
                 {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
@@ -1378,9 +1378,10 @@ class TestReplicationModule(unittest.TestCase):
 
         replication.renew_reqs({0,1,2,3,4,5})
         # Request3 should be discarged
+
         self.assertEqual(replication.rep[replication.id].get_pend_reqs(),
             [self.dummyRequest1.get_client_request(),
-            self.dummyRequest2.get_client_request()])
+             self.dummyRequest2.get_client_request()])
         # dummyRequest1 need a new Pre_prep message with the new primary as view
         # dummyRequest1 has default view = 1, and sequence number 1,
         # should now be updated
@@ -1401,7 +1402,7 @@ class TestReplicationModule(unittest.TestCase):
         newRequest = Request(ClientRequest(0, None, Operation(
             OperationEnums.APPEND, 1
         )), 0, 3)
-        request3 = ClientRequest(0, None, None)
+        request3 = ClientRequest(0, 1235, None)
         req_q = [
                 {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}},
                 {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
@@ -1460,7 +1461,7 @@ class TestReplicationModule(unittest.TestCase):
         # I'm 1 and prim = 0
         replication = ReplicationModule(1, Resolver(), 6, 1, 1)
         replication.check_new_state_and_r_log = MagicMock(return_value = True)
-        newRequest = Request(ClientRequest(0, None, Operation(
+        newRequest = Request(ClientRequest(0, 192312, Operation(
             OperationEnums.APPEND, 1
         )), 0, 3)
         request3 = ClientRequest(0, None, None)
