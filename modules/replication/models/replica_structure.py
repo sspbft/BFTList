@@ -37,6 +37,18 @@ class ReplicaStructure(object):
         self.view_changed = view_changed
         self.prim = prim
 
+    def set_replica_structure(self, rs):
+        """Setting some of the replica structure to the input rs."""
+        self.rep_state = deepcopy(rs.get_rep_state())
+        self.r_log = deepcopy(rs.get_r_log())
+        self.pend_reqs = deepcopy(rs.get_pend_reqs())
+        self.req_q = deepcopy(rs.get_req_q())
+        self.last_req = deepcopy(rs.get_last_req())
+        self.seq_num = deepcopy(rs.get_seq_num())
+        self.con_flag = False
+        self.view_changed = False
+        self.prim = deepcopy(rs.get_prim())
+
     def get_id(self) -> int:
         """Returns the id associated with this processor."""
         return self.id
