@@ -12,7 +12,7 @@ from typing import List, Tuple
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums, OperationEnums
 from modules.constants import (MAXINT, SIGMA, X_SET,
-                               REQUEST, STATUS)
+                               REQUEST, STATUS, REPLY)
 from resolve.enums import Module, Function, MessageType
 import conf.config as conf
 from .models.replica_structure import ReplicaStructure
@@ -67,6 +67,16 @@ class ReplicationModule(AlgorithmModule):
                 rep = data["rep"]
                 if rep is not None and len(rep) == n:
                     self.rep = rep
+                if byz.is_byzantine():
+                    self.byz_rep = deepcopy(rep[self.id])
+                    if byz.get_byz_behavior == byz.WRONG_CCSP:
+                        byz_applied_req = {REQUEST: Request(
+                                            rep[self.id].get_pend_reqs()[1],
+                                            0,
+                                            3),
+                                           REPLY: [3]}
+                        self.byz_rep.set_rep_state([2])
+                        self.byz_rep.set_r_log(byz_applied_req)
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -266,13 +276,13 @@ class ReplicationModule(AlgorithmModule):
         """Broadcasts its own replica_structure to other nodes."""
         for j in conf.get_other_nodes():
             if (byz.is_byzantine() and byz.get_byz_behavior() ==
-                                        byz.WRONG_CCSP):
+                    byz.WRONG_CCSP):
                 msg = {
                     "type": MessageType.REPLICATION_MESSAGE,
                     "sender": self.id,
-                    "data": {"own_replica_structure": self.rep[self.id]}
+                    "data": {"own_replica_structure": self.byz_rep}
                 }
-            else:                            
+            else:
                 msg = {
                     "type": MessageType.REPLICATION_MESSAGE,
                     "sender": self.id,
@@ -299,6 +309,8 @@ class ReplicationModule(AlgorithmModule):
                 self.rep[j] = rep
             else:
                 self.rep[j].set_rep_state(rep.get_rep_state())
+            if( j == 0):
+                logger.info(f"RECEIVED FROM 0: {rep.get_rep_state()}")
 
     def receive_msg_from_client(self, msg):
         """Logic for receiving a message from a client."""
