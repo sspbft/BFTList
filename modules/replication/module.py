@@ -265,11 +265,19 @@ class ReplicationModule(AlgorithmModule):
     def send_msg(self):
         """Broadcasts its own replica_structure to other nodes."""
         for j in conf.get_other_nodes():
-            msg = {
-                "type": MessageType.REPLICATION_MESSAGE,
-                "sender": self.id,
-                "data": {"own_replica_structure": self.rep[self.id]}
-            }
+            if (byz.is_byzantine() and byz.get_byz_behavior() ==
+                                        byz.WRONG_CCSP):
+                msg = {
+                    "type": MessageType.REPLICATION_MESSAGE,
+                    "sender": self.id,
+                    "data": {"own_replica_structure": self.rep[self.id]}
+                }
+            else:                            
+                msg = {
+                    "type": MessageType.REPLICATION_MESSAGE,
+                    "sender": self.id,
+                    "data": {"own_replica_structure": self.rep[self.id]}
+                }
             self.resolver.send_to_node(j, msg)
 
     def receive_rep_msg(self, msg):
