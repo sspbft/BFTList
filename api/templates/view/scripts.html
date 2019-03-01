@@ -61,7 +61,7 @@
     }
 
     const renderRepData = (id, data) => {
-        let repState = 'Rep state: ', pendReqs = 'Pending reqs: ', reqQ = 'Req queue: ',
+        let repState = 'Rep state: ', pendReqs = 'Pending reqs: ', reqQ = 'Req queue: ', rLog = 'Req log: ',
             seqNum = `Seq num: ${data.seq_num}`, prim = `Prim: ${data.prim}`, conflict = `Conflict: ${data.con_flag}`
 
         repState += `[${data.rep_state.toString()}]`
@@ -76,11 +76,17 @@
         })
         if (data.req_q.length == 0) reqQ += '[]'
 
+        data.r_log.forEach(({ request }) => {
+            rLog += `[${request.client_request.operation.type} ${request.client_request.operation.args[0]}-view ${request.view}-seq num ${request.seq_num}]`
+        })
+        if (data.r_log.length == 0) rLog += '[]'
+
         nodeElements[id].data.children[0].innerHTML = repState
         nodeElements[id].data.children[1].innerHTML = pendReqs
         nodeElements[id].data.children[2].innerHTML = reqQ
-        nodeElements[id].data.children[3].innerHTML = seqNum
-        nodeElements[id].data.children[4].innerHTML = prim
+        nodeElements[id].data.children[3].innerHTML = rLog
+        nodeElements[id].data.children[4].innerHTML = seqNum
+        nodeElements[id].data.children[5].innerHTML = prim
     }
 
     const renderPriMonData = (id, data) => {

@@ -35,7 +35,7 @@ class ClientRequest(object):
         """Returns True if this request is a dummy request."""
         return (self.client_id == -1 and
                 self.timestamp is None and
-                self.operation.type == OperationEnums.NO_OP)
+                self.operation.get_type() == OperationEnums.NO_OP)
 
     def __str__(self):
         """Overrides the default implementation"""
@@ -46,8 +46,7 @@ class ClientRequest(object):
         """Overrides the default implementation"""
         if type(other) is type(self):
             return (self.client_id == other.get_client_id() and
-                    self.timestamp == other.get_timestamp() and
-                    self.operation == other.get_operation())
+                    self.timestamp == other.get_timestamp())
         return False
 
     def __hash__(self):
