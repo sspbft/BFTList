@@ -69,13 +69,16 @@ class ReplicationModule(AlgorithmModule):
                     self.rep = rep
                 if byz.is_byzantine():
                     self.byz_rep = deepcopy(rep[self.id])
+                    self.byz_client_request = ClientRequest(0, 666, Operation(
+                                                "APPEND", 666))
+                    self.byz_req = Request(self.byz_client_request, self.id,
+                                           666)
                     if byz.get_byz_behavior() == byz.WRONG_CCSP:
-                        byz_applied_req = {REQUEST: Request(
-                                            rep[self.id].get_pend_reqs()[1],
-                                            0,
-                                            3),
-                                           X_SET: {0, 1, 2, 3, 4, 5}}
-                        self.byz_rep.set_rep_state([2])
+                        byz_applied_req = {REQUEST: self.byz_req,
+                                           X_SET: {i for i in range(n)}}
+                        # Create the byzantine rep_state
+                        byz_state = [666]
+                        self.byz_rep.set_rep_state(byz_state)
                         self.byz_rep.set_r_log([byz_applied_req])
 
     def run(self):
@@ -156,52 +159,47 @@ class ReplicationModule(AlgorithmModule):
                             if self.rep[self.id].get_seq_num() < \
                                     (self.last_exec() +
                                         (SIGMA * self.number_of_clients)):
-                                if (byz.is_byzantine() and
-                                    byz.get_byz_behavior() ==
-                                        byz.ASSIGN_DIFFERENT_SEQNUMS):
+                                if byz.is_byzantine():
                                     logger.info(
-                                        f"Node is acting byzantine: \
-                                            {byz.ASSIGN_DIFFERENT_SEQNUMS}")
-                                    self.byz_rep.set_seq_num(
-                                        self.byz_rep.get_seq_num() + 3)
-                                    byz_req = Request(
-                                        deepcopy(req),
-                                        prim_id,
-                                        self.byz_rep.get_seq_num()
-                                    )
-                                    byz_req_pair = {
-                                        REQUEST: deepcopy(byz_req),
-                                        STATUS: {
-                                            ReplicationEnums.PRE_PREP,
-                                            ReplicationEnums.PREP
+                                            f"Node is acting byzantine: \
+                                                {byz.get_byz_behavior()}"
+                                                )
+                                    if (byz.get_byz_behavior() ==
+                                            byz.ASSIGN_DIFFERENT_SEQNUMS):
+                                        self.byz_rep.set_seq_num(
+                                            self.byz_rep.get_seq_num() + 3)
+                                        byz_req = Request(
+                                            deepcopy(req),
+                                            prim_id,
+                                            self.byz_rep.get_seq_num()
+                                        )
+                                        byz_req_pair = {
+                                            REQUEST: deepcopy(byz_req),
+                                            STATUS: {
+                                                ReplicationEnums.PRE_PREP,
+                                                ReplicationEnums.PREP
+                                            }
                                         }
-                                    }
-                                    self.byz_rep.add_to_req_q(byz_req_pair)
+                                        self.byz_rep.add_to_req_q(byz_req_pair)
 
-                                elif (byz.is_byzantine() and
+                                    elif (byz.get_byz_behavior() ==
+                                            byz.SEQNUM_OUT_BOUND):
+                                        self.rep[self.id].set_seq_num(
+                                            self.rep[self.id].get_seq_num() +
+                                            SIGMA * self.number_of_clients + 1)
+
+                                    elif (byz.get_byz_behavior() ==
+                                            byz.MODIFY_CLIENT_REQ):
+                                        req = ClientRequest(0, 5, Operation(
+                                            "APPEND", 5
+                                        ))
+
+                                # If not reusing seq_num, increment before
+                                # assigning
+                                if not (byz.is_byzantine() and
                                         byz.get_byz_behavior() ==
-                                        byz.SEQNUM_OUT_BOUND):
-                                    logger.info(
-                                        f"Node is acting byzantine: \
-                                        {byz.SEQNUM_OUT_BOUND}")
-                                    self.rep[self.id].set_seq_num(
-                                        self.rep[self.id].get_seq_num() +
-                                        SIGMA * self.number_of_clients + 1
-                                    )
-                                elif not (byz.is_byzantine() and
-                                          byz.get_byz_behavior() ==
-                                          byz.REUSE_SEQNUMS):
-                                    logger.info(
-                                        f"Node is acting byzantine: \
-                                        {byz.REUSE_SEQNUMS}")
+                                        byz.REUSE_SEQNUMS):
                                     self.rep[self.id].inc_seq_num()
-
-                                if (byz.is_byzantine() and
-                                    byz.get_byz_behavior() ==
-                                        byz.MODIFY_CLIENT_REQ):
-                                    req = ClientRequest(0, 5, Operation(
-                                        "APPEND", 5
-                                    ))
 
                                 req = Request(
                                     req,
