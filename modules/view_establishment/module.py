@@ -13,7 +13,7 @@ from modules.view_establishment.predicates import PredicatesAndAction
 from modules.enums import ViewEstablishmentEnums
 from resolve.enums import MessageType
 import conf.config as conf
-from modules.constants import VIEWS, PHASE, WITNESSES, CURRENT, NEXT
+from modules.constants import VIEWS, PHASE, WITNESSES, CURRENT, NEXT, RUN_SLEEP
 import modules.byzantine as byz
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,8 @@ class ViewEstablishmentModule(AlgorithmModule):
             self.send_msg()
             self.lock.release()
 
-            time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.1)
+            # time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.1)
+            time.sleep(RUN_SLEEP)
 
             # Stopping the while loop, used for testing purpose
             if(not self.run_forever):
@@ -257,6 +258,8 @@ class ViewEstablishmentModule(AlgorithmModule):
         j = msg["sender"]  # id of sender
         j_own_data = msg["data"]["own_data"]  # j's own data
         j_about_data = msg["data"]["about_data"]  # what j thinks about me
+
+        logger.info(f"got msg {msg}")
 
         if(self.pred_and_action.valid(j_own_data)):
             self.echo[j] = {

@@ -5,6 +5,7 @@ import logging
 import zmq
 from queue import Queue
 import jsonpickle
+import time
 
 # local
 from metrics.messages import msgs_sent
@@ -34,6 +35,7 @@ class Receiver():
 
         self.msg_queue = Queue()
         self.clients = 0
+        self.msgs_received = 0
 
     def start(self):
         """Starts the zeromq server."""
@@ -47,5 +49,9 @@ class Receiver():
     def ack(self, counter):
         """Sends a message over the specified channel."""
         msgs_sent.labels(self.id).inc(1)
+        if self.msgs_received == 0:
+            self.start_time = time.time()
+        self.msgs_received += 1
         msg = Message(MessageEnum.RECEIVER_MESSAGE, counter, self.id)
         self.socket.send(msg.as_bytes())
+        # logger.info(f"ACKed {self.msgs_received} msgs in {time.time() - self.start_time} s")

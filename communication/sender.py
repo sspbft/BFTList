@@ -4,6 +4,7 @@
 import asyncio
 import logging
 import zmq
+import zmq.asyncio
 from queue import Queue
 import jsonpickle
 
@@ -29,7 +30,7 @@ class Sender():
         self.recv_ip = recv_ip
         self.recv_port = recv_port
 
-        self.context = zmq.Context()
+        self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect(f"tcp://{self.recv_ip}:{self.recv_port}")
 
@@ -53,11 +54,10 @@ class Sender():
 
     async def start(self):
         """Main loop for the sender channel."""
-
         while True:
             msg = self.get_msg_from_queue()
             if msg is None:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.01)
             else:
                 reply = await self.send(msg)
                 if reply.get_counter() != self.counter:
@@ -71,10 +71,10 @@ class Sender():
         it over the socket.
         """
         msgs_sent.labels(self.id).inc()
-        # await asyncio.sleep(0.1)
         msg = Message(MessageEnum.SENDER_MESSAGE, self.counter, self.id, data)
-        self.socket.send(msg.as_bytes())
-        reply_bytes = self.socket.recv()
+        await self.socket.send(msg.as_bytes())
+
+        reply_bytes = await self.socket.recv()
         try:
             reply_json = reply_bytes.decode()
             reply = jsonpickle.decode(reply_json)
