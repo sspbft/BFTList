@@ -31,7 +31,7 @@ class ReplicationModule(AlgorithmModule):
     Structure of variables:
     client_request (request by client): <client c, timestamp t, operation o>
     request (accepted request): < request client_request, view v,
-                                                    sequence number seq_n>
+                                                   sequence number seq_n>
     rep_state = UNDEFINED
     r_log (x_set is the set that claim to have executed/comitted request):
         [<request, x_set>]
@@ -124,7 +124,9 @@ class ReplicationModule(AlgorithmModule):
             # A byzantine node does not care if it is in conflict or stale
             if not byz.is_byzantine():
                 if self.stale_rep() or self.conflict():
-                    logger.info(f"Flushing because stale_rep: {self.stale_rep()} or conflict: {self.conflict()}")
+                    logger.info(f"Flushing because stale_rep: " +
+                                f"{self.stale_rep()} or conflict:" +
+                                f" {self.conflict()}")
                     self.flush_local()
                     self.rep[self.id].set_to_tee()
                     self.need_flush = True
@@ -1133,8 +1135,10 @@ class ReplicationModule(AlgorithmModule):
                            r[REQUEST].get_seq_num() == dummy_seq_num):
                             return False
                     continue
-                elif (key not in req_exists_count and self.accept_req_preprep(key, prim)):
-                    # A request that is PRE_PREP:ed by the primary but didnt' have a PRE_PREP from last view
+                elif (key not in req_exists_count and
+                      self.accept_req_preprep(key, prim)):
+                    # A request that is PRE_PREP:ed by the primary but didn't
+                    # have a PRE_PREP from last view
                     continue
                 elif (key not in req_exists_count or
                         req_exists_count[key] <
