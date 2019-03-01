@@ -94,6 +94,7 @@ class TestNonSupportedReqExecutedAtOneNode(AbstractIntegrationTest):
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
             checks = []
+            last_check = calls_left == 1
 
             for a in asyncio.as_completed(aws):
                 result = await a
@@ -101,8 +102,12 @@ class TestNonSupportedReqExecutedAtOneNode(AbstractIntegrationTest):
                 id = data["id"]
 
                 # nodes should probably reset their state
-                checks.append(data["rep_state"] == target_rep_state)
-                checks.append(len(data["r_log"]) == len(target_r_log))
+                if last_check:
+                    self.assertEqual(data["rep_state"], target_rep_state)
+                    self.assertEqual(len(data["r_log"]), len(target_r_log))
+                else:
+                    checks.append(data["rep_state"] == target_rep_state)
+                    checks.append(len(data["r_log"]) == len(target_r_log))
 
             # if all checks passed, test passed
             if all(checks):
