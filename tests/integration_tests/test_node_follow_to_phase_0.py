@@ -57,14 +57,13 @@ class TestNodesFollow(AbstractIntegrationTest):
 
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
-            res = {}
-            target = {"current": 2, "next": 2}
-
             checks = []
+            last_check = calls_left == 1
+
             for a in asyncio.as_completed(aws):
                 result = await a
                 views = result["data"]["VIEW_ESTABLISHMENT_MODULE"]["views"]
-                last_check = calls_left == 1
+                target = {"current": 2, "next": 2}
 
                 for vp in views:
                     if last_check:

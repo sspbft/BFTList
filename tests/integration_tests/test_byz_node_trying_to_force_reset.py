@@ -65,13 +65,13 @@ class TestByzNodeForcingReset(AbstractIntegrationTest):
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
             checks = []
+            last_check = calls_left == 1
 
             for a in asyncio.as_completed(aws):
                 result = await a
                 data = result["data"]["VIEW_ESTABLISHMENT_MODULE"]
                 views = data["views"]
                 id = data["id"]
-                last_check = calls_left == 1
                 target = {"current": 1, "next": 1}
 
                 if id != 0:

@@ -31,11 +31,11 @@ class TestHealth(AbstractIntegrationTest):
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
             checks = []
+            last_check = calls_left == 1
 
             # waits for all health check calls to complete
             for a in asyncio.as_completed(aws):
                 result = await a
-                last_check = calls_left == 1
 
                 if last_check:
                     self.assertEqual(result["status_code"], 200)
