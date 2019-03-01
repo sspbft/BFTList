@@ -80,12 +80,20 @@ class TestByzReusesSeqNum(AbstractIntegrationTest):
                 result = await a
                 data = result["data"]["REPLICATION_MODULE"]
                 id = data["id"]
+                last_check = calls_left == 1
 
-                checks.append(data["rep_state"] == [1])
-                checks.append(len(data["r_log"]) == 1)
-                checks.append(len(data["pend_reqs"]) == 2)
-                if id != 0:
-                    checks.append(len(data["req_q"]) == 0)
+                if last_check:
+                    self.assertEqual(data["rep_state"], [1])
+                    self.assertEqual(len(data["r_log"]), 1)
+                    self.assertEqual(len(data["pend_reqs"]), 2)
+                    if id != 0:
+                        self.assertEqual(len(data["req_q"]), 0)
+                else:
+                    checks.append(data["rep_state"] == [1])
+                    checks.append(len(data["r_log"]) == 1)
+                    checks.append(len(data["pend_reqs"]) == 2)
+                    if id != 0:
+                        checks.append(len(data["req_q"]) == 0)
 
             # if all checks passed, test passed
             if all(checks):

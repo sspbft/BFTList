@@ -52,8 +52,9 @@ class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
 
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
-
             checks = []
+            last_check = calls_left == 1
+
             for a in asyncio.as_completed(aws):
                 result = await a
                 data = result["data"]["VIEW_ESTABLISHMENT_MODULE"]
@@ -64,10 +65,16 @@ class TestNodesConvergeThroughResetAll(AbstractIntegrationTest):
                 vp_target = {"current": 0, "next": 0}
                 phases_target = [0 for i in range(N)]
 
-                for i,vp in enumerate(views):
-                    checks.append(vp == vp_target)
-                checks.append(phases == phases_target)
-                checks.append(vChange == False)
+                if last_check:
+                    for i,vp in enumerate(views):
+                        self.assertEqual(vp, vp_target)
+                    self.assertEqual(phases, phases_target)
+                    self.assertEqual(vChange, False)
+                else:
+                    for i,vp in enumerate(views):
+                        checks.append(vp == vp_target)
+                    checks.append(phases == phases_target)
+                    checks.append(vChange == False)
 
             # if all checks were true, test passed
             if all(checks):

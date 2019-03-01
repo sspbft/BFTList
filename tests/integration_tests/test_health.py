@@ -30,15 +30,20 @@ class TestHealth(AbstractIntegrationTest):
 
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
-            res = []
+            checks = []
 
             # waits for all health check calls to complete
             for a in asyncio.as_completed(aws):
                 result = await a
-                res.append(result["status_code"] == 200)
+                last_check = calls_left == 1
+
+                if last_check:
+                    self.assertEqual(result["status_code"], 200)
+                else:
+                    checks.append(result["status_code"] == 200)
 
             # if all checks were true, test passed
-            if all(res):
+            if all(checks):
                 test_result = True
                 break
 

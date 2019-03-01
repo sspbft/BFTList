@@ -82,9 +82,14 @@ class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
                 result = await a
                 data = result["data"]["REPLICATION_MODULE"]
                 id = data["id"]
+                last_check = calls_left == 1
 
-                checks.append(data["rep_state"] == [1])
-                checks.append(len(data["r_log"]) == 1)
+                if last_check:
+                    self.assertEqual(data["rep_state"], [1])
+                    self.assertEqual(len(data["r_log"]), 1)
+                else:
+                    checks.append(data["rep_state"] == [1])
+                    checks.append(len(data["r_log"]) == 1)
 
             # if all checks passed, test passed
             if all(checks):
