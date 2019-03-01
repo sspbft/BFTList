@@ -12,7 +12,7 @@ from typing import List, Tuple
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums, OperationEnums
 from modules.constants import (MAXINT, SIGMA, X_SET,
-                               REQUEST, STATUS, REPLY)
+                               REQUEST, STATUS)
 from resolve.enums import Module, Function, MessageType
 import conf.config as conf
 from .models.replica_structure import ReplicaStructure
@@ -69,14 +69,14 @@ class ReplicationModule(AlgorithmModule):
                     self.rep = rep
                 if byz.is_byzantine():
                     self.byz_rep = deepcopy(rep[self.id])
-                    if byz.get_byz_behavior == byz.WRONG_CCSP:
+                    if byz.get_byz_behavior() == byz.WRONG_CCSP:
                         byz_applied_req = {REQUEST: Request(
                                             rep[self.id].get_pend_reqs()[1],
                                             0,
                                             3),
-                                           REPLY: [3]}
+                                           X_SET: {0, 1, 2, 3, 4, 5}}
                         self.byz_rep.set_rep_state([2])
-                        self.byz_rep.set_r_log(byz_applied_req)
+                        self.byz_rep.set_r_log([byz_applied_req])
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -157,6 +157,9 @@ class ReplicationModule(AlgorithmModule):
                                 if (byz.is_byzantine() and
                                     byz.get_byz_behavior() ==
                                         byz.ASSIGN_DIFFERENT_SEQNUMS):
+                                    logger.info(
+                                        f"Node is acting byzantine: \
+                                            {byz.ASSIGN_DIFFERENT_SEQNUMS}")
                                     self.byz_rep.set_seq_num(
                                         self.byz_rep.get_seq_num() + 3)
                                     byz_req = Request(
@@ -176,6 +179,9 @@ class ReplicationModule(AlgorithmModule):
                                 if (byz.is_byzantine() and
                                     byz.get_byz_behavior() ==
                                         byz.SEQNUM_OUT_BOUND):
+                                    logger.info(
+                                        f"Node is acting byzantine: \
+                                        {byz.SEQNUM_OUT_BOUND}")
                                     self.rep[self.id].set_seq_num(
                                         self.rep[self.id].get_seq_num() +
                                         SIGMA * self.number_of_clients + 1
@@ -183,6 +189,9 @@ class ReplicationModule(AlgorithmModule):
                                 elif not (byz.is_byzantine() and
                                           byz.get_byz_behavior() ==
                                           byz.REUSE_SEQNUMS):
+                                    logger.info(
+                                        f"Node is acting byzantine: \
+                                        {byz.REUSE_SEQNUMS}")
                                     self.rep[self.id].inc_seq_num()
 
                                 req = Request(
@@ -300,6 +309,7 @@ class ReplicationModule(AlgorithmModule):
                     (byz.get_byz_behavior() ==
                         byz.ASSIGN_DIFFERENT_SEQNUMS and
                         j % 2 == 1))):
+                logger.info(f"Node is acting byzantine: sending byz_rep")
                 msg = {
                     "type": MessageType.REPLICATION_MESSAGE,
                     "sender": self.id,
@@ -332,8 +342,6 @@ class ReplicationModule(AlgorithmModule):
                 self.rep[j] = rep
             else:
                 self.rep[j].set_rep_state(rep.get_rep_state())
-            if j == 0:
-                logger.info(f"RECEIVED FROM 0: {rep.get_rep_state()}")
 
     def receive_msg_from_client(self, msg):
         """Logic for receiving a message from a client."""
