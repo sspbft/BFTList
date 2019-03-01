@@ -134,8 +134,8 @@ class ReplicaStructure(object):
         """Removes all occurrences of req from req_q."""
         self.req_q = [x for x in self.req_q if x[REQUEST] != req]
 
-    def get_last_req(self) -> Dict:
-        """Returns a dict of the last executed requests for each client
+    def get_last_req(self) -> List:
+        """Returns a list of the last executed requests for each client
 
         last_req[i] corresponds to request/reply of the last executed
         request for client with id i --> {REQUEST: req, REPLY: reply}
