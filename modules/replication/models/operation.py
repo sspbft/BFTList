@@ -14,15 +14,21 @@ class Operation(object):
     when sending requests to BFTList.
     """
 
-    def __init__(self, _type: OperationEnums, *args):
+    def __init__(self, op_type: OperationEnums, *args):
         """Initializes an operation."""
-        if type(_type) == str:
-            if _type == "APPEND":
-                _type = OperationEnums.APPEND
+        if type(op_type) == str:
+            if op_type == "APPEND":
+                op_type = OperationEnums.APPEND
             else:
-                raise ValueError(f"_type {_type} is not valid")
-        self.type = _type
+                raise ValueError(f"op_type {op_type} is not valid")
+        if type(op_type) != OperationEnums:
+            raise ValueError(f"op_type {op_type} is not a OperationEnum")
+        self.op_type = op_type
         self.args = args
+
+    def get_type(self):
+        """Returns the type of operation to execute."""
+        return self.op_type
 
     # BFTList only supports list operations for now
     def execute(self, lst: List):
@@ -30,26 +36,25 @@ class Operation(object):
         if type(lst) != list:
             raise ValueError(f"Input {lst} is not a list")
 
-        if self.type == OperationEnums.APPEND:
+        if self.op_type == OperationEnums.APPEND:
             lst.append(self.args[0])
-        elif self.type == OperationEnums.NO_OP:
+        elif self.op_type == OperationEnums.NO_OP:
             pass
         else:
             raise ValueError(f"Bad operation {self.type}")
-
         return lst
 
     def __str__(self):
         """Override the default __str__."""
-        return f"Operation - type: {self.type.name}, args: {self.args}"
+        return f"Operation - type: {self.op_type}, args: {self.args}"
 
     def __eq__(self, other):
         """Overrides the default implementation"""
         if type(other) is type(self):
-            return (self.type == other.type and
+            return (self.get_type() == other.get_type() and
                     self.args == other.args)
         return False
 
     def to_dct(self):
         """Converts an operation to a corresponding dictionary."""
-        return {"type": self.type.name, "args": list(self.args)}
+        return {"type": self.op_type.name, "args": list(self.args)}

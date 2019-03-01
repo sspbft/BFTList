@@ -15,6 +15,14 @@
     []
     {% endif %}
 </p>
+<p>Req log: 
+    {% for r in item.data.REPLICATION_MODULE.r_log %}
+        [{{ r.request.client_request.operation.type }} {{ r.request.client_request.operation.args[0] }}-view {{ r.request.view }}-seq num {{ r.request.seq_num }}-status {{ r.status }}]
+    {% endfor %}
+    {% if item.data.REPLICATION_MODULE.r_log|length == 0 %}
+    []
+    {% endif %}
+</p>
 <p>Seq num: {{ item.data.REPLICATION_MODULE.seq_num }}</p>
 <p>Prim: {{ item.data.REPLICATION_MODULE.prim }}</p>
 <p>Conflict: {{ item.data.REPLICATION_MODULE.con_flag }}</p>

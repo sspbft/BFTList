@@ -67,6 +67,8 @@ class ReplicationModule(AlgorithmModule):
                 rep = data["rep"]
                 if rep is not None and len(rep) == n:
                     self.rep = rep
+                if byz.is_byzantine():
+                    self.byz_rep = deepcopy(rep[self.id])
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -128,7 +130,6 @@ class ReplicationModule(AlgorithmModule):
                 self.flush_local()
 
             self.rep[self.id].extend_pend_reqs(self.known_pend_reqs())
-
             # line 15 - 25
             if (self.resolver.execute(
                     Module.VIEW_ESTABLISHMENT_MODULE,
@@ -137,7 +138,7 @@ class ReplicationModule(AlgorithmModule):
                     Module.PRIMARY_MONITORING_MODULE,
                     Function.NO_VIEW_CHANGE) and
                         self.rep[self.id].get_view_changed() is False):
-                    # prepare requests if not byzantine
+                    # prepare requests
                     if (prim_id == self.id and not (byz.is_byzantine() and
                         byz.get_byz_behavior() ==
                             byz.STOP_ASSIGNING_SEQNUMS)):
@@ -145,7 +146,37 @@ class ReplicationModule(AlgorithmModule):
                             if self.rep[self.id].get_seq_num() < \
                                     (self.last_exec() +
                                         (SIGMA * self.number_of_clients)):
-                                self.rep[self.id].inc_seq_num()
+                                if (byz.is_byzantine() and
+                                    byz.get_byz_behavior() ==
+                                        byz.ASSIGN_DIFFERENT_SEQNUMS):
+                                    self.byz_rep.set_seq_num(
+                                        self.byz_rep.get_seq_num() + 3)
+                                    byz_req = Request(
+                                        deepcopy(req),
+                                        prim_id,
+                                        self.byz_rep.get_seq_num()
+                                    )
+                                    byz_req_pair = {
+                                        REQUEST: deepcopy(byz_req),
+                                        STATUS: {
+                                            ReplicationEnums.PRE_PREP,
+                                            ReplicationEnums.PREP
+                                        }
+                                    }
+                                    self.byz_rep.add_to_req_q(byz_req_pair)
+
+                                if (byz.is_byzantine() and
+                                    byz.get_byz_behavior() ==
+                                        byz.SEQNUM_OUT_BOUND):
+                                    self.rep[self.id].set_seq_num(
+                                        self.rep[self.id].get_seq_num() +
+                                        SIGMA * self.number_of_clients + 1
+                                    )
+                                elif not (byz.is_byzantine() and
+                                          byz.get_byz_behavior() ==
+                                          byz.REUSE_SEQNUMS):
+                                    self.rep[self.id].inc_seq_num()
+
                                 req = Request(
                                     req,
                                     prim_id,
@@ -173,7 +204,7 @@ class ReplicationModule(AlgorithmModule):
                                     req = req_pair[REQUEST]
                                     if (req.get_client_request() ==
                                         client_req and req.get_view() ==
-                                        prim_id and self.last_exec() <=
+                                        prim_id and self.last_exec() <
                                             req.get_seq_num() <=
                                             (self.last_exec() +
                                                 SIGMA *
@@ -255,11 +286,20 @@ class ReplicationModule(AlgorithmModule):
     def send_msg(self):
         """Broadcasts its own replica_structure to other nodes."""
         for j in conf.get_other_nodes():
-            msg = {
-                "type": MessageType.REPLICATION_MESSAGE,
-                "sender": self.id,
-                "data": {"own_replica_structure": self.rep[self.id]}
-            }
+            if (byz.is_byzantine() and byz.get_byz_behavior() ==
+                    byz.ASSIGN_DIFFERENT_SEQNUMS and
+                    j % 2 == 1):
+                msg = {
+                    "type": MessageType.REPLICATION_MESSAGE,
+                    "sender": self.id,
+                    "data": {"own_replica_structure": self.byz_rep}
+                }
+            else:
+                msg = {
+                    "type": MessageType.REPLICATION_MESSAGE,
+                    "sender": self.id,
+                    "data": {"own_replica_structure": self.rep[self.id]}
+                }
             self.resolver.send_to_node(j, msg)
 
     def receive_rep_msg(self, msg):
@@ -435,7 +475,6 @@ class ReplicationModule(AlgorithmModule):
         for id in returning_processors:
             returning_states.append(dct[id]["REP_STATE"])
             returning_r_log.append(dct[id]["R_LOG"])
-
         return (returning_states, returning_r_log)
 
     def get_ds_state(self) -> Tuple[List, List]:
@@ -542,7 +581,6 @@ class ReplicationModule(AlgorithmModule):
 
         known_reqs = {k: v for (k, v) in request_count.items() if v >= (
                         3 * self.number_of_byzantine + 1)}
-
         return list(known_reqs.keys())
 
     def known_reqs(self, status):
@@ -653,7 +691,7 @@ class ReplicationModule(AlgorithmModule):
             for req_pair in self.rep[prim].get_req_q():
                 if (req_pair[REQUEST].get_client_request() == request and
                    req_pair[REQUEST].get_view() == prim and
-                   self.last_exec() <= req_pair[REQUEST].get_seq_num() <=
+                   self.last_exec() < req_pair[REQUEST].get_seq_num() <=
                         (self.last_exec() + SIGMA * self.number_of_clients)):
                         # A request should not already exist with the same
                         # sequence number or same client request
@@ -1012,6 +1050,9 @@ class ReplicationModule(AlgorithmModule):
                 state = []
                 for e in entries:
                     op = e[REQUEST].get_client_request().get_operation()
+                    if type(op) is not Operation:
+                        raise ValueError(f"Operation {op} in r_log entry is \
+                                            not of type Operation")
                     state = op.execute(state)
                 if state == prefix_state:
                     # found correct r_log entries
