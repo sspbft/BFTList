@@ -130,10 +130,12 @@ class ReplicationModule(AlgorithmModule):
                 # set own rep_state and r_log to consolidated values
                 self.rep[self.id].set_rep_state(deepcopy(X[0]))
                 self.rep[self.id].set_r_log(deepcopy(X[1]))
-            if self.stale_rep() or self.conflict():
-                self.flush_local()
-                self.rep[self.id].set_to_tee()
-                self.need_flush = True
+            # A byzantine node does not care if it is in conflict or stale
+            if not byz.is_byzantine():
+                if self.stale_rep() or self.conflict():
+                    self.flush_local()
+                    self.rep[self.id].set_to_tee()
+                    self.need_flush = True
             if self.flush:
                 self.flush_local()
 
@@ -176,8 +178,8 @@ class ReplicationModule(AlgorithmModule):
                                     }
                                     self.byz_rep.add_to_req_q(byz_req_pair)
 
-                                if (byz.is_byzantine() and
-                                    byz.get_byz_behavior() ==
+                                elif (byz.is_byzantine() and
+                                        byz.get_byz_behavior() ==
                                         byz.SEQNUM_OUT_BOUND):
                                     logger.info(
                                         f"Node is acting byzantine: \
@@ -193,6 +195,13 @@ class ReplicationModule(AlgorithmModule):
                                         f"Node is acting byzantine: \
                                         {byz.REUSE_SEQNUMS}")
                                     self.rep[self.id].inc_seq_num()
+
+                                if (byz.is_byzantine() and
+                                    byz.get_byz_behavior() ==
+                                        byz.MODIFY_CLIENT_REQ):
+                                    req = ClientRequest(0, 5, Operation(
+                                        "APPEND", 5
+                                    ))
 
                                 req = Request(
                                     req,
