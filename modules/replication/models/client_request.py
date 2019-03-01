@@ -40,7 +40,7 @@ class ClientRequest(object):
     def __str__(self):
         """Overrides the default implementation"""
         return (f"ClientRequest - client_id: {self.client_id}, timestamp: " +
-                f"{self.timestamp}, operation: {self.operation}" )
+                f"{self.timestamp}, operation: {self.operation}")
 
     def __eq__(self, other):
         """Overrides the default implementation"""
