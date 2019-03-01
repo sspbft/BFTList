@@ -1,8 +1,8 @@
 """
-Case 1
-There is one request in pending requests that should be propagated through
-all different stages before being applied without issue, since no nodes
-are acting Byzantine.
+Case 6.3
+The systems starts in a safe state but the primary is acting Byzantine and
+is assigning different sequence numbers to the same request. No progress should be
+made due to primary monitoring module not being included in this test right now.
 """
 
 # standard
@@ -17,7 +17,8 @@ from modules.replication.models.replica_structure import ReplicaStructure
 from modules.replication.models.client_request import ClientRequest
 from modules.replication.models.request import Request
 from modules.replication.models.operation import Operation
-from modules.constants import REPLY, REQUEST
+from modules.constants import REQUEST, STATUS, MAXINT, SIGMA, X_SET, REPLY
+from modules.enums import ReplicationEnums as enums
 
 # globals
 F = 1
@@ -25,26 +26,39 @@ N = 6
 logger = logging.getLogger(__name__)
 start_state = {}
 
-req = ClientRequest(0, 189276398, Operation(
-    "APPEND",
-    1
-))
+client_req_1 = ClientRequest(0, 189276398, Operation("APPEND", 1))
+client_req_2 = ClientRequest(0, 189276400, Operation("APPEND", 2))
+client_req_3 = ClientRequest(0, 189276450, Operation("APPEND", 3))
+req_1 = Request(client_req_1, 0, 1)
+req_2 = Request(client_req_1, 0, 1)
 
 for i in range(N):
     start_state[str(i)] = {
-        # force stable view_pair for all nodes
-        "VIEW_ESTABLISHMENT_MODULE": {
-            "views": [{"current": 0, "next": 0} for i in range(N)]
-        },
         "REPLICATION_MODULE": {
             "rep": [
-                ReplicaStructure(j, pend_reqs=[req],
-                prim=0)
-            for j in range(N)]
+                ReplicaStructure(
+                    j,
+                    rep_state=[1],
+                    r_log=[{REQUEST: req_1, X_SET: {0,1,2,3,4,5}}],
+                    pend_reqs=[client_req_2, client_req_3],
+                    last_req=[{REQUEST: req_2, REPLY: [1]}],
+                    prim=0
+                ) for j in range(N)
+            ]
         }
     }
+for s in start_state:
+    start_state[s]["REPLICATION_MODULE"]["rep"][0].set_seq_num(1)
 
-args = { "FORCE_VIEW": "0", "ALLOW_SERVICE": "1", "FORCE_NO_VIEW_CHANGE": "1" }
+args = {
+    "FORCE_VIEW": "0",
+    "ALLOW_SERVICE": "1",
+    "FORCE_NO_VIEW_CHANGE": "1",
+    "BYZANTINE": {
+        "NODES": [0],
+        "BEHAVIOR": "ASSIGN_DIFFERENT_SEQNUMS"
+    }
+}
 
 class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
     """Checks that a Byzantine node can not trick some nodes to do a view change."""
@@ -58,7 +72,7 @@ class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
         calls_left = helpers.MAX_NODE_CALLS
         test_result = False
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)
 
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
@@ -69,13 +83,8 @@ class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
                 data = result["data"]["REPLICATION_MODULE"]
                 id = data["id"]
 
-                # nodes should probably reset their state
-                if len(data["r_log"]) == 0:
-                    checks.append(False)
-                    continue
                 checks.append(data["rep_state"] == [1])
-                checks.append(data["pend_reqs"] == [])
-                checks.append(len(data["r_log"]) > 0)
+                checks.append(len(data["r_log"]) == 1)
 
             # if all checks passed, test passed
             if all(checks):

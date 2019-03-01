@@ -20,7 +20,7 @@ class ReplicaStructure(object):
     """Models a replica structure as used in the Replication module."""
 
     def __init__(self, id, number_of_clients=1, rep_state=[], r_log=[],
-                 pend_reqs=[], req_q=[], last_req={},
+                 pend_reqs=[], req_q=[], last_req=[],
                  seq_num=-1, con_flag=False, view_changed=False, prim=0):
         """Initializes a replica structure with its default state."""
         self.id = id
@@ -28,7 +28,10 @@ class ReplicaStructure(object):
         self.r_log = deepcopy(r_log)
         self.pend_reqs = deepcopy(pend_reqs)
         self.req_q = deepcopy(req_q)
-        self.last_req = deepcopy(last_req)
+        if last_req == []:
+            self.last_req = [-1 for i in range(number_of_clients)]
+        else:
+            self.last_req = deepcopy(last_req)
         self.seq_num = seq_num
         self.con_flag = con_flag
         self.view_changed = view_changed
@@ -61,8 +64,6 @@ class ReplicaStructure(object):
         { REQUEST: req, STATUS: set(st) : st ∈ ⟨PRE−PREP, PREP, COMMIT⟩},
         where req is of type Request
         """
-        # TODO fix this method, right now we're adding the req_pair, should be
-        # a dict { REQUEST: req, X_SET: set of nodes that executed req }
         self.validate_log_entry(req_pair)
         self.r_log.append(req_pair)
 
@@ -104,6 +105,14 @@ class ReplicaStructure(object):
         """Sets the pend_reqs for this processor."""
         self.pend_reqs = deepcopy(pend_reqs)
 
+    def set_req_q(self, req_q: List[Dict]):
+        """Sets the req_q for this processor.
+
+        NOTE that no validation is done on the performed req_q. This is mainly
+        used for testing purposes.
+        """
+        self.req_q = deepcopy(req_q)
+
     def get_req_q(self) -> List[Dict]:
         """Returns the requests that are in process along with their status."""
         return self.req_q
@@ -121,20 +130,12 @@ class ReplicaStructure(object):
                 return True
         return False
 
-    def set_req_q(self, req_q: List[Dict]):
-        """Sets the req_q for this processor.
-
-        NOTE that no validation is done on the performed req_q. This is mainly
-        used for testing purposes.
-        """
-        self.req_q = deepcopy(req_q)
-
     def remove_from_req_q(self, req):
         """Removes all occurrences of req from req_q."""
         self.req_q = [x for x in self.req_q if x[REQUEST] != req]
 
-    def get_last_req(self) -> List[Dict]:
-        """Returns a dict of the last executed requests for each client
+    def get_last_req(self) -> List:
+        """Returns a list of the last executed requests for each client
 
         last_req[i] corresponds to request/reply of the last executed
         request for client with id i --> {REQUEST: req, REPLY: reply}
@@ -143,9 +144,11 @@ class ReplicaStructure(object):
 
     def update_last_req(self, client_id: int, request: Request, reply):
         """Update the last executed request for client with client_id."""
-        self.last_req[client_id] = {
-            REQUEST: deepcopy(request), REPLY: deepcopy(reply)
-        }
+        # print(f"Setting last_req to {client_id}, {request} {reply}")
+        # self.last_req[int(client_id)] = {
+        #     REQUEST: deepcopy(request), REPLY: deepcopy(reply)
+        # }
+        self.last_req[client_id] = {REQUEST: request, REPLY: reply}
 
     def get_seq_num(self) -> int:
         """Returns the last assigned sequence number for this processor."""
