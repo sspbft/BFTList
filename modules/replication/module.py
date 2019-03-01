@@ -68,7 +68,7 @@ class ReplicationModule(AlgorithmModule):
                 if rep is not None and len(rep) == n:
                     self.rep = rep
                 if byz.is_byzantine():
-                    self.byz_rep = rep[self.id]
+                    self.byz_rep = deepcopy(rep[self.id])
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
