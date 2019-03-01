@@ -77,6 +77,7 @@ class TestNonConsistentRLogLeadToReset(AbstractIntegrationTest):
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
             checks = []
+            last_check = calls_left == 1
 
             for a in asyncio.as_completed(aws):
                 result = await a
@@ -84,8 +85,12 @@ class TestNonConsistentRLogLeadToReset(AbstractIntegrationTest):
                 id = data["id"]
 
                 # nodes should probably reset their state
-                checks.append(data["rep_state"] == [])
-                checks.append(data["r_log"] == [])
+                if last_check:
+                    self.assertEqual(data["rep_state"], [])
+                    self.assertEqual(data["r_log"], [])                    
+                else:
+                    checks.append(data["rep_state"] == [])
+                    checks.append(data["r_log"] == [])
 
             # if all checks passed, test passed
             if all(checks):

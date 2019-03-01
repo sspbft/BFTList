@@ -71,6 +71,7 @@ class TestByzNodeSilent(AbstractIntegrationTest):
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
             checks = []
+            last_check = calls_left == 1
 
             for a in asyncio.as_completed(aws):
                 result = await a
@@ -80,10 +81,16 @@ class TestByzNodeSilent(AbstractIntegrationTest):
 
                 if id != 5:
                     for i,vp in enumerate(views):
-                        if i <= 2:
-                            checks.append(vp == {"current": 2, "next": 2})
-                        elif i <= 4:
-                            checks.append(vp == {"current": -1, "next": 0})
+                        if last_check:
+                            if i <= 2:
+                                self.assertEqual(vp, {"current": 2, "next": 2})
+                            elif i <= 4:
+                                self.assertEqual(vp, {"current": -1, "next": 0})
+                        else:
+                            if i <= 2:
+                                checks.append(vp == {"current": 2, "next": 2})
+                            elif i <= 4:
+                                checks.append(vp == {"current": -1, "next": 0})
 
             # if all checks passed, test passed
             if all(checks):

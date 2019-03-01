@@ -52,6 +52,7 @@ class TestNodesResetsUponStaleInfo(AbstractIntegrationTest):
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
             checks = []
+            last_check = calls_left == 1
 
             for a in asyncio.as_completed(aws):
                 result = await a
@@ -65,9 +66,14 @@ class TestNodesResetsUponStaleInfo(AbstractIntegrationTest):
                 vp_target = [{"current": 0, "next": 0} for i in range(N)]
                 phases_target = [0 for i in range(N)]
 
-                checks.append(views == vp_target)
-                checks.append(phases == phases_target)
-                checks.append(vChange == False)
+                if last_check:
+                    self.assertEqual(views, vp_target)
+                    self.assertEqual(phases, phases_target)
+                    self.assertEqual(vChange, False)
+                else:
+                    checks.append(views == vp_target)
+                    checks.append(phases == phases_target)
+                    checks.append(vChange == False)
 
             # all checks passed means test passed
             if all(checks):
