@@ -259,8 +259,6 @@ class ViewEstablishmentModule(AlgorithmModule):
         j_own_data = msg["data"]["own_data"]  # j's own data
         j_about_data = msg["data"]["about_data"]  # what j thinks about me
 
-        logger.info(f"got msg {msg}")
-
         if(self.pred_and_action.valid(j_own_data)):
             self.echo[j] = {
                 PHASE: j_about_data[0],
