@@ -63,6 +63,7 @@ class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
             checks = []
+            last_check = calls_left == 1
 
             for a in asyncio.as_completed(aws):
                 result = await a
@@ -70,12 +71,17 @@ class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
                 id = data["id"]
 
                 # nodes should probably reset their state
-                if len(data["r_log"]) == 0:
-                    checks.append(False)
-                    continue
-                checks.append(data["rep_state"] == [1])
-                checks.append(data["pend_reqs"] == [])
-                checks.append(len(data["r_log"]) > 0)
+                if last_check:
+                    self.assertEqual(data["rep_state"] == [1])
+                    self.assertEqual(data["pend_reqs"] == [])
+                    self.assertTrue(len(data["r_log"]) > 0)
+                else:
+                    if len(data["r_log"]) == 0:
+                        checks.append(False)
+                        continue
+                    checks.append(data["rep_state"] == [1])
+                    checks.append(data["pend_reqs"] == [])
+                    checks.append(len(data["r_log"]) > 0)
 
             # if all checks passed, test passed
             if all(checks):

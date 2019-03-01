@@ -31,7 +31,7 @@ class ReplicationModule(AlgorithmModule):
     Structure of variables:
     client_request (request by client): <client c, timestamp t, operation o>
     request (accepted request): < request client_request, view v,
-                                                    sequence number seq_n>
+                                                   sequence number seq_n>
     rep_state = UNDEFINED
     r_log (x_set is the set that claim to have executed/comitted request):
         [<request, x_set>]
@@ -89,7 +89,7 @@ class ReplicationModule(AlgorithmModule):
         while True:
             # lines 1-3
             self.lock.acquire()
-            if (not self.rep[0].get_view_changed() and
+            if (not self.rep[self.id].get_view_changed() and
                     self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
                                           Function.ALLOW_SERVICE)):
                 view_changed = (not self.rep[self.id].is_tee() and
@@ -98,7 +98,6 @@ class ReplicationModule(AlgorithmModule):
                                     Function.GET_CURRENT_VIEW, self.id) !=
                                     self.rep[self.id].get_prim()))
                 self.rep[self.id].set_view_changed(view_changed)
-
             self.rep[self.id].set_prim(self.resolver.execute(
                 Module.VIEW_ESTABLISHMENT_MODULE,
                 Function.GET_CURRENT_VIEW, self.id))
@@ -136,10 +135,14 @@ class ReplicationModule(AlgorithmModule):
             # A byzantine node does not care if it is in conflict or stale
             if not byz.is_byzantine():
                 if self.stale_rep() or self.conflict():
+                    logger.info(f"Flushing because stale_rep: " +
+                                f"{self.stale_rep()} or conflict:" +
+                                f" {self.conflict()}")
                     self.flush_local()
                     self.rep[self.id].set_to_tee()
                     self.need_flush = True
             if self.flush:
+                logger.info(f"Flushing because flush is true")
                 self.flush_local()
 
             self.rep[self.id].extend_pend_reqs(self.known_pend_reqs())
@@ -255,14 +258,14 @@ class ReplicationModule(AlgorithmModule):
                                         # Add Prep
                                         req_pair[STATUS].add(
                                             ReplicationEnums.PREP)
-                            if not request_found:
-                                # Request is not found in own req_q, the
-                                # request is supported by 3f + 1 other
-                                # processors.
-                                new_req_pair = {REQUEST: request, STATUS: {
-                                    ReplicationEnums.PRE_PREP,
-                                    ReplicationEnums.PREP}}
-                                self.rep[self.id].add_to_req_q(new_req_pair)
+                            # if not request_found:
+                            #     # Request is not found in own req_q, the
+                            #     # request is supported by 3f + 1 other
+                            #     # processors.
+                            #     new_req_pair = {REQUEST: request, STATUS: {
+                            #         ReplicationEnums.PRE_PREP,
+                            #         ReplicationEnums.PREP}}
+                            #     self.rep[self.id].add_to_req_q(new_req_pair)
 
                     # Find request to be COMMIT:ed
                     for request in self.supported_reqs(
@@ -946,7 +949,7 @@ class ReplicationModule(AlgorithmModule):
         if (len(processor_ids) >=
                 (4 * self.number_of_byzantine + 1) and
                 self.check_new_v_state(prim_id)):
-            self.rep[self.id] = deepcopy(self.rep[prim_id])
+            self.rep[self.id].set_replica_structure(self.rep[prim_id])
             self.rep[self.id].set_view_changed(False)
 
     # Interface functions
@@ -1054,14 +1057,17 @@ class ReplicationModule(AlgorithmModule):
         processors_r_log = processors_tuple[1]
 
         if len(processors_states) == 0:
+            logger.info("Unable to find con_state because states =[]")
             return (-1, [])
         prefix_state = self.find_prefix(processors_states)
         if prefix_state is None:
+            logger.info("Unable to find con_state because prefix =[]")
             return (-1, [])
         # Find corresponding r_log
         r_log = self.get_corresponding_r_log(processors_r_log, prefix_state)
         # Check if inconsistency between r_log and rep_state
         if r_log == [] and len(prefix_state) > 0:
+            logger.info("Unable to find con_state because r_log =[]")
             return (-1, [])
         return (prefix_state, r_log)
 
@@ -1133,7 +1139,6 @@ class ReplicationModule(AlgorithmModule):
                     req_exists_count[key] += 1
                 else:
                     req_exists_count[key] = 1
-
         # find all PRE_PREP msgs with view == prim and check that they exist
         # for 3f + 1 processors
         for req_pair in self.rep[prim].get_req_q():
@@ -1148,7 +1153,11 @@ class ReplicationModule(AlgorithmModule):
                         if (r[REQUEST].get_client_request() != key and
                            r[REQUEST].get_seq_num() == dummy_seq_num):
                             return False
-
+                    continue
+                elif (key not in req_exists_count and
+                      self.accept_req_preprep(key, prim)):
+                    # A request that is PRE_PREP:ed by the primary but didn't
+                    # have a PRE_PREP from last view
                     continue
                 elif (key not in req_exists_count or
                         req_exists_count[key] <

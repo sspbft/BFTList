@@ -50,6 +50,7 @@ class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
             checks = []
+            last_check = calls_left == 1
 
             for a in asyncio.as_completed(aws):
                 result = await a
@@ -57,11 +58,12 @@ class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
                 views = data["VIEW_ESTABLISHMENT_MODULE"]["views"]
                 vp_target = {"current": 2, "next": 2}
 
-                if calls_left > 1:
-                    for vp in views:
+                
+                for vp in views:
+                    if last_check:
+                        self.assertEqual(vp, vp_target)
+                    else:
                         checks.append(vp == vp_target)
-                else:
-                    self.assertEqual(vp, vp_target)
 
             # test passed if all checks returned true
             if all(checks):

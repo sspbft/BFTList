@@ -1,8 +1,9 @@
 """
-Case 6.5
-The systems starts in a safe state but the primary is acting Byzantine and
-is modifying the client request before assigning seq_num. No progress should be
-made due to primary monitoring module not being included in this test right now.
+Case 7 
+A view change has occured (either by the primary being byz or another fault)
+and there are request that needs new sequence numbers.
+The View Establishment replies with view 1
+The new primary is NOT acting Byzantine.
 """
 
 # standard
@@ -30,6 +31,7 @@ client_req_1 = ClientRequest(0, 0, Operation("APPEND", 1))
 client_req_2 = ClientRequest(0, 1, Operation("APPEND", 2))
 client_req_3 = ClientRequest(0, 3, Operation("APPEND", 3))
 req_1 = Request(client_req_1, 0, 1)
+req_2 = Request(client_req_2, 0, 2)
 
 for i in range(N):
     start_state[str(i)] = {
@@ -40,7 +42,9 @@ for i in range(N):
                     rep_state=[1],
                     r_log=[{REQUEST: req_1, X_SET: {0,1,2,3,4,5}}],
                     pend_reqs=[client_req_2, client_req_3],
-                    last_req={0: {REQUEST: req_1, REPLY: [1]}}
+                    req_q=[{REQUEST: req_2, STATUS:{enums.PRE_PREP}}],
+                    last_req=[{0: {REQUEST: req_1, REPLY: [1]}}],
+                    prim=0
                 ) for j in range(N)
             ]
         }
@@ -49,13 +53,9 @@ for s in start_state:
     start_state[s]["REPLICATION_MODULE"]["rep"][0].set_seq_num(1)
 
 args = {
-    "FORCE_VIEW": "0",
+    "FORCE_VIEW": "1",
     "ALLOW_SERVICE": "1",
     "FORCE_NO_VIEW_CHANGE": "1",
-    "BYZANTINE": {
-        "NODES": [0],
-        "BEHAVIOR": "MODIFY_CLIENT_REQ"
-    }
 }
 
 class TestByzAssignSeqNumOutsideBoundInterval(AbstractIntegrationTest):
@@ -83,17 +83,15 @@ class TestByzAssignSeqNumOutsideBoundInterval(AbstractIntegrationTest):
                 id = data["id"]
 
                 if last_check:
-                    self.assertEqual(data["rep_state"], [1])
-                    self.assertEqual(len(data["r_log"]), 1)
-                    self.assertEqual(len(data["pend_reqs"]), 2)
-                    if id != 0:
-                        self.assertEqual(len(data["req_q"]), 0)
+                    self.assertEqual(data["rep_state"], [1,2,3])
+                    self.assertEqual(len(data["r_log"]), 3)
+                    self.assertEqual(len(data["pend_reqs"]), 0)
+                    self.assertEqual(len(data["req_q"]), 0)
                 else:
-                    checks.append(data["rep_state"] == [1])
-                    checks.append(len(data["r_log"]) == 1)
-                    checks.append(len(data["pend_reqs"]) == 2)
-                    if id != 0:
-                        checks.append(len(data["req_q"]) == 0)
+                    checks.append(data["rep_state"] == [1,2,3])
+                    checks.append(len(data["r_log"]) == 3)
+                    checks.append(len(data["pend_reqs"]) == 0)
+                    checks.append(len(data["req_q"]) == 0)
 
             # if all checks passed, test passed
             if all(checks):
