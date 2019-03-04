@@ -16,6 +16,7 @@ from api.server import start_server
 from modules.view_establishment.module import ViewEstablishmentModule
 from modules.replication.module import ReplicationModule
 from modules.primary_monitoring.module import PrimaryMonitoringModule
+from modules.primary_monitoring.failure_detector import FailureDetectorModule
 from resolve.enums import Module
 from resolve.resolver import Resolver
 
@@ -49,7 +50,9 @@ def start_modules(resolver):
         Module.REPLICATION_MODULE:
             ReplicationModule(id, resolver, n, f, k),
         Module.PRIMARY_MONITORING_MODULE:
-            PrimaryMonitoringModule(id, resolver, n, f)
+            PrimaryMonitoringModule(id, resolver, n, f),
+        Module.FAILURE_DETECTOR_MODULE:
+            FailureDetectorModule(id, resolver, n, f)
     }
 
     resolver.set_modules(modules)

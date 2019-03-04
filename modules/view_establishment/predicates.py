@@ -202,7 +202,7 @@ class PredicatesAndAction():
         """True if the replication module requires a reset."""
         return (self.stale_v(self.id) or self.resolver.execute(
                 module=Module.REPLICATION_MODULE,
-                func=Function.REPLICA_FLUSH
+                func=Function.NEED_FLUSH
                 ))
 
     def reset_all(self):
@@ -404,11 +404,11 @@ class PredicatesAndAction():
 
             # Apply changes to view: establish the new view
             elif(case == 1):
-                if(self.views[self.id] == self.RST_PAIR):
-                    self.resolver.execute(
-                        module=Module.REPLICATION_MODULE,
-                        func=Function.REPLICA_FLUSH
-                    )
+                # if(self.views[self.id] == self.RST_PAIR):
+                #     self.resolver.execute(
+                #         module=Module.REPLICATION_MODULE,
+                #         func=Function.REPLICA_FLUSH
+                #     )
                 self.establish()
                 self.reset_v_change()
                 self.view_module.next_phs()

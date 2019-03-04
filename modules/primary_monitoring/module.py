@@ -11,6 +11,7 @@ from modules.algorithm_module import AlgorithmModule
 from resolve.enums import Function, Module
 from modules.enums import PrimaryMonitoringEnums as enums
 from modules.constants import V_STATUS, PRIM, NEED_CHANGE, NEED_CHG_SET
+from resolve.enums import MessageType
 
 # global
 logger = logging.getLogger(__name__)
@@ -48,11 +49,9 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 self.clean_state()
 
             self.vcm[self.id][PRIM] = self.get_current_view(self.id)
-
-            # TODO algo4 running in own thread? Talk through resolver
-            # algo 4 running in same thread, have an instance of it
-
-            # self.vcm[self.id][NEED_CHANGE] = ALGO4.suspected()
+            self.vcm[self.id][NEED_CHANGE] = self.resolver.execute(
+                                                Module.FAILURE_DETECTOR_MODULE,
+                                                Function.SUSPECTED)
 
             if self.resolver.execute(
                Module.VIEW_ESTABLISHMENT_MODULE, Function.ALLOW_SERVICE):
@@ -62,7 +61,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                    self.vcm[self.id][V_STATUS] != enums.V_CHANGE):
                     self.update_need_chg_set()
                     # Line 11
-                    if(self.number_of_processors_in_no_service() <
+                    if(self.get_number_of_processors_in_no_service() <
                        (2 * self.number_of_byzantine + 1)):
                         self.vcm[self.id][V_STATUS] = enums.OK
                     # Line 12
@@ -93,11 +92,13 @@ class PrimaryMonitoringModule(AlgorithmModule):
             if(not self.run_forever):
                 break
 
+            time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
+
     # Help functions for run-method
-    def number_of_processors_in_no_service(self):
+    def get_number_of_processors_in_no_service(self):
         """Returns the number of processors which is in NO_SERVICE."""
         processors = 0
-        for processor_id, processor_vcm in enumerate(self.vcm):
+        for processor_vcm in self.vcm:
             if processor_vcm[V_STATUS] == enums.NO_SERVICE:
                 processors += 1
         return processors
@@ -143,19 +144,21 @@ class PrimaryMonitoringModule(AlgorithmModule):
             if len(v) >= size_processors:
                 processor_set = v
 
-        # Check the intersection of needChgSet
-        need_chg_set_intersection = set()
-        for processor_id in processor_set:
-            if len(need_chg_set_intersection) == 0:
-                need_chg_set_intersection = self.vcm[
-                                                processor_id][NEED_CHG_SET]
-            else:
-                need_chg_set_intersection.intersection(
-                    self.vcm[processor_id][NEED_CHG_SET])
+            # Check the intersection of needChgSet
+            need_chg_set_intersection = set()
+            for processor_id in processor_set:
+                if len(need_chg_set_intersection) == 0:
+                    need_chg_set_intersection = self.vcm[
+                                                    processor_id][NEED_CHG_SET]
+                else:
+                    need_chg_set_intersection.intersection(
+                        self.vcm[processor_id][NEED_CHG_SET])
 
-        # Check if the intersection is large enough
-        return (len(need_chg_set_intersection) >=
-                (3 * self.number_of_byzantine + 1))
+            # Check if the intersection is large enough
+            if (len(need_chg_set_intersection) >=
+                    (3 * self.number_of_byzantine + 1)):
+                    return True
+        return False
 
     # Interface functions
     def no_view_change(self):
@@ -186,7 +189,24 @@ class PrimaryMonitoringModule(AlgorithmModule):
         Calls the Resolver to send a message containing the vcm of processor i
         to processor_j
         """
-        pass
+        msg = {
+            "type": MessageType.PRIMARY_MONITORING_MESSAGE,
+            "sender": self.id,
+            "data": {
+                    "vcm": self.vcm[self.id],
+                        }
+                }
+        self.resolver.broadcast(msg)
+
+    def receive_msg(self, msg):
+        """Method description.
+
+        Called by the Resolver to recieve a message containing the vcm of
+        processor j
+        """
+        j = msg["sender"]
+        if j != self.id:
+            self.vcm[j] = msg["data"]["vcm"]
 
     # Function to extract data
     def get_data(self):

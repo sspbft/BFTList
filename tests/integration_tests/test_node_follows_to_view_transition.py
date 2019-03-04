@@ -80,7 +80,7 @@ class TestNodesFollow(AbstractIntegrationTest):
                 break
 
             # sleep for 2 seconds and then re-try
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
             calls_left -= 1
 
         self.assertTrue(test_result)
