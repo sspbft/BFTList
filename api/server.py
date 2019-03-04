@@ -31,4 +31,4 @@ def start_server(resolver):
     app = create_app(resolver)
     port = int(os.getenv("API_PORT", 4000))
     logger.info(f"Starting the FLASK server on port {port}")
-    app.run(port=port)
+    app.run(host="0.0.0.0", port=port)
