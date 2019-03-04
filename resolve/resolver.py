@@ -130,6 +130,10 @@ class Resolver:
                 self.modules[Module.REPLICATION_MODULE].receive_rep_msg(msg)
             finally:
                 self.replication_lock.release()
+        elif msg_type == MessageType.PRIMARY_MONITORING_MESSAGE:
+            self.modules[Module.PRIMARY_MONITORING_MODULE].receive_msg(msg)
+        elif msg_type == MessageType.FAILURE_DETECTOR_MESSAGE:
+            self.modules[Module.FAILURE_DETECTOR_MODULE].receive_msg(msg)
         else:
             logger.warning(f"Message with invalid type {msg_type} cannot be" +
                            "dispatched")
