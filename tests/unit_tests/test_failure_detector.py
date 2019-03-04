@@ -136,7 +136,7 @@ class TestFailureDetector(unittest.TestCase):
         fail_det.prim = 1
 
         fail_det.cnt = 1
-        fail_det.upon_token_from_pj(1)
+        fail_det.upon_token_from_pj(1, False)
         # Update beat should be called
         self.assertEqual(fail_det.beat, [0, 0, 3, 4, 5, 6])
         self.assertEqual(fail_det.fd_set, {0,1,2,3,4,5})
@@ -150,7 +150,7 @@ class TestFailureDetector(unittest.TestCase):
 
         # Cnt is above threshold
         fail_det.cnt = 101
-        fail_det.upon_token_from_pj(1)
+        fail_det.upon_token_from_pj(1, False)
         self.assertTrue(fail_det.prim_susp[0])
 
         # Reset the prim_susp and test other condition
@@ -173,7 +173,7 @@ class TestFailureDetector(unittest.TestCase):
         fail_det.prim = 0
 
         fail_det.cnt = 1
-        fail_det.upon_token_from_pj(1)
+        fail_det.upon_token_from_pj(1, False)
         # Update beat should be called
         self.assertEqual(fail_det.beat, [0, 0, 3, 4, 5, 6])
         self.assertEqual(fail_det.fd_set, {0,1,2,3,4,5})
@@ -187,7 +187,7 @@ class TestFailureDetector(unittest.TestCase):
         
         fail_det.reset = Mock()
         fail_det.allow_service = MagicMock(return_value = False)
-        fail_det.upon_token_from_pj(2)
+        fail_det.upon_token_from_pj(2, False)
         fail_det.reset.assert_called_once()
         
 
