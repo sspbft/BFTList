@@ -70,7 +70,15 @@ class Resolver:
 
     def replication_exec(self, func):
         """Executes a function on the Replication module."""
-        pass
+        module = self.modules[Module.REPLICATION_MODULE]
+        if func == Function.GET_PEND_REQS:
+            return module.get_pend_reqs()
+        elif func == Function.REP_REQUEST_RESET:
+            return module.rep_request_reset()
+        elif func == Function.REPLICA_FLUSH:
+            return module.replica_flush()
+        else:
+            raise ValueError("Bad function parameter")
 
     def primary_monitoring_exec(self, func):
         """Executes a function on the Primary Monitoring module."""
@@ -137,16 +145,23 @@ class Resolver:
     def get_replication_data(self):
         """Returns current values of variables.
 
-        View Establishment module.
+        Replication module.
         """
         return self.modules[Module.REPLICATION_MODULE].get_data()
 
     def get_primary_monitoring_data(self):
         """Returns current values of variables.
 
-        View Establishment module.
+        Primary Monitoring module.
         """
         return self.modules[Module.PRIMARY_MONITORING_MODULE].get_data()
+
+    def get_failure_detector_data(self):
+        """Returns current values of variables.
+
+        Failure detector module.
+        """
+        return self.modules[Module.FAILURE_DETECTOR_MODULE].get_data()
 
     def inject_client_req(self, req: ClientRequest):
         """Injects a ClientRequest sent from a client through the API."""

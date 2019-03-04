@@ -12,7 +12,7 @@ from typing import List, Tuple
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums, OperationEnums
 from modules.constants import (MAXINT, SIGMA, X_SET,
-                               REQUEST, STATUS)
+                               REQUEST, STATUS, VIEW_CHANGE)
 from resolve.enums import Module, Function, MessageType
 import conf.config as conf
 from .models.replica_structure import ReplicaStructure
@@ -962,10 +962,8 @@ class ReplicationModule(AlgorithmModule):
         """
         if not self.rep[self.id].get_view_changed():
             return(self.known_pend_reqs().intersection(self.unassigned_reqs()))
-        # TODO I will leave this else until the calling algorithm is
-        # implemented and we can see how it will react
-        # else:
-            # return("view_change")
+        else:
+            return(VIEW_CHANGE)
 
     def rep_request_reset(self):
         """Method description.

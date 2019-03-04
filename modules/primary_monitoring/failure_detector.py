@@ -2,12 +2,16 @@
 
 import time
 from resolve.enums import Function, Module
-from modules.constants import THRESHOLD
+from modules.constants import THRESHOLD, VIEW_CHANGE
+from resolve.enums import MessageType
+from queue import Queue
 # from modules.enums import PrimaryMonitoringEnums
 
 
 class FailureDetectorModule:
     """Models the Primary Monitoring moduel - Failure detector algorithm."""
+
+    run_forever = True
 
     def __init__(self, id, resolver, n, f):
         """Initializes the module."""
@@ -21,15 +25,28 @@ class FailureDetectorModule:
         self.cur_check_req = []
         self.fd_set = set()
         self.prim = -1
+        self.msg_queue = Queue()
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
-        # TODO change while to upon token from processor_j
         while True:
-            time.sleep(1)
 
+            if self.msg_queue.empty():
+                time.sleep(0.1)
+            else:
+                msg = self.msg_queue.get()
+                processor_j = msg["sender"]
+                prim_susp_j = msg["data"]["prim_susp"]
+                self.upon_token_from_pj(processor_j, prim_susp_j)
+                self.send_msg(processor_j)
+
+            if(not self.run_forever):
+                break
+
+    def upon_token_from_pj(self, processor_j: int, prim_susp_j):
+        """Checks responsiveness and liveness of processor j."""
         # Line 9-11
-        # self.update_beat(processor_j)
+        self.update_beat(processor_j)
 
         # Line 13-14
         new_prim = self.get_current_view(self.id)
@@ -37,15 +54,20 @@ class FailureDetectorModule:
             self.reset()
         self.prim = new_prim
 
-        if self.allow_service():  # TODO and algo5.no_view_change():
-            # TODO if self.prim == processor_j:
-                # self.check_progress_by_prim(processor_j)
+        if self.allow_service() and self.resolver.execute(
+                                        Module.PRIMARY_MONITORING_MODULE,
+                                        Function.NO_VIEW_CHANGE):
+            if self.prim == processor_j:
+                self.check_progress_by_prim(processor_j)
+            elif (self.prim == self.get_current_view(processor_j)):
+                self.prim_susp[processor_j] = prim_susp_j
+            # Ignoring the for each node \ prim reset cnt, has only one value
             if self.prim == self.id:
                 self.cnt = 0
             if(not self.prim_susp[self.id]):
                 self.prim_susp[self.id] = (self.prim not in self.fd_set or
                                            self.cnt > THRESHOLD)
-        else:
+        elif not self.allow_service():
             self.reset()
 
     # Macros
@@ -78,8 +100,17 @@ class FailureDetectorModule:
 
     def get_pend_reqs(self):
         """Calls get_pend_reqs in Replication module"""
-        return self.resolver.execute(Module.REPLICATION_MODULE,
-                                     Function.GET_PEND_REQS)
+        pend_reqs = self.resolver.execute(
+                        Module.REPLICATION_MODULE,
+                        Function.GET_PEND_REQS)
+        if pend_reqs == VIEW_CHANGE:
+            # There has been a view_change
+            # The replication module takes care to check the progress of the
+            # new primary
+            # Hence this module can "accept" the progress
+            return []
+        else:
+            return pend_reqs
 
     def allow_service(self):
         """Calls allow_service in View Establishment module"""
@@ -125,3 +156,34 @@ class FailureDetectorModule:
             if self.beat[other_processor] < THRESHOLD:
                 new_fd_set.add(other_processor)
         self.fd_set = new_fd_set
+
+    # Functions to send messages to other nodes
+
+    def send_msg(self, processor_j):
+        """Method description.
+
+        Calls the Resolver to send a message containing the vcm of processor i
+        to processor_j
+        """
+        msg = {
+            "type": MessageType.FAILURE_DETECTOR_MESSAGE,
+            "sender": self.id,
+            "data": {
+                    "prim_susp": self.prim_susp[self.id],
+                        }
+                }
+        self.resolver.send_to_node(processor_j, msg)
+
+    def receive_msg(self, msg):
+        """Method description.
+
+        Called by the Resolver to recieve a message containing the vcm of
+        processor j
+        """
+        if msg["sender"] != self.id:
+            self.msg_queue.put(msg)
+
+    # Function to extract data
+    def get_data(self):
+        """Returns current values on local variables."""
+        return {}

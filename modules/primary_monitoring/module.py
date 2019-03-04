@@ -11,6 +11,7 @@ from modules.algorithm_module import AlgorithmModule
 from resolve.enums import Function, Module
 from modules.enums import PrimaryMonitoringEnums as enums
 from modules.constants import V_STATUS, PRIM, NEED_CHANGE, NEED_CHG_SET
+from resolve.enums import MessageType
 
 # global
 logger = logging.getLogger(__name__)
@@ -186,7 +187,24 @@ class PrimaryMonitoringModule(AlgorithmModule):
         Calls the Resolver to send a message containing the vcm of processor i
         to processor_j
         """
-        pass
+        msg = {
+            "type": MessageType.PRIMARY_MONITORING_MESSAGE,
+            "sender": self.id,
+            "data": {
+                    "vcm": self.vcm[self.id],
+                        }
+                }
+        self.resolver.broadcast(msg)
+
+    def receive_msg(self, msg):
+        """Method description.
+
+        Called by the Resolver to recieve a message containing the vcm of
+        processor j
+        """
+        j = msg["sender"]
+        if j != self.id:
+            self.vcm[j] = msg["data"]["vcm"]
 
     # Function to extract data
     def get_data(self):
