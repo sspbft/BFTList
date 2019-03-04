@@ -72,8 +72,8 @@ class TestReqIsAppliedInMalFreeExecution(AbstractIntegrationTest):
 
                 # nodes should probably reset their state
                 if last_check:
-                    self.assertEqual(data["rep_state"] == [1])
-                    self.assertEqual(data["pend_reqs"] == [])
+                    self.assertEqual(data["rep_state"], [1])
+                    self.assertEqual(data["pend_reqs"],[])
                     self.assertTrue(len(data["r_log"]) > 0)
                 else:
                     if len(data["r_log"]) == 0:

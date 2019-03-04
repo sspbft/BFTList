@@ -23,12 +23,13 @@ class Function(Enum):
     REPLICA_FLUSH = 4
     GET_PEND_REQS = 5
     REP_REQUEST_RESET = 6
+    NEED_FLUSH = 7
 
     # Primary Monitoring Module
-    NO_VIEW_CHANGE = 7
+    NO_VIEW_CHANGE = 8
 
     # Failure detector module
-    SUSPECTED = 8
+    SUSPECTED = 9
 
 
 class MessageType(IntEnum):

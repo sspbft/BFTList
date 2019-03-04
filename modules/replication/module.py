@@ -144,6 +144,7 @@ class ReplicationModule(AlgorithmModule):
             if self.flush:
                 logger.info(f"Flushing because flush is true")
                 self.flush_local()
+                self.flush = False
 
             self.rep[self.id].extend_pend_reqs(self.known_pend_reqs())
             # line 15 - 25
@@ -345,7 +346,6 @@ class ReplicationModule(AlgorithmModule):
                 Function.ALLOW_SERVICE)):
             j = int(msg["sender"])                           # id of sender
             rep = msg["data"]["own_replica_structure"]  # rep data
-
             if (self.resolver.execute(
                     Module.PRIMARY_MONITORING_MODULE,
                     Function.NO_VIEW_CHANGE)):
@@ -661,7 +661,6 @@ class ReplicationModule(AlgorithmModule):
 
         known_reqs = {k: v for (k, v) in known_reqs.items()
                       if v >= (3 * self.number_of_byzantine + 1)}
-
         # Filter out all request that processor_i has already applied
         for applied_req in self.rep[self.id].get_r_log():
             if applied_req[REQUEST] in known_reqs:
@@ -878,7 +877,7 @@ class ReplicationModule(AlgorithmModule):
 
         if len(processor_ids) >= (4 * self.number_of_byzantine) + 1:
             # Update our sequence number to the most recent one.
-            potential_seq = 0
+            potential_seq = -1
             # Find max sequence number of requests that has not yet been
             # committed, but should not receive new sequence numbers.
             for request_pair in self.rep[self.id].get_req_q():
@@ -950,9 +949,14 @@ class ReplicationModule(AlgorithmModule):
                 (4 * self.number_of_byzantine + 1) and
                 self.check_new_v_state(prim_id)):
             self.rep[self.id].set_replica_structure(self.rep[prim_id])
+            self.rep[self.id].set_seq_num = self.last_exec()
             self.rep[self.id].set_view_changed(False)
 
     # Interface functions
+    def rep_need_flush(self):
+        """Returns True if Replication modules demands a flush."""
+        return self.need_flush
+
     def get_pend_reqs(self):
         """Method description.
 

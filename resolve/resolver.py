@@ -77,6 +77,8 @@ class Resolver:
             return module.rep_request_reset()
         elif func == Function.REPLICA_FLUSH:
             return module.replica_flush()
+        elif func == Function.NEED_FLUSH:
+            return module.rep_need_flush()
         else:
             raise ValueError("Bad function parameter")
 

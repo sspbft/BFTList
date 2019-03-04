@@ -92,6 +92,8 @@ class PrimaryMonitoringModule(AlgorithmModule):
             if(not self.run_forever):
                 break
 
+            time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
+
     # Help functions for run-method
     def get_number_of_processors_in_no_service(self):
         """Returns the number of processors which is in NO_SERVICE."""

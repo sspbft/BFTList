@@ -1,11 +1,19 @@
 """Contains code related to the Primary Monitoring module."""
 
+# standard
+import logging
+from copy import deepcopy
 import time
+import os
+
+# local
 from resolve.enums import Function, Module
 from modules.constants import THRESHOLD, VIEW_CHANGE
 from resolve.enums import MessageType
 from queue import Queue
-# from modules.enums import PrimaryMonitoringEnums
+
+# globals
+logger = logging.getLogger(__name__)
 
 
 class FailureDetectorModule:
@@ -42,6 +50,8 @@ class FailureDetectorModule:
 
             if(not self.run_forever):
                 break
+
+            time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
 
     def upon_token_from_pj(self, processor_j: int, prim_susp_j):
         """Checks responsiveness and liveness of processor j."""
@@ -100,9 +110,9 @@ class FailureDetectorModule:
 
     def get_pend_reqs(self):
         """Calls get_pend_reqs in Replication module"""
-        pend_reqs = self.resolver.execute(
+        pend_reqs = deepcopy(self.resolver.execute(
                         Module.REPLICATION_MODULE,
-                        Function.GET_PEND_REQS)
+                        Function.GET_PEND_REQS))
         if pend_reqs == VIEW_CHANGE:
             # There has been a view_change
             # The replication module takes care to check the progress of the
@@ -135,7 +145,7 @@ class FailureDetectorModule:
         # If there has been progress, reset the cnt
         if exist_progress:
             self.cnt = 0
-            self.cur_check_req = self.get_pend_reqs()
+            self.cur_check_req = deepcopy(self.get_pend_reqs())
         # The primary has not made progress, increase our own counter
         else:
             self.cnt += 1

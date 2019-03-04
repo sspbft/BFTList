@@ -44,6 +44,7 @@ for i in range(N):
                     pend_reqs=[client_req_2, client_req_3],
                     req_q=[{REQUEST: req_2, STATUS:{enums.PRE_PREP}}],
                     last_req=[{0: {REQUEST: req_1, REPLY: [1]}}],
+                    seq_num=1,
                     prim=0
                 ) for j in range(N)
             ]
