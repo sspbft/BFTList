@@ -48,7 +48,8 @@ class TestNodesResetsUponStaleInfo(AbstractIntegrationTest):
     async def validate(self):
         calls_left = helpers.MAX_NODE_CALLS
         test_result = False
-
+        await asyncio.sleep(5)
+        
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
             checks = []
