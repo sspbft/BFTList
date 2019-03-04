@@ -47,6 +47,8 @@ class Resolver:
             return self.replication_exec(func, *args)
         elif module == Module.PRIMARY_MONITORING_MODULE:
             return self.primary_monitoring_exec(func, *args)
+        elif module == Module.FAILURE_DETECTOR_MODULE:
+            return self.failure_detector_exec(func, *args)
         else:
             raise ValueError("Bad module parameter")
 
@@ -76,6 +78,14 @@ class Resolver:
             if os.getenv("FORCE_NEW_VIEW_CHANGE"):
                 return True
             return True
+        else:
+            raise ValueError("Bad function parameter")
+
+    def failure_detector_exec(self, func):
+        """Executes a function on the Failure Detector module."""
+        module = self.modules[Module.FAILURE_DETECTOR_MODULE]
+        if func == Function.SUSPECTED:
+            return module.suspected()
         else:
             raise ValueError("Bad function parameter")
 

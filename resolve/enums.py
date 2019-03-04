@@ -8,6 +8,7 @@ class Module(Enum):
     VIEW_ESTABLISHMENT_MODULE = 1
     REPLICATION_MODULE = 2
     PRIMARY_MONITORING_MODULE = 3
+    FAILURE_DETECTOR_MODULE = 4
 
 
 class Function(Enum):
@@ -26,9 +27,14 @@ class Function(Enum):
     # Primary Monitoring Module
     NO_VIEW_CHANGE = 7
 
+    # Failure detector module
+    SUSPECTED = 8
+
 
 class MessageType(IntEnum):
     """Represents a message type sent between nodes."""
 
     VIEW_ESTABLISHMENT_MESSAGE = 1
     REPLICATION_MESSAGE = 2
+    PRIMARY_MONITORING_MESSAGE = 3
+    FAILURE_DETECTOR_MESSAGE = 4
