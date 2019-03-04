@@ -12,6 +12,7 @@ from resolve.enums import Function, Module
 from modules.enums import PrimaryMonitoringEnums as enums
 from modules.constants import V_STATUS, PRIM, NEED_CHANGE, NEED_CHG_SET
 from resolve.enums import MessageType
+import conf.config as conf
 
 # global
 logger = logging.getLogger(__name__)
@@ -38,6 +39,24 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     PRIM: -1,
                     NEED_CHANGE: False,
                     NEED_CHG_SET: set()} for i in range(n)]
+
+        if os.getenv("INTEGRATION_TEST"):
+            start_state = conf.get_start_state()
+            if (start_state is not {} and str(self.id) in start_state and
+               "PRIMARY_MONITORING_MODULE" in start_state[str(self.id)]):
+                data = start_state[str(self.id)]["PRIMARY_MONITORING_MODULE"]
+                if data is not None:
+                    if "v_status" in data:
+                        self.vcm[self.id][V_STATUS] = deepcopy(
+                                                    data["v_status"])
+                    if "prim" in data:
+                        self.vcm[self.id][PRIM] = deepcopy(data["prim"])
+                    if "need_change" in data:
+                        self.vcm[self.id][NEED_CHANGE] = deepcopy(
+                                                        data["need_change"])
+                    if "need_chg_set" in data:
+                        self.vcm[self.id][NEED_CHG_SET] = deepcopy(
+                                                        data["need_chg_set"])
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
@@ -71,6 +90,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     # Line 13
                     elif self.sup_change(4 * self.number_of_byzantine + 1):
                         self.vcm[self.id][V_STATUS] = enums.V_CHANGE
+                        logger.info("Telling ViewEstablish to change view")
                         self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
@@ -78,11 +98,14 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 elif(self.vcm[self.id][PRIM] ==
                      self.get_current_view(self.id) and
                      self.vcm[self.id][V_STATUS] == enums.V_CHANGE):
+                    logger.info("Telling ViewEstablish to change view \
+                                 as primary")
                     self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
                 # Line 15
                 else:
+                    logger.info("Cleaning state")
                     self.clean_state()
 
             # Send vcm to all nodes

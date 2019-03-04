@@ -36,4 +36,4 @@ V_STATUS = "v_status"
 NEED_CHANGE = "need_change"
 NEED_CHG_SET = "need_chg_set"
 
-THRESHOLD = 100  # Threshold for liveness, beat-variable
+THRESHOLD = 10  # Threshold for liveness, beat-variable
