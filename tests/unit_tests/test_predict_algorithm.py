@@ -463,13 +463,9 @@ class TestPredicatesAndAction(unittest.TestCase):
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
         
         # Case 0
-        # TODO own next is faulty, should be able to adopt vp_next == vp_current
-        # when we are in phase 1 (other view pair is from phase 0)
-        # https://trello.com/c/9AViU3YO/75-figure-out-test-for-case-10
-
-        # pred_module.views = [{CURRENT: 0, NEXT : 4}, {CURRENT: 1, NEXT : 1}]
-        # pred_module.transit_adopble = MagicMock(return_value = True)
-        # self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 1, 0))
+        pred_module.views = [{CURRENT: 0, NEXT : 4}, {CURRENT: 1, NEXT : 1}]
+        pred_module.transit_adopble = MagicMock(return_value = True)
+        self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 1, 0))
         
         # Not a adoptable view in transit
         pred_module.transit_adopble = MagicMock(return_value = False)

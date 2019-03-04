@@ -169,8 +169,6 @@ class TestReplicationModule(unittest.TestCase):
         # Not enough processors with the state found in find_cons_state
         replication.rep[0].set_rep_state([2])
         replication.rep[1].set_rep_state([4])
-
-        # TODO how check if get_ds_state is TEE? Might need to build a helper method for this
         self.assertEqual(replication.get_ds_state(), (-1, []))
 
     def test_double(self):
