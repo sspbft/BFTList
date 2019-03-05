@@ -83,16 +83,22 @@ def get_modules_data():
 
 def fetch_data_for_all_nodes():
     """Fetches data from all nodes through their /data endpoint."""
-    data = []
-    for _, node in conf.get_nodes().items():
-        r = requests.get(f"http://{node.ip}:400{node.id}/data")
-        data.append({"node": node.to_dct(), "data": r.json()})
-    return data
+    try:
+        data = []
+        for _, node in conf.get_nodes().items():
+            r = requests.get(f"http://{node.ip}:400{node.id}/data")
+            data.append({"node": node.to_dct(), "data": r.json()})
+        return data
+    except Exception as e:
+        logger.error(f"Error when fetching data for other nodes: {e}")
+        return None
 
 
 def render_global_view(view="view-est"):
     """Renders the global view for a specified module."""
     nodes_data = fetch_data_for_all_nodes()
+    if nodes_data is None:
+        return jsonify({"STATUS": "SYSTEM_BOOT"})
 
     test_name = os.getenv("INTEGRATION_TEST")
     test_data = {"test_name": test_name} if test_name is not None else {}

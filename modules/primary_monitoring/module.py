@@ -120,7 +120,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
             if os.getenv("INTEGRATION_TEST"):
                 time.sleep(0.1)
             else:
-                time.sleep(int(os.getenv("RUN_SLEEP", RUN_SLEEP)))
+                time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
 
     # Help functions for run-method
     def get_number_of_processors_in_no_service(self):

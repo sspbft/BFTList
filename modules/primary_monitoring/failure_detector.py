@@ -80,7 +80,7 @@ class FailureDetectorModule:
             if os.getenv("INTEGRATION_TEST"):
                 time.sleep(0.1)
             else:
-                time.sleep(int(os.getenv("RUN_SLEEP", RUN_SLEEP)))
+                time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
 
     def upon_token_from_pj(self, processor_j: int, prim_susp_j):
         """Checks responsiveness and liveness of processor j."""
