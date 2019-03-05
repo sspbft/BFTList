@@ -135,14 +135,14 @@ class ReplicationModule(AlgorithmModule):
             # A byzantine node does not care if it is in conflict or stale
             if not byz.is_byzantine():
                 if self.stale_rep() or self.conflict():
-                    logger.info(f"Flushing because stale_rep: " +
+                    logger.debug(f"Flushing because stale_rep: " +
                                 f"{self.stale_rep()} or conflict:" +
                                 f" {self.conflict()}")
                     self.flush_local()
                     self.rep[self.id].set_to_tee()
                     self.need_flush = True
             if self.flush:
-                logger.info(f"Flushing because flush is true")
+                logger.debug(f"Flushing because flush is true")
                 self.flush_local()
                 self.flush = False
 
@@ -1067,17 +1067,17 @@ class ReplicationModule(AlgorithmModule):
         processors_r_log = processors_tuple[1]
 
         if len(processors_states) == 0:
-            logger.info("Unable to find con_state because states =[]")
+            logger.debug("Unable to find con_state because states =[]")
             return (-1, [])
         prefix_state = self.find_prefix(processors_states)
         if prefix_state is None:
-            logger.info("Unable to find con_state because prefix =[]")
+            logger.debug("Unable to find con_state because prefix =[]")
             return (-1, [])
         # Find corresponding r_log
         r_log = self.get_corresponding_r_log(processors_r_log, prefix_state)
         # Check if inconsistency between r_log and rep_state
         if r_log == [] and len(prefix_state) > 0:
-            logger.info("Unable to find con_state because r_log =[]")
+            logger.debug("Unable to find con_state because r_log =[]")
             return (-1, [])
         return (prefix_state, r_log)
 
