@@ -1,7 +1,6 @@
 """Contains code related to the module resolver."""
 
 # standard
-import jsonpickle
 import logging
 from threading import Lock
 import os

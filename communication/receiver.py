@@ -54,4 +54,3 @@ class Receiver():
         self.msgs_received += 1
         msg = Message(MessageEnum.RECEIVER_MESSAGE, counter, self.id)
         self.socket.send(msg.as_bytes())
-        # logger.info(f"ACKed {self.msgs_received} msgs in {time.time() - self.start_time} s")

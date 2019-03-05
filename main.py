@@ -65,42 +65,28 @@ def setup_communication(resolver):
     """Sets up the communication using asyncio event loop."""
     nodes = config.get_nodes()
 
-    # setup receiver to receive messages from other nodes
+    # setup receiver to receiver channel messages from other nodes
     receiver = Receiver(id, nodes[id].ip, nodes[id].port, resolver)
     t = Thread(target=receiver.start)
     t.start()
 
     # setup sender channel to other nodes
     senders = {}
-    # tasks = []
     for _, node in nodes.items():
         if id != node.id:
             sender = Sender(id, node.id, node.ip, node.port)
-            # tasks.append(sender.connect())
             senders[node.id] = sender
-
-            # loop.create_task(sender.start())
-            # Thread(target=sender.start).run()
-
-    # asyncio.gather(*tasks)
-
-    logger.info("all senders connected")
+    logger.info("All senders connected")
 
     resolver.senders = senders
     resolver.receiver = receiver
 
-    # run sender loop forever in each sender
-    # tasks = [senders[id].start() for id in senders]
-    # asyncio.gather(*tasks)  # will block forever
-
     loop = asyncio.get_event_loop()
     for i in senders:
         loop.create_task(senders[i].start())
-    
+
     loop.run_forever()
     loop.close()
-    # for t in tasks:
-    #     asyncio.ensure_future(t)
 
 
 def setup_metrics():
@@ -141,6 +127,4 @@ if __name__ == "__main__":
     setup_metrics()
     start_modules(resolver)
     start_api(resolver)
-    # always run last, due to asyncio loop run_forever
     setup_communication(resolver)
-    # asyncio.run(setup_communication(resolver))
