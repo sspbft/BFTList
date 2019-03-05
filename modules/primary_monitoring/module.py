@@ -10,7 +10,8 @@ from copy import deepcopy
 from modules.algorithm_module import AlgorithmModule
 from resolve.enums import Function, Module
 from modules.enums import PrimaryMonitoringEnums as enums
-from modules.constants import V_STATUS, PRIM, NEED_CHANGE, NEED_CHG_SET
+from modules.constants import (V_STATUS, PRIM, NEED_CHANGE,
+                               NEED_CHG_SET, RUN_SLEEP)
 from resolve.enums import MessageType
 import conf.config as conf
 
@@ -115,7 +116,11 @@ class PrimaryMonitoringModule(AlgorithmModule):
             if(not self.run_forever):
                 break
 
-            time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
+            # throttle run method
+            if os.getenv("INTEGRATION_TEST"):
+                time.sleep(0.1)
+            else:
+                time.sleep(os.getenv("RUN_SLEEP", RUN_SLEEP))
 
     # Help functions for run-method
     def get_number_of_processors_in_no_service(self):
