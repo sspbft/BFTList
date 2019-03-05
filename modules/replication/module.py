@@ -965,7 +965,10 @@ class ReplicationModule(AlgorithmModule):
         of other processors.
         """
         if not self.rep[self.id].get_view_changed():
-            return(self.known_pend_reqs().intersection(self.unassigned_reqs()))
+            intersection_set = set(self.known_pend_reqs()).intersection(
+                                            set(self.unassigned_reqs()))
+            return(list(intersection_set))
+            # return(self.known_pend_reqs().intersection(self.unassigned_reqs()))
         else:
             return(VIEW_CHANGE)
 

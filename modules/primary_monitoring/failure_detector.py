@@ -11,6 +11,7 @@ from resolve.enums import Function, Module
 from modules.constants import THRESHOLD, VIEW_CHANGE
 from resolve.enums import MessageType
 from queue import Queue
+import conf.config as conf
 
 # globals
 logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ class FailureDetectorModule:
     """Models the Primary Monitoring moduel - Failure detector algorithm."""
 
     run_forever = True
+    first_run = True
 
     def __init__(self, id, resolver, n, f):
         """Initializes the module."""
@@ -35,10 +37,26 @@ class FailureDetectorModule:
         self.prim = -1
         self.msg_queue = Queue()
 
+        if os.getenv("INTEGRATION_TEST"):
+            start_state = conf.get_start_state()
+            if (start_state is not {} and str(self.id) in start_state and
+               "FAILURE_DETECTOR_MODULE" in start_state[str(self.id)]):
+                data = start_state[str(self.id)]["FAILURE_DETECTOR_MODULE"]
+                if data is not None:
+                    if "beat" in data:
+                        self.beat = deepcopy(data["beat"])
+                    if "cnt" in data:
+                        self.cnt = deepcopy(data["cnt"])
+                    if "prim_susp" in data:
+                        self.prim_susp = deepcopy(data["prim_susp"])
+                    if "cur_check_req" in data:
+                        self.cur_check_req = deepcopy(data["cur_check_req"])
+                    if "prim" in data:
+                        self.prim = deepcopy(data["prim"])
+
     def run(self):
         """Called whenever the module is launched in a separate thread."""
         while True:
-
             if self.msg_queue.empty():
                 time.sleep(0.1)
             else:
@@ -48,8 +66,15 @@ class FailureDetectorModule:
                 self.upon_token_from_pj(processor_j, prim_susp_j)
                 self.send_msg(processor_j)
 
-            if(not self.run_forever):
+            if not self.run_forever:
                 break
+
+            if self.first_run:
+                nodes = conf.get_nodes()
+                for node_j, _ in nodes.items():
+                    if node_j != self.id:
+                        self.send_msg(node_j)
+                self.first_run = False
 
             time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
 

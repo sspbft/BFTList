@@ -473,7 +473,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.unassigned_reqs = MagicMock(return_value = {1,2})
         replication.known_pend_reqs = MagicMock(return_value = {2,3})
         replication.view_changed = False
-        self.assertEqual(replication.get_pend_reqs(), {2})
+        self.assertEqual(replication.get_pend_reqs(), [2])
 
     def test_rep_request_reset(self):
         replication = ReplicationModule(0, Resolver(), 2, 0, 1)
