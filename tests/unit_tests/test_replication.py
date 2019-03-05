@@ -169,8 +169,6 @@ class TestReplicationModule(unittest.TestCase):
         # Not enough processors with the state found in find_cons_state
         replication.rep[0].set_rep_state([2])
         replication.rep[1].set_rep_state([4])
-
-        # TODO how check if get_ds_state is TEE? Might need to build a helper method for this
         self.assertEqual(replication.get_ds_state(), (-1, []))
 
     def test_double(self):
@@ -475,7 +473,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.unassigned_reqs = MagicMock(return_value = {1,2})
         replication.known_pend_reqs = MagicMock(return_value = {2,3})
         replication.view_changed = False
-        self.assertEqual(replication.get_pend_reqs(), {2})
+        self.assertEqual(replication.get_pend_reqs(), [2])
 
     def test_rep_request_reset(self):
         replication = ReplicationModule(0, Resolver(), 2, 0, 1)

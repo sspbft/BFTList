@@ -90,7 +90,41 @@
     }
 
     const renderPriMonData = (id, data) => {
-        // TODO implement
+        let prim = `Prim: ${data.prim}`, v_status = `vStatus: ${data.v_status}`,
+            need_change = `Need change: ${data.need_change}`, need_chg_set = 'Change set: ',
+            prim_fd = `Prim (FD): ${data.prim_fd}`, beat = 'Beat: ',
+            cnt = `Count: ${data.cnt}`, prim_susp = 'Suspect primary: ',
+            cur_check_req = 'Current request: '
+    
+        data.need_chg_set.forEach(i => {
+            need_chg_set += `[${i}]`
+        })
+        if (data.need_chg_set.length == 0) need_chg_set += '[]'
+
+        data.beat.forEach((v,i) => {
+            beat += i == id ? `${strongify(v)} ` : `${v} `
+        })
+
+        data.prim_susp.forEach((w,i) => {
+            w_ = w ? 'True' : 'False'
+            prim_susp += i == id ? `${strongify(w_)} `: `${w_} `
+        })
+
+        data.cur_check_req.forEach(r => {
+            cur_check_req += `[${r.operation.type} ${r.operation.args[0]}]`
+        })
+        if (data.cur_check_req.length == 0) cur_check_req += '[]'
+
+
+        nodeElements[id].data.children[0].innerHTML = prim
+        nodeElements[id].data.children[1].innerHTML = v_status
+        nodeElements[id].data.children[3].innerHTML = need_chg_set
+        nodeElements[id].data.children[4].innerHTML = prim_fd
+        nodeElements[id].data.children[5].innerHTML = beat
+        nodeElements[id].data.children[6].innerHTML = cnt
+        nodeElements[id].data.children[7].innerHTML = prim_susp
+        nodeElements[id].data.children[8].innerHTML = cur_check_req
+
     }
 
     // fetches data for a nodes and updates its view
@@ -118,13 +152,13 @@
                         renderRepData(res.node_id, res.REPLICATION_MODULE)
                         break
 
+                    case 'prim-mon':
+                        renderPriMonData(res.node_id, res.PRIMARY_MONITORING_MODULE)
+                        break
                     default:
                         console.error(`Bad view supplied: ${view}`)
                         break
                 }
-                
-                // TODO implement this later
-                // renderPriMonData(res.node_id, res.PRIMARY_MONITORING_MODULE)
 
                 if (res.test_data) {
                     // testName might not have been rendered on mount

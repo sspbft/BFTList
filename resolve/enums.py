@@ -8,6 +8,7 @@ class Module(Enum):
     VIEW_ESTABLISHMENT_MODULE = 1
     REPLICATION_MODULE = 2
     PRIMARY_MONITORING_MODULE = 3
+    FAILURE_DETECTOR_MODULE = 4
 
 
 class Function(Enum):
@@ -22,9 +23,13 @@ class Function(Enum):
     REPLICA_FLUSH = 4
     GET_PEND_REQS = 5
     REP_REQUEST_RESET = 6
+    NEED_FLUSH = 7
 
     # Primary Monitoring Module
-    NO_VIEW_CHANGE = 7
+    NO_VIEW_CHANGE = 8
+
+    # Failure detector module
+    SUSPECTED = 9
 
 
 class MessageType(IntEnum):
@@ -32,3 +37,5 @@ class MessageType(IntEnum):
 
     VIEW_ESTABLISHMENT_MESSAGE = 1
     REPLICATION_MESSAGE = 2
+    PRIMARY_MONITORING_MESSAGE = 3
+    FAILURE_DETECTOR_MESSAGE = 4
