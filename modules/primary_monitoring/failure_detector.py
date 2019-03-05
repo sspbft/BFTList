@@ -8,7 +8,7 @@ import os
 
 # local
 from resolve.enums import Function, Module
-from modules.constants import THRESHOLD, VIEW_CHANGE
+from modules.constants import THRESHOLD, VIEW_CHANGE, RUN_SLEEP
 from resolve.enums import MessageType
 from queue import Queue
 import conf.config as conf
@@ -76,7 +76,11 @@ class FailureDetectorModule:
                         self.send_msg(node_j)
                 self.first_run = False
 
-            time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
+            # throttle run method
+            if os.getenv("INTEGRATION_TEST"):
+                time.sleep(0.1)
+            else:
+                time.sleep(os.getenv("RUN_SLEEP", RUN_SLEEP))
 
     def upon_token_from_pj(self, processor_j: int, prim_susp_j):
         """Checks responsiveness and liveness of processor j."""

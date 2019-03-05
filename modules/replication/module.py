@@ -305,8 +305,12 @@ class ReplicationModule(AlgorithmModule):
                                          X_SET: x_set})
             self.lock.release()
             self.send_msg()
-            # time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.1)
-            time.sleep(RUN_SLEEP)
+
+            # throttle run method
+            if os.getenv("INTEGRATION_TEST"):
+                time.sleep(0.1)
+            else:
+                time.sleep(os.getenv("RUN_SLEEP", RUN_SLEEP))
 
             # Stopping the while loop, used for testing purpose
             if(not self.run_forever):
