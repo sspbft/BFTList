@@ -127,8 +127,6 @@
 
     }
 
-    // TODO render Failure detector
-
     // fetches data for a nodes and updates its view
     const refreshNode = n => {
         fetch(`http://${n.ip}:400${n.id}/data`)
