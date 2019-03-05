@@ -136,8 +136,8 @@ class ReplicationModule(AlgorithmModule):
             if not byz.is_byzantine():
                 if self.stale_rep() or self.conflict():
                     logger.debug(f"Flushing because stale_rep: " +
-                                f"{self.stale_rep()} or conflict:" +
-                                f" {self.conflict()}")
+                                 f"{self.stale_rep()} or conflict:" +
+                                 f" {self.conflict()}")
                     self.flush_local()
                     self.rep[self.id].set_to_tee()
                     self.need_flush = True
