@@ -896,7 +896,10 @@ class ReplicationModule(AlgorithmModule):
             # (all assigned request has been committed)
             # then add last executed sequence number
             new_seq = max(self.last_exec(), potential_seq)
-            self.rep[self.id].set_seq_num(new_seq)
+            try:
+                self.rep[self.id].set_seq_num(new_seq)
+            except TypeError as e:
+                logger.error(f"Got error {e} when setting new seq_num. self.rep = {str(self.rep[self.id])}")
             last_seq_num = self.last_exec()
             while new_seq > last_seq_num:
                 # check if missing requests are in request queue
