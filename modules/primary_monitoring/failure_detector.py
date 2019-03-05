@@ -72,7 +72,8 @@ class FailureDetectorModule:
             if self.first_run:
                 nodes = conf.get_nodes()
                 for node_j, _ in nodes.items():
-                    self.send_msg(node_j)
+                    if node_j != self.id:
+                        self.send_msg(node_j)
                 self.first_run = False
 
             time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
