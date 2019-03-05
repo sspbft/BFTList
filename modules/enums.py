@@ -1,8 +1,8 @@
 """Enums related to the modules of the algorithm."""
-from enum import Enum, IntEnum
+from enum import IntEnum
 
 
-class PrimaryMonitoringEnums(Enum):
+class PrimaryMonitoringEnums(IntEnum):
     """Represents a string for v_status."""
 
     OK = 1

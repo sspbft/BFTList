@@ -220,4 +220,10 @@ class FailureDetectorModule:
     # Function to extract data
     def get_data(self):
         """Returns current values on local variables."""
-        return {}
+        return {
+            "beat": self.beat,
+            "cnt": self.cnt,
+            "prim_susp": self.prim_susp,
+            "cur_check_req": self.cur_check_req,
+            "prim_fd": self.prim
+        }
