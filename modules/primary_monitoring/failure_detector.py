@@ -123,7 +123,6 @@ class FailureDetectorModule:
                self.prim_susp[processor_id]):
                 num_of_processor += 1
         if num_of_processor >= (3 * self.number_of_byzantine + 1):
-            logger.info("Returning suspected primary")
             return True
         return False
 
