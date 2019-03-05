@@ -120,9 +120,9 @@ class FailureDetectorModule:
         num_of_processor = 0
 
         for processor_id in range(self.number_of_nodes):
-            if (self.get_current_view(processor_id) ==
-                    self.get_current_view(self.id) and
-               self.prim_susp[processor_id]):
+            if (self.prim_susp[processor_id] and
+               self.get_current_view(processor_id) ==
+                    self.get_current_view(self.id)):
                 num_of_processor += 1
         if num_of_processor >= (3 * self.number_of_byzantine + 1):
             return True
@@ -191,7 +191,7 @@ class FailureDetectorModule:
             self.beat[other_processor] += 1
             if self.beat[other_processor] < THRESHOLD:
                 new_fd_set.add(other_processor)
-        self.fd_set = new_fd_set
+        self.fd_set = deepcopy(new_fd_set)
 
     # Functions to send messages to other nodes
 
@@ -224,9 +224,9 @@ class FailureDetectorModule:
         """Returns current values on local variables."""
         return {
             "id": self.id,
-            "beat": self.beat,
-            "cnt": self.cnt,
-            "prim_susp": self.prim_susp,
-            "cur_check_req": self.cur_check_req,
-            "prim_fd": self.prim
+            "beat": deepcopy(self.beat),
+            "cnt": deepcopy(self.cnt),
+            "prim_susp": deepcopy(self.prim_susp),
+            "cur_check_req": deepcopy(self.cur_check_req),
+            "prim_fd": deepcopy(self.prim)
         }

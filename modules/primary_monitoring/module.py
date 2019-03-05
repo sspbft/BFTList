@@ -237,8 +237,8 @@ class PrimaryMonitoringModule(AlgorithmModule):
         vcm = self.vcm[self.id]
         return {
             "id": self.id,
-            "v_status": vcm[V_STATUS].name,
-            "prim": vcm[PRIM],
-            "need_change": vcm[NEED_CHANGE],
-            "need_chg_set": vcm[NEED_CHG_SET]
+            "v_status": deepcopy(vcm[V_STATUS].name),
+            "prim": deepcopy(vcm[PRIM]),
+            "need_change": deepcopy(vcm[NEED_CHANGE]),
+            "need_chg_set": deepcopy(vcm[NEED_CHG_SET])
         }

@@ -51,7 +51,7 @@ start_state[1] = {
         },
         "FAILURE_DETECTOR_MODULE": {
             "prim": 0,
-            "beat": [15, 0, 0, 0, 0, 0]
+            "beat": [35, 0, 0, 0, 0, 0]
         }
     }
 start_state[2] = {
@@ -60,7 +60,7 @@ start_state[2] = {
         },
         "FAILURE_DETECTOR_MODULE": {
             "prim": 0,
-            "cnt": 15
+            "cnt": 35
         }
     }
 for i in range(3,5):
