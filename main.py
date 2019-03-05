@@ -106,7 +106,7 @@ def setup_communication(resolver):
 def setup_metrics():
     """Starts metrics server for Prometheus scraper on port 600{ID}."""
     port = 6000 + id
-    start_http_server(port)
+    start_http_server(port, addr="0.0.0.0")
     logger.info(f"Node {id} running on {port}")
 
 
