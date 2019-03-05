@@ -1,7 +1,6 @@
 """Contains code related to the module resolver."""
 
 # standard
-import jsonpickle
 import logging
 from threading import Lock
 import os
@@ -108,9 +107,10 @@ class Resolver:
         the other node.
         """
         if node_id in self.senders:
-            msg_json = jsonpickle.encode(msg_dct)
-            byte_obj = self.pack_helper.pack(msg_json.encode())
-            self.senders[node_id].add_msg_to_queue(byte_obj)
+            self.senders[node_id].add_msg_to_queue(msg_dct)
+        else:
+            pass
+            # logger.error(f"Non-existing sender for node {node_id}")
 
     def broadcast(self, msg_dct):
         """Broadcasts a message to all nodes."""

@@ -79,18 +79,17 @@ class TestByzNodeSilent(AbstractIntegrationTest):
                 views = data["views"]
                 id = data["id"]
 
-                if id != 5:
-                    for i,vp in enumerate(views):
-                        if last_check:
-                            if i <= 2:
-                                self.assertEqual(vp, {"current": 2, "next": 2})
-                            elif i <= 4:
-                                self.assertEqual(vp, {"current": -1, "next": 0})
-                        else:
-                            if i <= 2:
-                                checks.append(vp == {"current": 2, "next": 2})
-                            elif i <= 4:
-                                checks.append(vp == {"current": -1, "next": 0})
+                for i,vp in enumerate(views):
+                    if last_check:
+                        if i <= 2:
+                            self.assertEqual(vp, {"current": 2, "next": 2})
+                        elif i <= 4:
+                            self.assertEqual(vp, {"current": -1, "next": 0})
+                    else:
+                        if i <= 2:
+                            checks.append(vp == {"current": 2, "next": 2})
+                        elif i <= 4:
+                            checks.append(vp == {"current": -1, "next": 0})
 
             # if all checks passed, test passed
             if all(checks):

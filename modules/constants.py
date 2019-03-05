@@ -27,7 +27,7 @@ PRIM = "prim"
 CLIENT = "client"
 REPLY = "reply"
 
-
+RUN_SLEEP = 0.05
 MAXINT = sys.maxsize  # Sequence number limit
 SIGMA = 10  # Threshold for assigning sequence numbers
 
@@ -35,5 +35,4 @@ SIGMA = 10  # Threshold for assigning sequence numbers
 V_STATUS = "v_status"
 NEED_CHANGE = "need_change"
 NEED_CHG_SET = "need_chg_set"
-
 THRESHOLD = 10  # Threshold for liveness, beat-variable

@@ -13,7 +13,7 @@ from node import get_nodes
 def build_payload(op, args):
     """Builds a request object to be sent to all BFTList nodes."""
     return {
-        "client_id": 1,
+        "client_id": 0,
         "timestamp": int(time.time()),
         "operation": {
             "type": op,

@@ -12,7 +12,7 @@ from typing import List, Tuple
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums, OperationEnums
 from modules.constants import (MAXINT, SIGMA, X_SET,
-                               REQUEST, STATUS, VIEW_CHANGE)
+                               REQUEST, STATUS, RUN_SLEEP, VIEW_CHANGE)
 from resolve.enums import Module, Function, MessageType
 import conf.config as conf
 from .models.replica_structure import ReplicaStructure
@@ -305,7 +305,8 @@ class ReplicationModule(AlgorithmModule):
                                          X_SET: x_set})
             self.lock.release()
             self.send_msg()
-            time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
+            # time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.1)
+            time.sleep(RUN_SLEEP)
 
             # Stopping the while loop, used for testing purpose
             if(not self.run_forever):

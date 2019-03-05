@@ -10,7 +10,8 @@ from threading import Thread
 from prometheus_client import start_http_server
 
 # local
-from communication import send, recv
+from communication.sender import Sender
+from communication.receiver import Receiver
 import conf.config as config
 from api.server import start_server
 from modules.view_establishment.module import ViewEstablishmentModule
@@ -65,23 +66,27 @@ def start_modules(resolver):
 
 def setup_communication(resolver):
     """Sets up the communication using asyncio event loop."""
-    loop = asyncio.get_event_loop()
     nodes = config.get_nodes()
+
+    # setup receiver to receiver channel messages from other nodes
+    receiver = Receiver(id, nodes[id].ip, nodes[id].port, resolver)
+    t = Thread(target=receiver.start)
+    t.start()
 
     # setup sender channel to other nodes
     senders = {}
     for _, node in nodes.items():
         if id != node.id:
-            sender = send.Sender(node.ip, node.port)
-            loop.create_task(sender.start())
+            sender = Sender(id, node.id, node.ip, node.port)
             senders[node.id] = sender
-
-    # setup receiver channel from other nodes
-    receiver = recv.Receiver(nodes[id].ip, nodes[id].port, resolver)
-    loop.create_task(receiver.tcp_listen())
+    logger.info("All senders connected")
 
     resolver.senders = senders
     resolver.receiver = receiver
+
+    loop = asyncio.get_event_loop()
+    for i in senders:
+        loop.create_task(senders[i].start())
 
     loop.run_forever()
     loop.close()
@@ -107,7 +112,8 @@ def setup_logging():
     logging.basicConfig(format=FORMAT, level=level)
 
     # only log ERROR messages from external loggers
-    externals = ["werkzeug", "asyncio"]
+    externals = ["werkzeug", "asyncio, engineio", "engineio.client",
+                 "engineio.server", "socketio.client", "socketio.server"]
     for e in externals:
         logging.getLogger(e).setLevel(logging.ERROR)
 
@@ -124,5 +130,4 @@ if __name__ == "__main__":
     setup_metrics()
     start_modules(resolver)
     start_api(resolver)
-    # always run last, due to asyncio loop run_forever
     setup_communication(resolver)

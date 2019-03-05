@@ -13,7 +13,7 @@ from modules.view_establishment.predicates import PredicatesAndAction
 from modules.enums import ViewEstablishmentEnums
 from resolve.enums import MessageType
 import conf.config as conf
-from modules.constants import VIEWS, PHASE, WITNESSES, CURRENT, NEXT
+from modules.constants import VIEWS, PHASE, WITNESSES, CURRENT, NEXT, RUN_SLEEP
 import modules.byzantine as byz
 
 logger = logging.getLogger(__name__)
@@ -90,10 +90,12 @@ class ViewEstablishmentModule(AlgorithmModule):
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
 
-            self.lock.release()
             # Send message to all other processors
             self.send_msg()
-            time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.25)
+            self.lock.release()
+
+            # time.sleep(0.1 if os.getenv("INTEGRATION_TEST") else 0.1)
+            time.sleep(RUN_SLEEP)
 
             # Stopping the while loop, used for testing purpose
             if(not self.run_forever):
