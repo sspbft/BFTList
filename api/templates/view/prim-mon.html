@@ -1,0 +1,37 @@
+<p>Prim: {{ item.data.PRIMARY_MONITORING_MODULE.prim }}
+<p>vStatus: {{item.data.PRIMARY_MONITORING_MODULE.v_status}}
+</p>
+<p>Need Change: 
+    {{item.data.PRIMARY_MONITORING_MODULE.need_change}}
+</p>
+<p>Change set: 
+    {% for w in item.data.PRIMARY_MONITORING_MODULE.need_chg_set %}
+        {% if item.node.id == (loop.index - 1) %}
+            <b><u>{{ w }}</u></b>
+        {% else %}
+            {{ w }}
+        {% endif %}
+    {% endfor %}
+</p>
+<p>Prim (FD): {{item.data.PRIMARY_MONITORING_MODULE.prim_fd}}</p>
+<p>Beat: {{item.data.PRIMARY_MONITORING_MODULE.beat}}</p>
+<p>Count: {{item.data.PRIMARY_MONITORING_MODULE.cnt}}</p>
+<p>Suspect primary: 
+    {% for w in item.data.PRIMARY_MONITORING_MODULE.prim_susp %}
+        {% if item.node.id == (loop.index - 1) %}
+            <b><u>{{ w }}</u></b>
+        {% else %}
+            {{ w }}
+        {% endif %}
+    {% endfor %}
+</p>
+<p>Current reqs: 
+    {% for r in item.data.PRIMARY_MONITORING_MODULE.cur_check_req %}
+        [{{ r.operation.type }} {{ r.operation.args[0] }}] 
+    {% endfor %}
+    {% if item.data.PRIMARY_MONITORING_MODULE.cur_check_req|length == 0 %}
+    []
+    {% endif %}
+</p>
+
+

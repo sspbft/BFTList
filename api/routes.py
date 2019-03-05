@@ -122,3 +122,13 @@ def render_rep_view():
     only be used when running integration test for that module.
     """
     return render_global_view("rep")
+
+
+@routes.route("/view/prim-mon", methods=["GET"])
+def render_prim_mon_view():
+    """Renders the global view for the Primary Monitoring module.
+
+    This view only displays data related to the prim monitoring module and
+    should only be used when running integration test for that module.
+    """
+    return render_global_view("prim-mon")

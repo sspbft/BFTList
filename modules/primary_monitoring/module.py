@@ -211,4 +211,10 @@ class PrimaryMonitoringModule(AlgorithmModule):
     # Function to extract data
     def get_data(self):
         """Returns current values on local variables."""
-        return {}
+        vcm = self.vcm[self.id]
+        return {
+            "v_status": vcm[V_STATUS].name,
+            "prim": vcm[PRIM],
+            "need_change": vcm[NEED_CHANGE],
+            "need_chg_set": vcm[NEED_CHG_SET]
+        }

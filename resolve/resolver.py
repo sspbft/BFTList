@@ -160,7 +160,9 @@ class Resolver:
 
         Primary Monitoring module.
         """
-        return self.modules[Module.PRIMARY_MONITORING_MODULE].get_data()
+        prim_mon = self.modules[Module.PRIMARY_MONITORING_MODULE].get_data()
+        fail_det = self.modules[Module.FAILURE_DETECTOR_MODULE].get_data()
+        return {**prim_mon, **fail_det}
 
     def get_failure_detector_data(self):
         """Returns current values of variables.
