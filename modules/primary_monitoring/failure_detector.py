@@ -108,6 +108,7 @@ class FailureDetectorModule:
     # Macros
     def reset(self):
         """Resets local variables."""
+        logger.debug("Reset Failure Detector")
         self.beat = [0 for i in range(self.number_of_nodes)]
         self.cnt = 0
         self.prim_susp = [False for i in range(self.number_of_nodes)]
@@ -222,6 +223,7 @@ class FailureDetectorModule:
     def get_data(self):
         """Returns current values on local variables."""
         return {
+            "id": self.id,
             "beat": self.beat,
             "cnt": self.cnt,
             "prim_susp": self.prim_susp,

@@ -90,7 +90,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     # Line 13
                     elif self.sup_change(4 * self.number_of_byzantine + 1):
                         self.vcm[self.id][V_STATUS] = enums.V_CHANGE
-                        logger.info("Telling ViewEstablish to change view")
+                        logger.debug("Telling ViewEstablish to change view")
                         self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
@@ -98,14 +98,14 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 elif(self.vcm[self.id][PRIM] ==
                      self.get_current_view(self.id) and
                      self.vcm[self.id][V_STATUS] == enums.V_CHANGE):
-                    logger.info("Telling ViewEstablish to change view \
+                    logger.debug("Telling ViewEstablish to change view \
                                  as primary")
                     self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
                 # Line 15
                 else:
-                    logger.info("Cleaning state")
+                    logger.debug("Cleaning state")
                     self.clean_state()
 
             # Send vcm to all nodes
@@ -216,7 +216,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
             "type": MessageType.PRIMARY_MONITORING_MESSAGE,
             "sender": self.id,
             "data": {
-                    "vcm": self.vcm[self.id],
+                    "vcm": deepcopy(self.vcm[self.id]),
                         }
                 }
         self.resolver.broadcast(msg)
@@ -229,13 +229,14 @@ class PrimaryMonitoringModule(AlgorithmModule):
         """
         j = msg["sender"]
         if j != self.id:
-            self.vcm[j] = msg["data"]["vcm"]
+            self.vcm[j] = deepcopy(msg["data"]["vcm"])
 
     # Function to extract data
     def get_data(self):
         """Returns current values on local variables."""
         vcm = self.vcm[self.id]
         return {
+            "id": self.id,
             "v_status": vcm[V_STATUS].name,
             "prim": vcm[PRIM],
             "need_change": vcm[NEED_CHANGE],

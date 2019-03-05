@@ -7,6 +7,12 @@ Node 2 has a corrupt injected cnt-value
 Node 3-4 has corrupt prim_susp value
 Node 5 has corrupt cur_check_reqs so that it will think primary is doing progress
 
+Nodes should suspect the primary since a node never "unsuspect" a primary until there
+has been a view change.
+
+NOTE: View Establishment is going crazy in this test, since we are mocking the get_current_view
+for the Primary Monitoring/Failure detector. The FD never sees a view change even if the VE is doing it
+This is because we are just testing PM/FD and not VE for this test.
 """
 
 # standard
@@ -20,6 +26,7 @@ from .abstract_integration_test import AbstractIntegrationTest
 from modules.replication.models.client_request import ClientRequest
 from modules.replication.models.request import Request
 from modules.replication.models.operation import Operation
+from modules.enums import PrimaryMonitoringEnums as enums
 
 # globals
 F = 1
@@ -75,15 +82,12 @@ start_state[5] = {
             "cur_check_req": [client_req_1]
         }
     }
-
 args = {
-    "BYZANTINE": {
-        "NODES": [0],
-        "BEHAVIOR": "STOP_ASSIGNING_SEQNUMS"
-    }
+    "FORCE_VIEW": "0",
+    "ALLOW_SERVICE": "1",
 }
 
-class TestPrimaryMonitoringStaleDataRemoved(AbstractIntegrationTest):
+class TestPrimaryMonitoringStaleDataViewChangeDemand(AbstractIntegrationTest):
     """Checks that a Byzantine node can not trick some nodes to do a view change."""
 
     async def bootstrap(self):
@@ -104,15 +108,17 @@ class TestPrimaryMonitoringStaleDataRemoved(AbstractIntegrationTest):
 
             for a in asyncio.as_completed(aws):
                 result = await a
-                data = result["data"]["PRIMARY_MONITORING"]
+                data = result["data"]["PRIMARY_MONITORING_MODULE"]
                 id = data["id"]
 
                 if last_check:
-                    self.assertEqual(data["cnt"], 0)
-                    self.assertEqual(len(data["beat"][0]), 0)                  
+                    self.assertEqual(data["v_status"], "V_CHANGE" or
+                                     data["v_status"] == "NO_SERVICE")
+                    self.assertEqual(data["need_change"], True)                  
                 else:
-                    checks.append(data["cnt"] == 0)
-                    checks.append(len(data["beat"][0]) == 0)
+                    checks.append(data["v_status"] == "V_CHANGE" or
+                                  data["v_status"] == "NO_SERVICE")
+                    checks.append(data["need_change"] == True)
 
             # if all checks passed, test passed
             if all(checks):
