@@ -205,15 +205,15 @@ class ViewEstablishmentModule(AlgorithmModule):
                 }
             else:
                 # node_i's own data
-                own_data = [self.phs[self.id],
-                            self.witnesses[self.id],
-                            self.pred_and_action.get_info(self.id)
+                own_data = [deepcopy(self.phs[self.id]),
+                            deepcopy(self.witnesses[self.id]),
+                            deepcopy(self.pred_and_action.get_info(self.id))
                             ]
 
                 # what node_i thinks about node_j
-                about_data = [self.phs[node_j],
-                              self.witnesses[node_j],
-                              self.pred_and_action.get_info(node_j)
+                about_data = [deepcopy(self.phs[node_j]),
+                              deepcopy(self.witnesses[node_j]),
+                              deepcopy(self.pred_and_action.get_info(node_j))
                               ]
 
                 # Overwriting own_data to send different views to different
@@ -258,9 +258,12 @@ class ViewEstablishmentModule(AlgorithmModule):
         Validates the message and updates phase, witnesses, echo and views for
         the sending processor.
         """
-        j = msg["sender"]  # id of sender
-        j_own_data = msg["data"]["own_data"]  # j's own data
-        j_about_data = msg["data"]["about_data"]  # what j thinks about me
+        # id of sender
+        j = msg["sender"]
+        # j's own data
+        j_own_data = deepcopy(msg["data"]["own_data"])
+        # what j thinks about me
+        j_about_data = deepcopy(msg["data"]["about_data"])
 
         if(self.pred_and_action.valid(j_own_data)):
             self.echo[j] = {

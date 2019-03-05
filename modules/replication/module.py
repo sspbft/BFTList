@@ -335,7 +335,9 @@ class ReplicationModule(AlgorithmModule):
                 msg = {
                     "type": MessageType.REPLICATION_MESSAGE,
                     "sender": self.id,
-                    "data": {"own_replica_structure": self.rep[self.id]}
+                    "data": {
+                        "own_replica_structure": deepcopy(self.rep[self.id])
+                    }
                 }
             self.resolver.send_to_node(j, msg)
 
@@ -350,7 +352,7 @@ class ReplicationModule(AlgorithmModule):
                 Module.VIEW_ESTABLISHMENT_MODULE,
                 Function.ALLOW_SERVICE)):
             j = int(msg["sender"])                           # id of sender
-            rep = msg["data"]["own_replica_structure"]  # rep data
+            rep = deepcopy(msg["data"]["own_replica_structure"])  # rep data
             if (self.resolver.execute(
                     Module.PRIMARY_MONITORING_MODULE,
                     Function.NO_VIEW_CHANGE)):
