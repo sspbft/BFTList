@@ -23,16 +23,18 @@ class Sender():
     order to send messages over the specified channel.
     """
 
-    def __init__(self, id, recv_id, recv_ip, recv_port):
+    # def __init__(self, id, recv_id, recv_ip, recv_port):
+    def __init__(self, id, node):
         """Initializes the sender."""
         self.id = id
-        self.recv_id = recv_id
-        self.recv_ip = recv_ip
-        self.recv_port = recv_port
+        self.recv = node
+        # self.recv_id = recv_id
+        # self.recv_ip = recv_ip
+        # self.recv_port = recv_port
 
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)
-        self.socket.connect(f"tcp://{self.recv_ip}:{self.recv_port}")
+        self.socket.connect(f"tcp://{self.recv.hostname}:{self.recv.port}")
 
         self.msg_queue = Queue()
         self.counter = 1

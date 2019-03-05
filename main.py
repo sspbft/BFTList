@@ -77,7 +77,7 @@ def setup_communication(resolver):
     senders = {}
     for _, node in nodes.items():
         if id != node.id:
-            sender = Sender(id, node.id, node.ip, node.port)
+            sender = Sender(id, node)
             senders[node.id] = sender
     logger.info("All senders connected")
 
