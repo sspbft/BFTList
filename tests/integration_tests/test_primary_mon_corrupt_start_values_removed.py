@@ -1,11 +1,12 @@
 """
-Case 4 (Primary monitoring)
-The systems starts in a safe state but the primary is acting Byzantine and
-stops assigning seqnums/stops propagating requests. 
+Case 1 (Primary monitoring)
+The systems starts in a state where there is stale information of different kind.
 
-Primary Monitoring should detect and demand a view change of the View Establishment 
-Module. After the view is established (new primary is Node 1), the client request
-should be assigned sequence numbers and applied.
+Node 1 has a corrupt injected beat-value
+Node 2 has a corrupt injected cnt-value
+Node 3-4 has corrupt prim_susp value
+Node 5 has corrupt cur_check_reqs so that it will think primary is doing progress
+
 """
 
 # standard
@@ -16,12 +17,9 @@ from copy import deepcopy
 # local
 from . import helpers
 from .abstract_integration_test import AbstractIntegrationTest
-from modules.replication.models.replica_structure import ReplicaStructure
 from modules.replication.models.client_request import ClientRequest
 from modules.replication.models.request import Request
 from modules.replication.models.operation import Operation
-from modules.constants import REQUEST, STATUS, MAXINT, SIGMA, X_SET, REPLY
-from modules.enums import ReplicationEnums as enums
 
 # globals
 F = 1
@@ -33,25 +31,48 @@ client_req_1 = ClientRequest(0, 0, Operation("APPEND", 1))
 
 for i in range(N):
     start_state[str(i)] = {
-        # force stable view_pair for all nodes
-        "VIEW_ESTABLISHMENT_MODULE": {
-            "views": [{"current": 0, "next": 0} for i in range(N)]
+        "PRIMARY_MONITORING_MODULE": {
+            "prim": 0
         },
-        "REPLICATION_MODULE": {
-            "rep": [
-                ReplicaStructure(
-                    j,
-                    pend_reqs=[client_req_1],
-                    prim = 0
-                ) for j in range(N)
-            ]
-        },
+        "FAILURE_DETECTOR_MODULE": {
+            "prim": 0
+        }
+    }
+start_state[1] = {
         "PRIMARY_MONITORING_MODULE": {
             "prim": 0
         },
         "FAILURE_DETECTOR_MODULE": {
             "prim": 0,
-            "cur_check_req":[client_req_1]
+            "beat": [15, 0, 0, 0, 0, 0]
+        }
+    }
+start_state[2] = {
+        "PRIMARY_MONITORING_MODULE": {
+            "prim": 0
+        },
+        "FAILURE_DETECTOR_MODULE": {
+            "prim": 0,
+            "cnt": 15
+        }
+    }
+for i in range(3,5):
+    start_state[i] = {
+            "PRIMARY_MONITORING_MODULE": {
+                "prim": 0
+            },
+            "FAILURE_DETECTOR_MODULE": {
+                "prim": 0,
+                "prim_susp": [False, False, False, True, True, False]
+            }
+        }
+start_state[5] = {
+        "PRIMARY_MONITORING_MODULE": {
+            "prim": 0
+        },
+        "FAILURE_DETECTOR_MODULE": {
+            "prim": 0,
+            "cur_check_req": [client_req_1]
         }
     }
 
@@ -62,7 +83,7 @@ args = {
     }
 }
 
-class TestByzStopsAssigningSeqNumPrimaryMonitoringToTheRescue(AbstractIntegrationTest):
+class TestPrimaryMonitoringStaleDataRemoved(AbstractIntegrationTest):
     """Checks that a Byzantine node can not trick some nodes to do a view change."""
 
     async def bootstrap(self):
@@ -74,7 +95,7 @@ class TestByzStopsAssigningSeqNumPrimaryMonitoringToTheRescue(AbstractIntegratio
         calls_left = helpers.MAX_NODE_CALLS
         test_result = False
 
-        await asyncio.sleep(30)
+        await asyncio.sleep(10)
 
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
@@ -83,17 +104,15 @@ class TestByzStopsAssigningSeqNumPrimaryMonitoringToTheRescue(AbstractIntegratio
 
             for a in asyncio.as_completed(aws):
                 result = await a
-                data = result["data"]["REPLICATION_MODULE"]
+                data = result["data"]["PRIMARY_MONITORING"]
                 id = data["id"]
 
                 if last_check:
-                    self.assertEqual(data["rep_state"], [1])
-                    self.assertEqual(len(data["r_log"]), 1)
-                    self.assertEqual(len(data["pend_reqs"]), 0)                    
+                    self.assertEqual(data["cnt"], 0)
+                    self.assertEqual(len(data["beat"][0]), 0)                  
                 else:
-                    checks.append(data["rep_state"] == [1])
-                    checks.append(len(data["r_log"]) == 1)
-                    checks.append(len(data["pend_reqs"]) == 0)
+                    checks.append(data["cnt"] == 0)
+                    checks.append(len(data["beat"][0]) == 0)
 
             # if all checks passed, test passed
             if all(checks):
