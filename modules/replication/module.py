@@ -335,7 +335,8 @@ class ReplicationModule(AlgorithmModule):
                 msg = {
                     "type": MessageType.REPLICATION_MESSAGE,
                     "sender": self.id,
-                    "data": {"own_replica_structure": deepcopy(self.rep[self.id])}
+                    "data": {"own_replica_structure": deepcopy(
+                                                        self.rep[self.id])}
                 }
             self.resolver.send_to_node(j, msg)
 
