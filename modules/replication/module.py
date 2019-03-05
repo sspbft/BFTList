@@ -310,7 +310,7 @@ class ReplicationModule(AlgorithmModule):
             if os.getenv("INTEGRATION_TEST"):
                 time.sleep(0.1)
             else:
-                time.sleep(os.getenv("RUN_SLEEP", RUN_SLEEP))
+                time.sleep(int(os.getenv("RUN_SLEEP", RUN_SLEEP)))
 
             # Stopping the while loop, used for testing purpose
             if(not self.run_forever):
