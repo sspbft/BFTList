@@ -10,7 +10,7 @@ from queue import Queue
 import jsonpickle
 
 # local
-from metrics.messages import msgs_sent, msg_rtt
+from metrics.messages import msgs_sent, msg_rtt, msgs_in_queue
 from .message import Message, MessageEnum
 
 # globals
@@ -40,6 +40,7 @@ class Sender():
     def add_msg_to_queue(self, msg):
         """Adds the message to the FIFO queue for this sender channel."""
         self.msg_queue.put(msg)
+        msgs_in_queue.label(self.id, self.recv.id, self.recv.hostname).inc()
 
     def get_msg_from_queue(self):
         """Gets the next message from the queue.
@@ -49,6 +50,7 @@ class Sender():
         if self.msg_queue.empty():
             return None
         msg = self.msg_queue.get()
+        msgs_in_queue.label(self.id, self.recv.id, self.recv.hostname).dec()
         return msg
 
     async def start(self):
