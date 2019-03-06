@@ -114,7 +114,7 @@ class ReplicationModule(AlgorithmModule):
                 self.act_as_nonprim_when_view_changed(prim_id)
 
             # lines 9 - 10
-            # X and Y are tuples (rep_state, r_log, default_flag)
+            # X and Y are tuples (rep_state, r_log, is_default_prefix)
             # -1 in X[0] and Y[0] is used to indicate failure
             X = self.find_cons_state(self.com_pref_states(
                 (3 * self.number_of_byzantine) + 1
@@ -125,15 +125,18 @@ class ReplicationModule(AlgorithmModule):
             # lines 11 - 14
             # TODO check if X[1] should be a prefix of self.rep[self.id].r_log?
             # https://bit.ly/2Iu6I0E
-            self.rep[self.id].set_con_flag(X[0] == -1)
-            logger.info(X[0])
+            X_rep_state = X[0]
+            X_r_log = X[1]
+            is_default_prefix = X[2]
+            self.rep[self.id].set_con_flag(X_rep_state == -1)
             if (not (self.rep[self.id].get_con_flag()) and
-                #  (not (self.prefixes(self.rep[self.id].get_rep_state(), X[0])) or
-               (not (self.check_new_X_prefix(self.id, X[0], X[2])) or
+               (not (self.check_new_X_prefix(self.id,
+                                             X_rep_state,
+                                             is_default_prefix)) or
                self.rep[self.id].is_rep_state_default() or self.delayed())):
                 # set own rep_state and r_log to consolidated values
-                self.rep[self.id].set_rep_state(deepcopy(X[0]))
-                self.rep[self.id].set_r_log(deepcopy(X[1]))
+                self.rep[self.id].set_rep_state(deepcopy(X_rep_state))
+                self.rep[self.id].set_r_log(deepcopy(X_r_log))
             # A byzantine node does not care if it is in conflict or stale
             if not byz.is_byzantine():
                 if self.stale_rep() or self.conflict():
@@ -486,9 +489,7 @@ class ReplicationModule(AlgorithmModule):
             all_states_are_prefixes = True
             # Check if prefixes for all combinations in the set of processors
             for id_A, id_B in itertools.combinations(processor_set, 2):
-                if not self.is_whole_rep_prefix(id_A, id_B):
-                    # if not self.prefixes(dct[id_A]["REP_STATE"],
-                    #                      dct[id_B]["REP_STATE"]):
+                if not self.are_prefixes(id_A, id_B):
                     # Move on to next combination of replica states
                     all_states_are_prefixes = False
                     break
@@ -511,17 +512,17 @@ class ReplicationModule(AlgorithmModule):
 
         returning_states = []
         returning_r_log = []
-        default_flag = False
+        is_default_prefix = False
         # Get all rep_states and r_log of the processors
         for id in returning_processors:
             if self.rep[id].is_def_prefix():
-                default_flag = True
+                is_default_prefix = True
             returning_states.append(dct[id]["REP_STATE"])
             returning_r_log.append(dct[id]["R_LOG"])
-        return (returning_states, returning_r_log, default_flag)
+        return (returning_states, returning_r_log, is_default_prefix)
 
-    def is_whole_rep_prefix(self, processor_A, processor_B):
-        """Checks prefix of whole rep.
+    def are_prefixes(self, processor_A, processor_B):
+        """Checks prefix of whole rep, including default values check.
 
         A processor with default prefix values is only a prefix of another
         processor with default prefix values.
@@ -537,11 +538,11 @@ class ReplicationModule(AlgorithmModule):
             return self.prefixes(self.rep[processor_A].get_rep_state(),
                                  self.rep[processor_B].get_rep_state())
 
-    def check_new_X_prefix(self, id, X_rep, default_prefix_flag):
+    def check_new_X_prefix(self, id, X_rep, is_default_prefix):
         """Checks the new prefix rep_state (X_rep) proposed."""
         if self.rep[id].is_def_prefix():
-            return X_rep == []
-        elif default_prefix_flag:
+            return is_default_prefix
+        elif is_default_prefix:
             # Own rep is not default value
             return False
         else:
@@ -560,13 +561,15 @@ class ReplicationModule(AlgorithmModule):
                                 2 * self.number_of_byzantine + 1))
         if X[0] == -1:
             return X
-
+        is_default_prefix = X[2]
         # Find default replica structures and prefixes to/of X
         for replica_structure in self.rep:
             if(replica_structure.is_rep_state_default()):
                 processors_in_def_state += 1
                 continue
-            if self.check_new_X_prefix(replica_structure.get_id(), X[0], X[2]):
+            if self.check_new_X_prefix(replica_structure.get_id(),
+                                       X[0],
+                                       is_default_prefix):
                 processors_prefix_X += 1
 
         # Checks if the sets are in the correct size span
