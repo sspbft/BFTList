@@ -10,7 +10,6 @@ import time
 # local
 from resolve.enums import Function, Module, MessageType, SystemStatus
 from conf.config import get_nodes
-from communication.pack_helper import PackHelper
 from modules.replication.models.client_request import ClientRequest
 
 # globals
@@ -25,7 +24,6 @@ class Resolver:
         self.modules = None
         self.senders = {}
         self.receiver = None
-        self.pack_helper = PackHelper()
         self.nodes = get_nodes()
 
         # locks used to avoid race conditions with modules
