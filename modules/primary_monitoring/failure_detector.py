@@ -8,8 +8,7 @@ import os
 
 # local
 from resolve.enums import Function, Module
-from modules.constants import (THRESHOLD, VIEW_CHANGE, RUN_SLEEP,
-                               INTEGRATION_RUN_SLEEP)
+from modules.constants import (THRESHOLD, VIEW_CHANGE)
 from resolve.enums import MessageType
 from queue import Queue
 import conf.config as conf
@@ -81,7 +80,7 @@ class FailureDetectorModule:
                     if node_j != self.id:
                         self.send_msg(node_j)
                 self.first_run = False
-            
+
             throttle()
 
     def upon_token_from_pj(self, processor_j: int, prim_susp_j):
