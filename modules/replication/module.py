@@ -546,7 +546,7 @@ class ReplicationModule(AlgorithmModule):
             # Own rep is not default value
             return False
         else:
-            return self.prefixes(self.rep[self.id].get_rep_state(), X_rep)
+            return self.prefixes(self.rep[id].get_rep_state(), X_rep)
 
     def get_ds_state(self) -> Tuple[List, List]:
         """Method description.
@@ -578,7 +578,6 @@ class ReplicationModule(AlgorithmModule):
             ((processors_prefix_X + processors_in_def_state) >=
                 (4 * self.number_of_byzantine + 1))):
             return X
-
         return (-1, [], False)
 
     def double(self):
@@ -1102,6 +1101,7 @@ class ReplicationModule(AlgorithmModule):
         """
         processors_states = processors_tuple[0]
         processors_r_log = processors_tuple[1]
+        is_default_prefix = processors_tuple[2]
 
         if len(processors_states) == 0:
             logger.debug("Unable to find con_state because states =[]")
@@ -1116,7 +1116,7 @@ class ReplicationModule(AlgorithmModule):
         if r_log == [] and len(prefix_state) > 0:
             logger.debug("Unable to find con_state because r_log =[]")
             return (-1, [], False)
-        return (prefix_state, r_log, processors_tuple[2])
+        return (prefix_state, r_log, is_default_prefix)
 
     def get_corresponding_r_log(self, processors_r_log, prefix_state):
         """Returns the corresponding r_log to the prefix_state.
