@@ -114,7 +114,7 @@ class ReplicationModule(AlgorithmModule):
                 self.act_as_nonprim_when_view_changed(prim_id)
 
             # lines 9 - 10
-            # X and Y are tuples (rep_state, r_log)
+            # X and Y are tuples (rep_state, r_log, default_flag)
             # -1 in X[0] and Y[0] is used to indicate failure
             X = self.find_cons_state(self.com_pref_states(
                 (3 * self.number_of_byzantine) + 1
@@ -126,8 +126,10 @@ class ReplicationModule(AlgorithmModule):
             # TODO check if X[1] should be a prefix of self.rep[self.id].r_log?
             # https://bit.ly/2Iu6I0E
             self.rep[self.id].set_con_flag(X[0] == -1)
+            logger.info(X[0])
             if (not (self.rep[self.id].get_con_flag()) and
-               (not (self.prefixes(self.rep[self.id].get_rep_state(), X[0])) or
+                #  (not (self.prefixes(self.rep[self.id].get_rep_state(), X[0])) or
+               (not (self.check_new_X_prefix(self.id, X[0], X[2])) or
                self.rep[self.id].is_rep_state_default() or self.delayed())):
                 # set own rep_state and r_log to consolidated values
                 self.rep[self.id].set_rep_state(deepcopy(X[0]))
@@ -484,8 +486,9 @@ class ReplicationModule(AlgorithmModule):
             all_states_are_prefixes = True
             # Check if prefixes for all combinations in the set of processors
             for id_A, id_B in itertools.combinations(processor_set, 2):
-                if not self.prefixes(dct[id_A]["REP_STATE"],
-                                     dct[id_B]["REP_STATE"]):
+                if not self.is_whole_rep_prefix(id_A, id_B):
+                    # if not self.prefixes(dct[id_A]["REP_STATE"],
+                    #                      dct[id_B]["REP_STATE"]):
                     # Move on to next combination of replica states
                     all_states_are_prefixes = False
                     break
@@ -508,11 +511,41 @@ class ReplicationModule(AlgorithmModule):
 
         returning_states = []
         returning_r_log = []
+        default_flag = False
         # Get all rep_states and r_log of the processors
         for id in returning_processors:
+            if self.rep[id].is_def_prefix():
+                default_flag = True
             returning_states.append(dct[id]["REP_STATE"])
             returning_r_log.append(dct[id]["R_LOG"])
-        return (returning_states, returning_r_log)
+        return (returning_states, returning_r_log, default_flag)
+
+    def is_whole_rep_prefix(self, processor_A, processor_B):
+        """Checks prefix of whole rep.
+
+        A processor with default prefix values is only a prefix of another
+        processor with default prefix values.
+        """
+        if self.rep[processor_A].is_def_prefix():
+            # processor_B must also have the default prefix values
+            return self.rep[processor_B].is_def_prefix()
+        elif self.rep[processor_B].is_def_prefix():
+            # Processor A does not have default values but B does
+            return False
+        else:
+            # Return the normal prefix check
+            return self.prefixes(self.rep[processor_A].get_rep_state(),
+                                 self.rep[processor_B].get_rep_state())
+
+    def check_new_X_prefix(self, id, X_rep, default_prefix_flag):
+        """Checks the new prefix rep_state (X_rep) proposed."""
+        if self.rep[id].is_def_prefix():
+            return X_rep == []
+        elif default_prefix_flag:
+            # Own rep is not default value
+            return False
+        else:
+            return self.prefixes(self.rep[self.id].get_rep_state(), X_rep)
 
     def get_ds_state(self) -> Tuple[List, List]:
         """Method description.
@@ -533,7 +566,7 @@ class ReplicationModule(AlgorithmModule):
             if(replica_structure.is_rep_state_default()):
                 processors_in_def_state += 1
                 continue
-            if self.prefixes(replica_structure.get_rep_state(), X[0]):
+            if self.check_new_X_prefix(replica_structure.get_id(), X[0], X[2]):
                 processors_prefix_X += 1
 
         # Checks if the sets are in the correct size span
@@ -543,7 +576,7 @@ class ReplicationModule(AlgorithmModule):
                 (4 * self.number_of_byzantine + 1))):
             return X
 
-        return (-1, [])
+        return (-1, [], False)
 
     def double(self):
         """Method description.
@@ -1069,18 +1102,18 @@ class ReplicationModule(AlgorithmModule):
 
         if len(processors_states) == 0:
             logger.debug("Unable to find con_state because states =[]")
-            return (-1, [])
+            return (-1, [], False)
         prefix_state = self.find_prefix(processors_states)
         if prefix_state is None:
             logger.debug("Unable to find con_state because prefix =[]")
-            return (-1, [])
+            return (-1, [], False)
         # Find corresponding r_log
         r_log = self.get_corresponding_r_log(processors_r_log, prefix_state)
         # Check if inconsistency between r_log and rep_state
         if r_log == [] and len(prefix_state) > 0:
             logger.debug("Unable to find con_state because r_log =[]")
-            return (-1, [])
-        return (prefix_state, r_log)
+            return (-1, [], False)
+        return (prefix_state, r_log, processors_tuple[2])
 
     def get_corresponding_r_log(self, processors_r_log, prefix_state):
         """Returns the corresponding r_log to the prefix_state.
