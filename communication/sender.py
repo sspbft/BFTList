@@ -74,6 +74,7 @@ class Sender():
         """
         msgs_sent.labels(self.id).inc()
         msg = Message(MessageEnum.SENDER_MESSAGE, self.counter, self.id, data)
+        logger.info(f"Sending msg to node {self.recv.id}")
         await self.socket.send(msg.as_bytes())
 
         reply_bytes = await self.socket.recv()
