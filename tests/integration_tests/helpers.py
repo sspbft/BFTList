@@ -73,6 +73,7 @@ async def launch_bftlist(test_name="unknown test", args={}):
         env["NUMBER_OF_CLIENTS"] = "1"
         env["HOSTS_PATH"] = os.path.abspath(RELATIVE_PATH_FIXTURES_HOST)
         env["INTEGRATION_TEST"] = test_name
+        env["DEBUG"] = "1"
         if "FORCE_VIEW" in args:
             env["FORCE_VIEW"] = args["FORCE_VIEW"]
         if "ALLOW_SERVICE" in args:

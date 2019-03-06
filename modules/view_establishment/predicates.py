@@ -214,6 +214,7 @@ class PredicatesAndAction():
             module=Module.REPLICATION_MODULE,
             func=Function.REP_REQUEST_RESET
         )
+        logger.info("reset_all() called")
         return(enums.RESET)
 
     def view_change(self):

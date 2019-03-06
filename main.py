@@ -113,12 +113,13 @@ def setup_logging():
 
     FORMAT = f"{node_color}BFTList.%(name)s : Node {id}" + " ==> " + \
              "[%(levelname)s] : %(message)s" + f"{end_color}"
-    level = logging.NOTSET if os.getenv("DEBUG") == "true" else logging.INFO
+    level = logging.NOTSET if os.getenv("DEBUG") is not None else logging.INFO
     logging.basicConfig(format=FORMAT, level=level)
 
     # only log ERROR messages from external loggers
     externals = ["werkzeug", "asyncio, engineio", "engineio.client",
-                 "engineio.server", "socketio.client", "socketio.server"]
+                 "engineio.server", "socketio.client", "socketio.server",
+                 "urllib3.connectionpool"]
     for e in externals:
         logging.getLogger(e).setLevel(logging.ERROR)
 
