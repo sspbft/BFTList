@@ -8,7 +8,8 @@ import os
 
 # local
 from resolve.enums import Function, Module
-from modules.constants import THRESHOLD, VIEW_CHANGE, RUN_SLEEP
+from modules.constants import (THRESHOLD, VIEW_CHANGE, RUN_SLEEP,
+                               INTEGRATION_RUN_SLEEP)
 from resolve.enums import MessageType
 from queue import Queue
 import conf.config as conf
@@ -56,6 +57,10 @@ class FailureDetectorModule:
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
+        # block until system is ready
+        while not self.resolver.system_running():
+            time.sleep(0.1)
+
         while True:
             if self.msg_queue.empty():
                 time.sleep(0.1)
@@ -78,9 +83,9 @@ class FailureDetectorModule:
 
             # throttle run method
             if os.getenv("INTEGRATION_TEST"):
-                time.sleep(0.1)
+                time.sleep(INTEGRATION_RUN_SLEEP)
             else:
-                time.sleep(os.getenv("RUN_SLEEP", RUN_SLEEP))
+                time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
 
     def upon_token_from_pj(self, processor_j: int, prim_susp_j):
         """Checks responsiveness and liveness of processor j."""

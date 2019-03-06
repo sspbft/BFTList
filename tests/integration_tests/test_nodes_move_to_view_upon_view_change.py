@@ -44,7 +44,7 @@ class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
         return await helpers.launch_bftlist(__name__)
 
     async def validate(self):
-        calls_left = helpers.MAX_NODE_CALLS
+        calls_left = helpers.MAX_NODE_CALLS * 2
         test_result = False
 
         while calls_left > 0:

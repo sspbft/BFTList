@@ -18,7 +18,7 @@ from modules.view_establishment.module import ViewEstablishmentModule
 from modules.replication.module import ReplicationModule
 from modules.primary_monitoring.module import PrimaryMonitoringModule
 from modules.primary_monitoring.failure_detector import FailureDetectorModule
-from resolve.enums import Module
+from resolve.enums import Module, SystemStatus
 from resolve.resolver import Resolver
 
 # globals
@@ -77,7 +77,7 @@ def setup_communication(resolver):
     senders = {}
     for _, node in nodes.items():
         if id != node.id:
-            sender = Sender(id, node.id, node.ip, node.port)
+            sender = Sender(id, node)
             senders[node.id] = sender
     logger.info("All senders connected")
 
@@ -88,15 +88,20 @@ def setup_communication(resolver):
     for i in senders:
         loop.create_task(senders[i].start())
 
+    resolver.system_status = SystemStatus.READY
+
     loop.run_forever()
     loop.close()
 
 
 def setup_metrics():
     """Starts metrics server for Prometheus scraper on port 600{ID}."""
-    port = 6000 + id
-    start_http_server(port, addr="0.0.0.0")
-    logger.info(f"Node {id} running on {port}")
+    try:
+        port = 6000 + id
+        start_http_server(port, addr="0.0.0.0")
+        logger.info(f"Metrics server setup on port {port}")
+    except Exception as e:
+        logger.error(f"Could not setup metrics. Got error: {e}")
 
 
 def setup_logging():
@@ -108,12 +113,13 @@ def setup_logging():
 
     FORMAT = f"{node_color}BFTList.%(name)s : Node {id}" + " ==> " + \
              "[%(levelname)s] : %(message)s" + f"{end_color}"
-    level = logging.NOTSET if os.getenv("DEBUG") == "true" else logging.INFO
+    level = logging.NOTSET if os.getenv("DEBUG") is not None else logging.INFO
     logging.basicConfig(format=FORMAT, level=level)
 
     # only log ERROR messages from external loggers
     externals = ["werkzeug", "asyncio, engineio", "engineio.client",
-                 "engineio.server", "socketio.client", "socketio.server"]
+                 "engineio.server", "socketio.client", "socketio.server",
+                 "urllib3.connectionpool"]
     for e in externals:
         logging.getLogger(e).setLevel(logging.ERROR)
 

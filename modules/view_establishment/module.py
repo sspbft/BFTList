@@ -13,7 +13,8 @@ from modules.view_establishment.predicates import PredicatesAndAction
 from modules.enums import ViewEstablishmentEnums
 from resolve.enums import MessageType
 import conf.config as conf
-from modules.constants import VIEWS, PHASE, WITNESSES, CURRENT, NEXT, RUN_SLEEP
+from modules.constants import (VIEWS, PHASE, WITNESSES, CURRENT, NEXT,
+                               RUN_SLEEP, INTEGRATION_RUN_SLEEP)
 import modules.byzantine as byz
 
 logger = logging.getLogger(__name__)
@@ -65,6 +66,10 @@ class ViewEstablishmentModule(AlgorithmModule):
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
         time.sleep(int(sec) if sec is not None else 0)
 
+        # block until system is ready
+        while not self.resolver.system_running():
+            time.sleep(0.1)
+
         while True:
             self.lock.acquire()
             if(self.pred_and_action.need_reset()):
@@ -96,9 +101,9 @@ class ViewEstablishmentModule(AlgorithmModule):
 
             # throttle run method
             if os.getenv("INTEGRATION_TEST"):
-                time.sleep(0.1)
+                time.sleep(INTEGRATION_RUN_SLEEP)
             else:
-                time.sleep(os.getenv("RUN_SLEEP", RUN_SLEEP))
+                time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
 
             # Stopping the while loop, used for testing purpose
             if(not self.run_forever):
@@ -258,9 +263,12 @@ class ViewEstablishmentModule(AlgorithmModule):
         Validates the message and updates phase, witnesses, echo and views for
         the sending processor.
         """
-        j = msg["sender"]  # id of sender
-        j_own_data = msg["data"]["own_data"]  # j's own data
-        j_about_data = msg["data"]["about_data"]  # what j thinks about me
+        # id of sender
+        j = msg["sender"]
+        # j's own data
+        j_own_data = deepcopy(msg["data"]["own_data"])
+        # what j thinks about me
+        j_about_data = deepcopy(msg["data"]["about_data"])
 
         if(self.pred_and_action.valid(j_own_data)):
             self.echo[j] = {

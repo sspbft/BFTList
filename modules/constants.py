@@ -28,6 +28,7 @@ CLIENT = "client"
 REPLY = "reply"
 
 RUN_SLEEP = 0.05
+INTEGRATION_RUN_SLEEP = 0.05
 MAXINT = sys.maxsize  # Sequence number limit
 SIGMA = 10  # Threshold for assigning sequence numbers
 

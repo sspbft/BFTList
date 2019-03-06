@@ -38,7 +38,11 @@ class CustomEncoder(json.JSONEncoder):
 def index():
     """Return the status of the current API service."""
     _id = str(os.getenv("ID", 0))
-    return jsonify({"status": "running", "service": "BFTList API", "id": _id})
+    return jsonify({
+        "status": app.resolver.system_status.name,
+        "service": "BFTList",
+        "id": _id
+    })
 
 
 @routes.route("/inject-client-req", methods=["POST"])
@@ -83,16 +87,22 @@ def get_modules_data():
 
 def fetch_data_for_all_nodes():
     """Fetches data from all nodes through their /data endpoint."""
-    data = []
-    for _, node in conf.get_nodes().items():
-        r = requests.get(f"http://{node.ip}:400{node.id}/data")
-        data.append({"node": node.to_dct(), "data": r.json()})
-    return data
+    try:
+        data = []
+        for _, node in conf.get_nodes().items():
+            r = requests.get(f"http://{node.ip}:400{node.id}/data")
+            data.append({"node": node.to_dct(), "data": r.json()})
+        return data
+    except Exception as e:
+        logger.error(f"Error when fetching data for other nodes: {e}")
+        return None
 
 
 def render_global_view(view="view-est"):
     """Renders the global view for a specified module."""
     nodes_data = fetch_data_for_all_nodes()
+    if nodes_data is None:
+        return jsonify({"STATUS": "SYSTEM_BOOT"})
 
     test_name = os.getenv("INTEGRATION_TEST")
     test_data = {"test_name": test_name} if test_name is not None else {}

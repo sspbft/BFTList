@@ -66,13 +66,14 @@ class TestNodesFollow(AbstractIntegrationTest):
             for a in asyncio.as_completed(aws):
                 result = await a
                 views = result["data"]["VIEW_ESTABLISHMENT_MODULE"]["views"]
-                target = {"current": 2, "next": 2}
+                vp_targets = [{"current": 0, "next": 0},
+                              {"current": 2, "next": 2}]
 
                 for vp in views:
                     if last_check:
-                        self.assertEqual(vp, target)
+                        self.assertIn(vp, vp_targets)
                     else:
-                        checks.append(vp == target)
+                        checks.append(vp in vp_targets)
 
             # if all checks were true, test passed
             if all(checks):

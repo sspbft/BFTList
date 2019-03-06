@@ -3,7 +3,6 @@
 # standard
 import logging
 import zmq
-from queue import Queue
 import jsonpickle
 import time
 
@@ -32,9 +31,8 @@ class Receiver():
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REP)
         self.socket.bind(f"tcp://*:{self.port}")
+        logger.info(f"Receiver channel setup on port {self.port}")
 
-        self.msg_queue = Queue()
-        self.clients = 0
         self.msgs_received = 0
 
     def start(self):

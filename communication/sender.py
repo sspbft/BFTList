@@ -4,12 +4,13 @@
 import asyncio
 import logging
 import zmq
+import time
 import zmq.asyncio
 from queue import Queue
 import jsonpickle
 
 # local
-from metrics.messages import msgs_sent
+from metrics.messages import msgs_sent, msg_rtt
 from .message import Message, MessageEnum
 
 # globals
@@ -23,16 +24,14 @@ class Sender():
     order to send messages over the specified channel.
     """
 
-    def __init__(self, id, recv_id, recv_ip, recv_port):
+    def __init__(self, id, node):
         """Initializes the sender."""
         self.id = id
-        self.recv_id = recv_id
-        self.recv_ip = recv_ip
-        self.recv_port = recv_port
+        self.recv = node
 
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)
-        self.socket.connect(f"tcp://{self.recv_ip}:{self.recv_port}")
+        self.socket.connect(f"tcp://{self.recv.hostname}:{self.recv.port}")
 
         self.msg_queue = Queue()
         self.counter = 1
@@ -70,11 +69,15 @@ class Sender():
         Constructs a message consisting of the token and the payload and sends
         it over the socket.
         """
+        # emit message sent message
         msgs_sent.labels(self.id).inc()
         msg = Message(MessageEnum.SENDER_MESSAGE, self.counter, self.id, data)
+        sent_time = time.time()
         await self.socket.send(msg.as_bytes())
 
         reply_bytes = await self.socket.recv()
+        # emit rtt time for sent and ACKed message
+        msg_rtt.labels(self.id, self.recv.id).set(time.time() - sent_time)
         try:
             reply_json = reply_bytes.decode()
             reply = jsonpickle.decode(reply_json)

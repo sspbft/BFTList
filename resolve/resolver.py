@@ -2,11 +2,13 @@
 
 # standard
 import logging
-from threading import Lock
+from threading import Lock, Thread
 import os
+import requests
+import time
 
 # local
-from resolve.enums import Function, Module, MessageType
+from resolve.enums import Function, Module, MessageType, SystemStatus
 from conf.config import get_nodes
 from communication.pack_helper import PackHelper
 from modules.replication.models.client_request import ClientRequest
@@ -30,9 +32,41 @@ class Resolver:
         self.view_est_lock = Lock()
         self.replication_lock = Lock()
 
-    def is_ready(self):
-        """Check function to determine if system is ready."""
-        return self.modules is not None
+        self.own_comm_ready = False
+        self.other_comm_ready = False
+        self.system_status = SystemStatus.BOOTING
+
+        # check other nodes for system ready before starting system
+        t = Thread(target=self.wait_for_other_nodes)
+        t.start()
+
+    def wait_for_other_nodes(self):
+        """Write me."""
+        if len(self.nodes) == 1:
+            self.other_comm_ready = True
+            return
+
+        system_ready = False
+        while not system_ready:
+            nodes_ready = []
+            for n_id, node in self.nodes.items():
+                try:
+                    r = requests.get(f"http://{node.hostname}:{4000 + n_id}")
+                    is_ready = (r.status_code == 200 and
+                                r.json()["status"] !=
+                                SystemStatus.BOOTING.name)
+                    nodes_ready.append(is_ready)
+                except Exception:
+                    nodes_ready.append(False)
+            system_ready = all(nodes_ready)
+            if not system_ready:
+                time.sleep(0.1)
+        self.system_status = SystemStatus.RUNNING
+        logger.info(f"System running at UNIX time {time.time()}")
+
+    def system_running(self):
+        """Return True if the system as a whole i running."""
+        return self.system_status == SystemStatus.RUNNING
 
     def set_modules(self, modules):
         """Sets the modules dict of the resolver."""

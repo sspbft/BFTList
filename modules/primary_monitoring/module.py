@@ -11,7 +11,7 @@ from modules.algorithm_module import AlgorithmModule
 from resolve.enums import Function, Module
 from modules.enums import PrimaryMonitoringEnums as enums
 from modules.constants import (V_STATUS, PRIM, NEED_CHANGE,
-                               NEED_CHG_SET, RUN_SLEEP)
+                               NEED_CHG_SET, RUN_SLEEP, INTEGRATION_RUN_SLEEP)
 from resolve.enums import MessageType
 import conf.config as conf
 
@@ -64,6 +64,10 @@ class PrimaryMonitoringModule(AlgorithmModule):
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
         time.sleep(int(sec) if sec is not None else 0)
 
+        # block until system is ready
+        while not self.resolver.system_running():
+            time.sleep(0.1)
+
         while True:
             if self.vcm[self.id][PRIM] != self.get_current_view(self.id):
                 self.clean_state()
@@ -91,7 +95,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     # Line 13
                     elif self.sup_change(4 * self.number_of_byzantine + 1):
                         self.vcm[self.id][V_STATUS] = enums.V_CHANGE
-                        logger.debug("Telling ViewEstablish to change view")
+                        logger.debug("Telling ViewEst to change view")
                         self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
@@ -99,8 +103,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 elif(self.vcm[self.id][PRIM] ==
                      self.get_current_view(self.id) and
                      self.vcm[self.id][V_STATUS] == enums.V_CHANGE):
-                    logger.debug("Telling ViewEstablish to change view \
-                                 as primary")
+                    logger.debug("Telling ViewEst to change view as prim")
                     self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
@@ -118,9 +121,9 @@ class PrimaryMonitoringModule(AlgorithmModule):
 
             # throttle run method
             if os.getenv("INTEGRATION_TEST"):
-                time.sleep(0.1)
+                time.sleep(INTEGRATION_RUN_SLEEP)
             else:
-                time.sleep(os.getenv("RUN_SLEEP", RUN_SLEEP))
+                time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
 
     # Help functions for run-method
     def get_number_of_processors_in_no_service(self):

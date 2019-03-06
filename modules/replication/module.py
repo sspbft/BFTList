@@ -12,7 +12,8 @@ from typing import List, Tuple
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums, OperationEnums
 from modules.constants import (MAXINT, SIGMA, X_SET,
-                               REQUEST, STATUS, RUN_SLEEP, VIEW_CHANGE)
+                               REQUEST, STATUS, RUN_SLEEP, VIEW_CHANGE,
+                               INTEGRATION_RUN_SLEEP)
 from resolve.enums import Module, Function, MessageType
 import conf.config as conf
 from .models.replica_structure import ReplicaStructure
@@ -85,6 +86,10 @@ class ReplicationModule(AlgorithmModule):
         """Called whenever the module is launched in a separate thread."""
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
         time.sleep(int(sec) if sec is not None else 0)
+
+        # block until system is ready
+        while not self.resolver.system_running():
+            time.sleep(0.1)
 
         while True:
             # lines 1-3
@@ -313,9 +318,9 @@ class ReplicationModule(AlgorithmModule):
 
             # throttle run method
             if os.getenv("INTEGRATION_TEST"):
-                time.sleep(0.1)
+                time.sleep(INTEGRATION_RUN_SLEEP)
             else:
-                time.sleep(os.getenv("RUN_SLEEP", RUN_SLEEP))
+                time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
 
             # Stopping the while loop, used for testing purpose
             if(not self.run_forever):
@@ -356,7 +361,7 @@ class ReplicationModule(AlgorithmModule):
                 Module.VIEW_ESTABLISHMENT_MODULE,
                 Function.ALLOW_SERVICE)):
             j = int(msg["sender"])                           # id of sender
-            rep = msg["data"]["own_replica_structure"]  # rep data
+            rep = deepcopy(msg["data"]["own_replica_structure"])  # rep data
             if (self.resolver.execute(
                     Module.PRIMARY_MONITORING_MODULE,
                     Function.NO_VIEW_CHANGE)):
@@ -930,7 +935,11 @@ class ReplicationModule(AlgorithmModule):
             # (all assigned request has been committed)
             # then add last executed sequence number
             new_seq = max(self.last_exec(), potential_seq)
-            self.rep[self.id].set_seq_num(new_seq)
+            try:
+                self.rep[self.id].set_seq_num(new_seq)
+            except TypeError as e:
+                logger.error(f"Got error {e} when setting new seq_num. " +
+                             f"self.rep[self.id] = {str(self.rep[self.id])}")
             last_seq_num = self.last_exec()
             while new_seq > last_seq_num:
                 # check if missing requests are in request queue
