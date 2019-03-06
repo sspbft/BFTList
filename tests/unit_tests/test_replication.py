@@ -146,9 +146,9 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep[4].set_rep_state([3])
         replication.rep[5].set_rep_state([2])
 
-        target_tuple_1 = ([[0], [0]], [[], []])
-        target_tuple_2 = ([[0], [0], [0, 2]], [[], [], []])
-        target_tuple_3 = ([], [])
+        target_tuple_1 = ([[0], [0]], [[], []], False)
+        target_tuple_2 = ([[0], [0], [0, 2]], [[], [], []], False)
+        target_tuple_3 = ([], [], False)
         self.assertEqual(replication.com_pref_states(2), target_tuple_1)
         self.assertEqual(replication.com_pref_states(3), target_tuple_2)
         # no more than 3 processors have a common prefix
@@ -163,13 +163,13 @@ class TestReplicationModule(unittest.TestCase):
         replication.rep[4].set_rep_state([])
         replication.rep[5].set_rep_state([])
 
-        replication.find_cons_state = MagicMock(return_value = ([0], []))
-        self.assertEqual(replication.get_ds_state(), ([0], []))
+        replication.find_cons_state = MagicMock(return_value = ([0], [], False))
+        self.assertEqual(replication.get_ds_state(), ([0], [], False))
         
         # Not enough processors with the state found in find_cons_state
         replication.rep[0].set_rep_state([2])
         replication.rep[1].set_rep_state([4])
-        self.assertEqual(replication.get_ds_state(), (-1, []))
+        self.assertEqual(replication.get_ds_state(), (-1, [], False))
 
     def test_double(self):
         replication = ReplicationModule(0, Resolver(), 2, 0, 1)
@@ -781,8 +781,8 @@ class TestReplicationModule(unittest.TestCase):
         replication.prefixes = MagicMock(return_value = True)
 
         # If not returning arrays, it returns an Mock-object and tests don't pass at all
-        replication.find_cons_state = MagicMock(return_value = ([], []))
-        replication.get_ds_state = MagicMock(return_value = [])
+        replication.find_cons_state = MagicMock(return_value = ([], [], False))
+        replication.get_ds_state = MagicMock(return_value = ([], [], False))
         replication.known_pend_reqs = MagicMock(return_value = [])
 
         # The resolver should return the current view (0)
@@ -822,7 +822,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.act_as_prim_when_view_changed = Mock()
         replication.send_msg = Mock()
 
-        replication.find_cons_state = MagicMock(return_value = ([], []))
+        replication.find_cons_state = MagicMock(return_value = ([], [], False))
         replication.get_ds_state = MagicMock(return_value = [])
         replication.known_pend_reqs = MagicMock(return_value = [])
 
@@ -861,7 +861,7 @@ class TestReplicationModule(unittest.TestCase):
 
         # If not returning arrays, it returns an Mock-object and tests don't pass at all
         # These functions are not used for the current case of test
-        replication.get_ds_state = MagicMock(return_value = ([], []))
+        replication.get_ds_state = MagicMock(return_value = ([], [], False))
         replication.resolver.execute = MagicMock(return_value = -1)
         replication.known_pend_reqs = MagicMock(return_value = [])
 
@@ -871,7 +871,7 @@ class TestReplicationModule(unittest.TestCase):
             {REQUEST: self.dummyRequest1, REPLY: [1]},
             {REQUEST: self.dummyRequest2, REPLY: [1,2]}
         ]
-        replication.find_cons_state = MagicMock(return_value = (mock_rep_state, mock_r_log))
+        replication.find_cons_state = MagicMock(return_value = (mock_rep_state, mock_r_log, False))
         replication.stale_rep = MagicMock(return_value = False)
         replication.conflict = MagicMock(return_value = False)
 
@@ -916,14 +916,14 @@ class TestReplicationModule(unittest.TestCase):
         replication.known_pend_reqs = MagicMock(return_value = [])
 
         # The consolidated state is not found
-        replication.find_cons_state = MagicMock(return_value = (-1, []))
+        replication.find_cons_state = MagicMock(return_value = (-1, [], False))
         # Get DS_state on the other hand returns a rep_state
         mock_rep_state = [1,2]
         mock_r_log = [
             {REQUEST: self.dummyRequest1, REPLY: [1]},
             {REQUEST: self.dummyRequest2, REPLY: [1,2]}
         ]
-        replication.get_ds_state = MagicMock(return_value = (mock_rep_state, mock_r_log))
+        replication.get_ds_state = MagicMock(return_value = (mock_rep_state, mock_r_log, False))
         replication.stale_rep = MagicMock(return_value = False)
         replication.conflict = MagicMock(return_value = False)
 
@@ -963,7 +963,7 @@ class TestReplicationModule(unittest.TestCase):
         replication.flush_local = Mock()
 
         # If not returning arrays, it returns an Mock-object and tests don't pass at all
-        replication.find_cons_state = MagicMock(return_value = ([], []))
+        replication.find_cons_state = MagicMock(return_value = ([], [], False))
         replication.get_ds_state = MagicMock(return_value = [])
         replication.resolver.execute = MagicMock(return_value = 0)
         replication.known_pend_reqs = MagicMock(return_value = [])
@@ -1037,8 +1037,8 @@ class TestReplicationModule(unittest.TestCase):
         replication.send_msg = Mock()
 
         # If not returning arrays, it returns an Mock-object and tests don't pass at all
-        replication.find_cons_state = MagicMock(return_value = ([], []))
-        replication.get_ds_state = MagicMock(return_value = ([], []))
+        replication.find_cons_state = MagicMock(return_value = ([], [], False))
+        replication.get_ds_state = MagicMock(return_value = ([], [], False))
         replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
         replication.known_pend_reqs = MagicMock(return_value = [])
         replication.last_exec = MagicMock(return_value = 2)
@@ -1081,8 +1081,8 @@ class TestReplicationModule(unittest.TestCase):
         replication.send_msg = Mock()
 
         # If not returning arrays, it returns an Mock-object and tests don't pass at all
-        replication.find_cons_state = MagicMock(return_value = ([], []))
-        replication.get_ds_state = MagicMock(return_value = [])
+        replication.find_cons_state = MagicMock(return_value = ([], [], False))
+        replication.get_ds_state = MagicMock(return_value = ([], [], False))
         replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
         replication.last_exec = MagicMock(return_value = 2)
         replication.seq_n = 2
@@ -1135,8 +1135,8 @@ class TestReplicationModule(unittest.TestCase):
         #replication.accept_req_preprep = MagicMock(return_value = True)
 
         # If not returning arrays, it returns an Mock-object and tests don't pass at all
-        replication.find_cons_state = MagicMock(return_value = ([], []))
-        replication.get_ds_state = MagicMock(return_value = [])
+        replication.find_cons_state = MagicMock(return_value = ([], [], False))
+        replication.get_ds_state = MagicMock(return_value = ([], [], False))
         replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
         replication.last_exec = MagicMock(return_value = 2)
         replication.seq_n = 2
@@ -1191,8 +1191,8 @@ class TestReplicationModule(unittest.TestCase):
         replication.known_pend_reqs = MagicMock(return_value =[])
 
         # If not returning arrays, it returns an Mock-object and tests don't pass at all
-        replication.find_cons_state = MagicMock(return_value = ([], []))
-        replication.get_ds_state = MagicMock(return_value = [])
+        replication.find_cons_state = MagicMock(return_value = ([], [], False))
+        replication.get_ds_state = MagicMock(return_value = ([],[], False))
         replication.committed_set = MagicMock(return_value = {0,1,2,3,4,5})
         replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
         replication.last_exec = MagicMock(return_value = 2)
@@ -1241,8 +1241,8 @@ class TestReplicationModule(unittest.TestCase):
         replication.known_pend_reqs = MagicMock(return_value =[])
 
         # If not returning arrays, it returns an Mock-object and tests don't pass at all
-        replication.find_cons_state = MagicMock(return_value = ([], []))
-        replication.get_ds_state = MagicMock(return_value = [])
+        replication.find_cons_state = MagicMock(return_value = ([], [], False))
+        replication.get_ds_state = MagicMock(return_value = ([], [], False))
         replication.committed_set = MagicMock(return_value = {0,1,2,3,4,5})
         replication.resolver.execute = MagicMock(side_effect = lambda y, func, x=-1 : self.get_0_as_view(func))
         replication.last_exec = MagicMock(return_value = 2)
@@ -1632,12 +1632,12 @@ class TestReplicationModule(unittest.TestCase):
             prim=1
         ) for i in range(6)]
 
-        processor_states = ([[1,2],[1,2], [1,2], [1,2], [1,2], [1,2]], [r_log_entries for i in range(6)])
-        target = ([1,2], r_log_entries)
+        processor_states = ([[1,2],[1,2], [1,2], [1,2], [1,2], [1,2]], [r_log_entries for i in range(6)], False)
+        target = ([1,2], r_log_entries, False)
         self.assertEqual(replication.find_cons_state(processor_states), target)
 
         # Empty set should return "TEE"
-        self.assertEqual(replication.find_cons_state(([],[])), (-1, []))
+        self.assertEqual(replication.find_cons_state(([],[], False)), (-1, [], False))
 
         # Empty R_log should return "TEE"
         # Their r_log does not match the common prefix     
@@ -1647,8 +1647,8 @@ class TestReplicationModule(unittest.TestCase):
         #     r_log = [{REQUEST: self.dummyRequest1, X_SET: {1}}],
         #     prim=1
         # ) for i in range(6)]
-        processor_states = ([[1,2] for i in range(6)], [[{REQUEST: self.dummyRequest1, X_SET: {1}}] for i in range(6)])
-        self.assertEqual(replication.find_cons_state(processor_states), (-1, []))   
+        processor_states = ([[1,2] for i in range(6)], [[{REQUEST: self.dummyRequest1, X_SET: {1}}] for i in range(6)], False)
+        self.assertEqual(replication.find_cons_state(processor_states), (-1, [], False))   
 
         # Empty prefix_state should return "TEE"
         # Nodes don't have a prefix in common
@@ -1665,8 +1665,8 @@ class TestReplicationModule(unittest.TestCase):
         ) for i in range(3,6)]
 
         processor_states = [[1,2] for i in range(3)] + [[2,4] for i in range(3,6)]
-        processor_tuple = (processor_states, [r_log_entries for i in range(6)])
-        self.assertEqual(replication.find_cons_state(processor_tuple), (-1, []))
+        processor_tuple = (processor_states, [r_log_entries for i in range(6)], False)
+        self.assertEqual(replication.find_cons_state(processor_tuple), (-1, [], False))
 
 
 
@@ -1785,8 +1785,8 @@ class TestReplicationModule(unittest.TestCase):
         #replication.accept_req_preprep = MagicMock(return_value = True)
 
         # If not returning arrays, it returns an Mock-object and tests don't pass at all
-        replication.find_cons_state = MagicMock(return_value = ([], []))
-        replication.get_ds_state = MagicMock(return_value = [])
+        replication.find_cons_state = MagicMock(return_value = ([], [], False))
+        replication.get_ds_state = MagicMock(return_value = ([], [], False))
         replication.resolver.execute = MagicMock(return_value = 1)
         replication.last_exec = MagicMock(return_value = 0)
 

@@ -249,8 +249,8 @@ class ViewEstablishmentModule(AlgorithmModule):
                 msg = {"type": MessageType.VIEW_ESTABLISHMENT_MESSAGE,
                        "sender": self.id,
                        "data": {
-                                "own_data": own_data,
-                                "about_data": about_data
+                                "own_data": deepcopy(own_data),
+                                "about_data": deepcopy(about_data)
                             }
                        }
                 self.resolver.send_to_node(node_j, msg)
@@ -272,14 +272,14 @@ class ViewEstablishmentModule(AlgorithmModule):
 
         if(self.pred_and_action.valid(j_own_data)):
             self.echo[j] = {
-                PHASE: j_about_data[0],
-                WITNESSES: j_about_data[1],
-                VIEWS: j_about_data[2]
+                PHASE: deepcopy(j_about_data[0]),
+                WITNESSES: deepcopy(j_about_data[1]),
+                VIEWS: deepcopy(j_about_data[2])
             }
 
-            self.phs[j] = j_own_data[0]
-            self.witnesses[j] = j_own_data[1]
-            self.pred_and_action.set_info(j_own_data[2], j)
+            self.phs[j] = deepcopy(j_own_data[0])
+            self.witnesses[j] = deepcopy(j_own_data[1])
+            self.pred_and_action.set_info(deepcopy(j_own_data[2]), j)
         else:
             logger.info(f"Not a valid message from " +
                         f"node {j}: {j_own_data}")

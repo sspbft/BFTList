@@ -99,7 +99,6 @@ class TestNonSupportedReqExecutedAtOneNode(AbstractIntegrationTest):
             for a in asyncio.as_completed(aws):
                 result = await a
                 data = result["data"]["REPLICATION_MODULE"]
-                id = data["id"]
 
                 # nodes should probably reset their state
                 if last_check:
