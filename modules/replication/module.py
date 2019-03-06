@@ -86,6 +86,10 @@ class ReplicationModule(AlgorithmModule):
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
         time.sleep(int(sec) if sec is not None else 0)
 
+        while not self.resolver.system_running():
+            logger.info("System not ready, sleeping for 0.1s")
+            time.sleep(0.1)
+
         while True:
             # lines 1-3
             self.lock.acquire()
@@ -1072,17 +1076,17 @@ class ReplicationModule(AlgorithmModule):
         processors_r_log = processors_tuple[1]
 
         if len(processors_states) == 0:
-            logger.info("Unable to find con_state because states =[]")
+            # logger.info("Unable to find con_state because states = []")
             return (-1, [])
         prefix_state = self.find_prefix(processors_states)
         if prefix_state is None:
-            logger.info("Unable to find con_state because prefix =[]")
+            logger.info("Unable to find con_state because prefix = []")
             return (-1, [])
         # Find corresponding r_log
         r_log = self.get_corresponding_r_log(processors_r_log, prefix_state)
         # Check if inconsistency between r_log and rep_state
         if r_log == [] and len(prefix_state) > 0:
-            logger.info("Unable to find con_state because r_log =[]")
+            logger.info("Unable to find con_state because r_log = []")
             return (-1, [])
         return (prefix_state, r_log)
 

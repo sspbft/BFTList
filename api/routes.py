@@ -38,7 +38,11 @@ class CustomEncoder(json.JSONEncoder):
 def index():
     """Return the status of the current API service."""
     _id = str(os.getenv("ID", 0))
-    return jsonify({"status": "running", "service": "BFTList API", "id": _id})
+    return jsonify({
+        "status": app.resolver.system_status.name,
+        "service": "BFTList",
+        "id": _id
+    })
 
 
 @routes.route("/inject-client-req", methods=["POST"])

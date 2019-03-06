@@ -64,6 +64,10 @@ class PrimaryMonitoringModule(AlgorithmModule):
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
         time.sleep(int(sec) if sec is not None else 0)
 
+        while not self.resolver.system_running():
+            logger.info("System not ready, sleeping for 0.1s")
+            time.sleep(0.1)
+
         while True:
             if self.vcm[self.id][PRIM] != self.get_current_view(self.id):
                 self.clean_state()

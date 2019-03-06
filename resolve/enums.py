@@ -2,6 +2,14 @@
 from enum import Enum, IntEnum
 
 
+class SystemStatus(IntEnum):
+    """Represents system status."""
+
+    BOOTING = 1
+    READY = 2
+    RUNNING = 3
+
+
 class Module(Enum):
     """Represents a module."""
 

@@ -56,6 +56,11 @@ class FailureDetectorModule:
 
     def run(self):
         """Called whenever the module is launched in a separate thread."""
+
+        while not self.resolver.system_running():
+            logger.info("System not ready, sleeping for 0.1s")
+            time.sleep(0.1)
+
         while True:
             if self.msg_queue.empty():
                 time.sleep(0.1)

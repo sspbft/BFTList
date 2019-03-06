@@ -18,7 +18,7 @@ from modules.view_establishment.module import ViewEstablishmentModule
 from modules.replication.module import ReplicationModule
 from modules.primary_monitoring.module import PrimaryMonitoringModule
 from modules.primary_monitoring.failure_detector import FailureDetectorModule
-from resolve.enums import Module
+from resolve.enums import Module, SystemStatus
 from resolve.resolver import Resolver
 
 # globals
@@ -87,6 +87,8 @@ def setup_communication(resolver):
     loop = asyncio.get_event_loop()
     for i in senders:
         loop.create_task(senders[i].start())
+
+    resolver.system_status = SystemStatus.READY
 
     loop.run_forever()
     loop.close()
