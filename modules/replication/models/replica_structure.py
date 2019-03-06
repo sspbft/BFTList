@@ -198,6 +198,11 @@ class ReplicaStructure(object):
         """Update what node this processor considers to be the primary."""
         self.prim = prim
 
+    def is_def_prefix(self) -> bool:
+        """Returns True if data used for prefix finding is set to default."""
+        return (self.rep_state == [] and self.r_log == [] and
+                self.pend_reqs == [] and self.req_q == [])
+
     def is_def_state(self) -> bool:
         """Returns True if all processor data is set to default."""
         return (self.rep_state == [] and self.r_log == [] and
