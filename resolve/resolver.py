@@ -11,6 +11,7 @@ import time
 from resolve.enums import Function, Module, MessageType, SystemStatus
 from conf.config import get_nodes
 from modules.replication.models.client_request import ClientRequest
+from communication import rate_limiter
 
 # globals
 logger = logging.getLogger(__name__)
@@ -37,6 +38,8 @@ class Resolver:
         # check other nodes for system ready before starting system
         t = Thread(target=self.wait_for_other_nodes)
         t.start()
+
+        rate_limiter.resolver = self
 
     def wait_for_other_nodes(self):
         """Write me."""
@@ -141,8 +144,7 @@ class Resolver:
         if node_id in self.senders:
             self.senders[node_id].add_msg_to_queue(msg_dct)
         else:
-            pass
-            # logger.error(f"Non-existing sender for node {node_id}")
+            logger.error(f"Non-existing sender for node {node_id}")
 
     def broadcast(self, msg_dct):
         """Broadcasts a message to all nodes."""

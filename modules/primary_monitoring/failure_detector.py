@@ -13,6 +13,7 @@ from modules.constants import (THRESHOLD, VIEW_CHANGE, RUN_SLEEP,
 from resolve.enums import MessageType
 from queue import Queue
 import conf.config as conf
+from communication.rate_limiter import throttle
 
 # globals
 logger = logging.getLogger(__name__)
@@ -80,12 +81,8 @@ class FailureDetectorModule:
                     if node_j != self.id:
                         self.send_msg(node_j)
                 self.first_run = False
-
-            # throttle run method
-            if os.getenv("INTEGRATION_TEST"):
-                time.sleep(INTEGRATION_RUN_SLEEP)
-            else:
-                time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
+            
+            throttle()
 
     def upon_token_from_pj(self, processor_j: int, prim_susp_j):
         """Checks responsiveness and liveness of processor j."""

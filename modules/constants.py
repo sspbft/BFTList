@@ -31,6 +31,7 @@ RUN_SLEEP = 0.05
 INTEGRATION_RUN_SLEEP = 0.05
 MAXINT = sys.maxsize  # Sequence number limit
 SIGMA = 10  # Threshold for assigning sequence numbers
+MAX_QUEUE_SIZE = 10  # Max allowed amount of messages in send queue
 
 # Primary Monitoring
 V_STATUS = "v_status"

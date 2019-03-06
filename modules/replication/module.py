@@ -12,8 +12,7 @@ from typing import List, Tuple
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums, OperationEnums
 from modules.constants import (MAXINT, SIGMA, X_SET,
-                               REQUEST, STATUS, RUN_SLEEP, VIEW_CHANGE,
-                               INTEGRATION_RUN_SLEEP)
+                               REQUEST, STATUS, VIEW_CHANGE)
 from resolve.enums import Module, Function, MessageType
 import conf.config as conf
 from .models.replica_structure import ReplicaStructure
@@ -21,6 +20,7 @@ from .models.request import Request
 from .models.client_request import ClientRequest
 from .models.operation import Operation
 import modules.byzantine as byz
+from communication.rate_limiter import throttle
 
 # globals
 logger = logging.getLogger(__name__)
@@ -315,12 +315,7 @@ class ReplicationModule(AlgorithmModule):
                                          X_SET: x_set})
             self.lock.release()
             self.send_msg()
-
-            # throttle run method
-            if os.getenv("INTEGRATION_TEST"):
-                time.sleep(INTEGRATION_RUN_SLEEP)
-            else:
-                time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
+            throttle()
 
             # Stopping the while loop, used for testing purpose
             if(not self.run_forever):

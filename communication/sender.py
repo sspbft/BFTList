@@ -33,7 +33,7 @@ class Sender():
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect(f"tcp://{self.recv.hostname}:{self.recv.port}")
 
-        self.msg_queue = Queue(maxsize=25)
+        self.msg_queue = Queue()
         self.counter = 1
         self.cap = 2**31
 
