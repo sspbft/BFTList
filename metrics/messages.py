@@ -8,4 +8,4 @@ msgs_sent = Counter("msg_sent",
 
 msg_rtt = Gauge("msg_rtt",
                 "Time taken to send a message to a node and get an ACK",
-                ["node_id", "receiver_id"])
+                ["node_id", "receiver_id", "receiver_hostname"])

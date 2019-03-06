@@ -77,7 +77,8 @@ class Sender():
 
         reply_bytes = await self.socket.recv()
         # emit rtt time for sent and ACKed message
-        msg_rtt.labels(self.id, self.recv.id).set(time.time() - sent_time)
+        msg_rtt.labels(self.id, self.recv.id, self.recv.hostname).set(
+            time.time() - sent_time)
         try:
             reply_json = reply_bytes.decode()
             reply = jsonpickle.decode(reply_json)
