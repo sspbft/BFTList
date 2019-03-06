@@ -37,7 +37,7 @@ for i in range(N):
     }
 args = {}
 
-class TestPrimMonDemandViewChangeAndViewEstPerformsViewChange(AbstractIntegrationTest):
+class TestPrimMonDemandViewChangeAtSomeNodesNotEnoughSupport(AbstractIntegrationTest):
     """A view change is not conducted because of correct prim."""
 
     async def bootstrap(self):
