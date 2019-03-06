@@ -205,15 +205,15 @@ class ViewEstablishmentModule(AlgorithmModule):
                 }
             else:
                 # node_i's own data
-                own_data = [self.phs[self.id],
-                            self.witnesses[self.id],
-                            self.pred_and_action.get_info(self.id)
+                own_data = [deepcopy(self.phs[self.id]),
+                            deepcopy(self.witnesses[self.id]),
+                            deepcopy(self.pred_and_action.get_info(self.id))
                             ]
 
                 # what node_i thinks about node_j
-                about_data = [self.phs[node_j],
-                              self.witnesses[node_j],
-                              self.pred_and_action.get_info(node_j)
+                about_data = [deepcopy(self.phs[node_j]),
+                              deepcopy(self.witnesses[node_j]),
+                              deepcopy(self.pred_and_action.get_info(node_j))
                               ]
 
                 # Overwriting own_data to send different views to different
@@ -244,8 +244,8 @@ class ViewEstablishmentModule(AlgorithmModule):
                 msg = {"type": MessageType.VIEW_ESTABLISHMENT_MESSAGE,
                        "sender": self.id,
                        "data": {
-                                "own_data": own_data,
-                                "about_data": about_data
+                                "own_data": deepcopy(own_data),
+                                "about_data": deepcopy(about_data)
                             }
                        }
                 self.resolver.send_to_node(node_j, msg)
@@ -264,14 +264,14 @@ class ViewEstablishmentModule(AlgorithmModule):
 
         if(self.pred_and_action.valid(j_own_data)):
             self.echo[j] = {
-                PHASE: j_about_data[0],
-                WITNESSES: j_about_data[1],
-                VIEWS: j_about_data[2]
+                PHASE: deepcopy(j_about_data[0]),
+                WITNESSES: deepcopy(j_about_data[1]),
+                VIEWS: deepcopy(j_about_data[2])
             }
 
-            self.phs[j] = j_own_data[0]
-            self.witnesses[j] = j_own_data[1]
-            self.pred_and_action.set_info(j_own_data[2], j)
+            self.phs[j] = deepcopy(j_own_data[0])
+            self.witnesses[j] = deepcopy(j_own_data[1])
+            self.pred_and_action.set_info(deepcopy(j_own_data[2]), j)
         else:
             logger.info(f"Not a valid message from " +
                         f"node {j}: {j_own_data}")

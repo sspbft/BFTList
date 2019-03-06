@@ -102,7 +102,7 @@
         if (data.need_chg_set.length == 0) need_chg_set += '[]'
 
         data.beat.forEach((v,i) => {
-            beat += i == id ? `${strongify(v)} ` : `${v} `
+            beat += i == data.prim ? `${strongify(v)} ` : `${v} `
         })
 
         data.prim_susp.forEach((w,i) => {

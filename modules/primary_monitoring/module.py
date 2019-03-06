@@ -106,7 +106,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                             Function.VIEW_CHANGE)
                 # Line 15
                 else:
-                    logger.info("Cleaning state")
+                    logger.debug("Cleaning state")
                     self.clean_state()
 
             # Send vcm to all nodes
@@ -221,7 +221,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
             "type": MessageType.PRIMARY_MONITORING_MESSAGE,
             "sender": self.id,
             "data": {
-                    "vcm": self.vcm[self.id],
+                    "vcm": deepcopy(self.vcm[self.id]),
                         }
                 }
         self.resolver.broadcast(msg)
@@ -234,15 +234,16 @@ class PrimaryMonitoringModule(AlgorithmModule):
         """
         j = msg["sender"]
         if j != self.id:
-            self.vcm[j] = msg["data"]["vcm"]
+            self.vcm[j] = deepcopy(msg["data"]["vcm"])
 
     # Function to extract data
     def get_data(self):
         """Returns current values on local variables."""
         vcm = self.vcm[self.id]
         return {
-            "v_status": vcm[V_STATUS].name,
-            "prim": vcm[PRIM],
-            "need_change": vcm[NEED_CHANGE],
-            "need_chg_set": vcm[NEED_CHG_SET]
+            "id": self.id,
+            "v_status": deepcopy(vcm[V_STATUS].name),
+            "prim": deepcopy(vcm[PRIM]),
+            "need_change": deepcopy(vcm[NEED_CHANGE]),
+            "need_chg_set": deepcopy(vcm[NEED_CHG_SET])
         }
