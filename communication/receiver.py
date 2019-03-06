@@ -31,6 +31,7 @@ class Receiver():
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REP)
         self.socket.bind(f"tcp://*:{self.port}")
+        logger.info(f"Receiver channel setup on port {self.port}")
 
         self.msgs_received = 0
 
@@ -40,7 +41,6 @@ class Receiver():
             msg_bytes = self.socket.recv()
             msg_json = msg_bytes.decode()
             msg = jsonpickle.decode(msg_json)
-            logger.info(f"Got msg {msg.get_counter()} from node {msg.get_sender_id()}")
             self.resolver.dispatch_msg(msg.get_data())
             self.ack(msg.get_counter())
 

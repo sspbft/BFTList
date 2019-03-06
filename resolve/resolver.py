@@ -37,10 +37,11 @@ class Resolver:
         self.system_status = SystemStatus.BOOTING
 
         # check other nodes for system ready before starting system
-        t = Thread(target=self.poll_other_nodes)
+        t = Thread(target=self.wait_for_other_nodes)
         t.start()
-    
-    def poll_other_nodes(self):
+
+    def wait_for_other_nodes(self):
+        """Write me."""
         if len(self.nodes) == 1:
             self.other_comm_ready = True
             return
@@ -49,24 +50,23 @@ class Resolver:
         while not system_ready:
             nodes_ready = []
             for n_id, node in self.nodes.items():
-                if n_id == int(os.getenv("ID")):
-                    continue
                 try:
                     r = requests.get(f"http://{node.hostname}:{4000 + n_id}")
                     is_ready = (r.status_code == 200 and
-                                r.json()["status"] != SystemStatus.BOOTING.name)
+                                r.json()["status"] !=
+                                SystemStatus.BOOTING.name)
                     nodes_ready.append(is_ready)
-                    logger.info(f"Node {n_id} ready: {is_ready}")
                 except Exception:
                     nodes_ready.append(False)
             system_ready = all(nodes_ready)
             if not system_ready:
                 time.sleep(0.1)
         self.system_status = SystemStatus.RUNNING
-        logger.info(f"System running at {time.time()}")
-    
+        logger.info(f"System running at UNIX time {time.time()}")
+
     def system_running(self):
-        return self.system_status == SystemStatus.RUNNING    
+        """Return True if the system as a whole i running."""
+        return self.system_status == SystemStatus.RUNNING
 
     def set_modules(self, modules):
         """Sets the modules dict of the resolver."""

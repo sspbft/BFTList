@@ -30,5 +30,5 @@ def start_server(resolver):
     """Starts the Flask server."""
     app = create_app(resolver)
     port = int(os.getenv("API_PORT", 4000))
-    logger.info(f"Starting the FLASK server on port {port}")
+    logger.info(f"API setup on port {port}")
     app.run(host="0.0.0.0", port=port)

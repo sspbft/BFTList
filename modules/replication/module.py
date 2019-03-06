@@ -12,7 +12,8 @@ from typing import List, Tuple
 from modules.algorithm_module import AlgorithmModule
 from modules.enums import ReplicationEnums, OperationEnums
 from modules.constants import (MAXINT, SIGMA, X_SET,
-                               REQUEST, STATUS, RUN_SLEEP, VIEW_CHANGE)
+                               REQUEST, STATUS, RUN_SLEEP, VIEW_CHANGE,
+                               INTEGRATION_RUN_SLEEP)
 from resolve.enums import Module, Function, MessageType
 import conf.config as conf
 from .models.replica_structure import ReplicaStructure
@@ -86,8 +87,8 @@ class ReplicationModule(AlgorithmModule):
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
         time.sleep(int(sec) if sec is not None else 0)
 
+        # block until system is ready
         while not self.resolver.system_running():
-            logger.info("System not ready, sleeping for 0.1s")
             time.sleep(0.1)
 
         while True:
@@ -312,7 +313,7 @@ class ReplicationModule(AlgorithmModule):
 
             # throttle run method
             if os.getenv("INTEGRATION_TEST"):
-                time.sleep(0.1)
+                time.sleep(INTEGRATION_RUN_SLEEP)
             else:
                 time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
 
@@ -903,7 +904,8 @@ class ReplicationModule(AlgorithmModule):
             try:
                 self.rep[self.id].set_seq_num(new_seq)
             except TypeError as e:
-                logger.error(f"Got error {e} when setting new seq_num. self.rep = {str(self.rep[self.id])}")
+                logger.error(f"Got error {e} when setting new seq_num. " +
+                             f"self.rep[self.id] = {str(self.rep[self.id])}")
             last_seq_num = self.last_exec()
             while new_seq > last_seq_num:
                 # check if missing requests are in request queue

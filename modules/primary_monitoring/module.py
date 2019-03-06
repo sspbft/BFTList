@@ -11,7 +11,7 @@ from modules.algorithm_module import AlgorithmModule
 from resolve.enums import Function, Module
 from modules.enums import PrimaryMonitoringEnums as enums
 from modules.constants import (V_STATUS, PRIM, NEED_CHANGE,
-                               NEED_CHG_SET, RUN_SLEEP)
+                               NEED_CHG_SET, RUN_SLEEP, INTEGRATION_RUN_SLEEP)
 from resolve.enums import MessageType
 import conf.config as conf
 
@@ -64,8 +64,8 @@ class PrimaryMonitoringModule(AlgorithmModule):
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
         time.sleep(int(sec) if sec is not None else 0)
 
+        # block until system is ready
         while not self.resolver.system_running():
-            logger.info("System not ready, sleeping for 0.1s")
             time.sleep(0.1)
 
         while True:
@@ -103,8 +103,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 elif(self.vcm[self.id][PRIM] ==
                      self.get_current_view(self.id) and
                      self.vcm[self.id][V_STATUS] == enums.V_CHANGE):
-                    logger.info("Telling ViewEstablish to change view \
-                                 as primary")
+                    logger.info("Telling ViewEstablish to change view as prim")
                     self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
@@ -122,7 +121,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
 
             # throttle run method
             if os.getenv("INTEGRATION_TEST"):
-                time.sleep(0.1)
+                time.sleep(INTEGRATION_RUN_SLEEP)
             else:
                 time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
 
