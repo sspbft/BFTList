@@ -43,9 +43,6 @@ class ReplicationModule(AlgorithmModule):
     rep[N] (replica structure):
         [<rep_state, r_log, pend_req, req_q, last_req, con_flag, view_change>]
     """
-
-    run_forever = True
-
     def __init__(self, id: int, resolver, n, f, k):
         """Initializes the module."""
         self.id = id
@@ -82,13 +79,13 @@ class ReplicationModule(AlgorithmModule):
                         self.byz_rep.set_rep_state(byz_state)
                         self.byz_rep.set_r_log([byz_applied_req])
 
-    def run(self):
+    def run(self, testing=False):
         """Called whenever the module is launched in a separate thread."""
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
         time.sleep(int(sec) if sec is not None else 0)
 
         # block until system is ready
-        while not self.resolver.system_running():
+        while not testing and not self.resolver.system_running():
             time.sleep(0.1)
 
         while True:
@@ -314,6 +311,10 @@ class ReplicationModule(AlgorithmModule):
                             self.commit({REQUEST: request,
                                          X_SET: x_set})
             self.lock.release()
+            # Stopping the while loop, used for testing purpose
+            if(testing):
+                break
+
             self.send_msg()
 
             # throttle run method
@@ -322,9 +323,6 @@ class ReplicationModule(AlgorithmModule):
             else:
                 time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
 
-            # Stopping the while loop, used for testing purpose
-            if(not self.run_forever):
-                break
 
     def send_msg(self):
         """Broadcasts its own replica_structure to other nodes."""
@@ -776,6 +774,18 @@ class ReplicationModule(AlgorithmModule):
                             # conditions, move on to next request in REQ_Q
                             continue
                         return True
+            for applied_req in self.rep[prim].get_r_log():
+                if (applied_req[REQUEST].get_client_request() == request and
+                    applied_req[REQUEST].get_view() == prim and
+                    self.last_exec() < applied_req[REQUEST].get_seq_num() <=
+                        (self.last_exec() + SIGMA * self.number_of_clients)):
+                    # A request should not already exist with the same
+                    # sequence number or same client request
+                    if (self.request_already_exists(applied_req[REQUEST])):
+                        # Request y[REQUEST] does not fulfill all
+                        # conditions, move on to next request in REQ_Q
+                        continue
+                    return True
         return False
 
     def accept_req_prep(self, request: REQUEST, prim: int):

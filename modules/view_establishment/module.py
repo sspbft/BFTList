@@ -23,8 +23,6 @@ logger = logging.getLogger(__name__)
 class ViewEstablishmentModule(AlgorithmModule):
     """Models the View Establishment module."""
 
-    run_forever = True
-
     def __init__(self, id, resolver, n, f):
         """Initializes the module."""
         self.resolver = resolver
@@ -61,13 +59,13 @@ class ViewEstablishmentModule(AlgorithmModule):
                         self.pred_and_action.vChange = deepcopy(
                                                         data["vChange"])
 
-    def run(self):
+    def run(self, testing=False):
         """Called whenever the module is launched in a separate thread."""
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
         time.sleep(int(sec) if sec is not None else 0)
 
         # block until system is ready
-        while not self.resolver.system_running():
+        while not testing and not self.resolver.system_running():
             time.sleep(0.1)
 
         while True:
@@ -94,10 +92,15 @@ class ViewEstablishmentModule(AlgorithmModule):
                     # logger.info(f"Phase: {self.phs[self.id]} Case: {case}")
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
+            
+            self.lock.release()
+            # Stopping the while loop, used for testing purpose
+            if testing:
+                break
 
             # Send message to all other processors
+
             self.send_msg()
-            self.lock.release()
 
             # throttle run method
             if os.getenv("INTEGRATION_TEST"):
@@ -105,9 +108,7 @@ class ViewEstablishmentModule(AlgorithmModule):
             else:
                 time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
 
-            # Stopping the while loop, used for testing purpose
-            if(not self.run_forever):
-                break
+
 
     # Macros
     def echo_no_witn(self, processor_k):

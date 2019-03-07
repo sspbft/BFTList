@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 class FailureDetectorModule:
     """Models the Primary Monitoring moduel - Failure detector algorithm."""
 
-    run_forever = True
     first_run = True
 
     def __init__(self, id, resolver, n, f):
@@ -55,10 +54,10 @@ class FailureDetectorModule:
                     if "prim" in data:
                         self.prim = deepcopy(data["prim"])
 
-    def run(self):
+    def run(self, testing=False):
         """Called whenever the module is launched in a separate thread."""
         # block until system is ready
-        while not self.resolver.system_running():
+        while not testing and not self.resolver.system_running():
             time.sleep(0.1)
 
         while True:
@@ -71,7 +70,7 @@ class FailureDetectorModule:
                 self.upon_token_from_pj(processor_j, prim_susp_j)
                 self.send_msg(processor_j)
 
-            if not self.run_forever:
+            if testing:
                 break
 
             if self.first_run:
