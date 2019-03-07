@@ -24,7 +24,9 @@ class Resolver:
         """Initializes the resolver."""
         self.modules = None
         self.senders = {}
+        self.fd_senders = {}
         self.receiver = None
+        self.fd_receiver = None
         self.nodes = get_nodes()
 
         # locks used to avoid race conditions with modules

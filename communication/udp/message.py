@@ -12,7 +12,11 @@ class Message:
         self.msg_counter = msg_counter
         self.payload = payload
 
-    def as_bytes(self):
+    def from_bytes(bytes):
+        """TODO write me."""
+        return jsonpickle.decode(bytes.decode())
+
+    def to_bytes(self):
         """TODO write me."""
         return jsonpickle.encode(self).encode()
 

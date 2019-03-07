@@ -38,35 +38,33 @@ class Receiver:
             # block until data is available over socket
             msg, addr = self.recv()
 
-            # acknowledge message to sender
-            self.ack(msg, addr)
+            sender_id = msg.get_sender_id()
+            msg_counter = msg.get_msg_counter()
+            # token arrives
+            if sender_id not in self.msg_counters:
+                self.msg_counters[sender_id] = -1
+
+            # accept message if new token, otherwise send back
+            if msg_counter != self.msg_counters[sender_id]:
+                self.msg_counters[sender_id] = msg_counter
+
+                # call callback if supplied
+                if self.on_message_recv is not None:
+                    self.on_message_recv(msg)
+
+            self.send(msg, addr)
 
     def recv(self):
         """TODO write me."""
         msg_bytes, address = self.socket.recvfrom(1024)
         msg = jsonpickle.decode(msg_bytes.decode())
 
-        sender_id = msg.get_sender_id()
-        msg_counter = msg.get_msg_counter()
-        # token arrives
-        if sender_id not in self.msg_counters:
-            self.msg_counters[sender_id] = msg_counter
-        elif msg_counter != self.msg_counters[sender_id]:
-            self.msg_counters[sender_id] = msg_counter
-
-            self.msgs_recv += 1
-            self.bytes_recv += len(msg_bytes)
-            logger.info(f"{self.msgs_recv} msgs received")
-
-            # call callback if supplied
-            if self.on_message_recv is not None:
-                self.on_message_recv(msg)
-        else:
-            # TODO do something here?
-            pass
+        self.msgs_recv += 1
+        self.bytes_recv += len(msg_bytes)
+        logger.info(f"{self.msgs_recv} msgs received")
 
         return (msg, address)
 
-    def ack(self, msg, addr):
+    def send(self, msg, addr):
         """TODO write me."""
-        self.socket.sendto(msg.as_bytes(), addr)
+        self.socket.sendto(msg.to_bytes(), addr)

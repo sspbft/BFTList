@@ -3,10 +3,11 @@
 # standard
 import socket
 import logging
-import jsonpickle
+import time
 
 # local
 from communication.udp.message import Message
+from modules.constants import FD_SLEEP
 
 logger = logging.getLogger(__name__)
 
@@ -33,23 +34,23 @@ class Sender:
 
         while True:
             # wait for token to arrive
-            msg_counter = self.recv()
+            msg = self.recv()
+            msg_counter = msg.get_msg_counter()
             # token arrives
             if msg_counter >= self.msg_counter:
-                # logger.info(f"FDSender {self.addr} got back token {msg_counter}")
                 self.msg_counter += 1
                 msg = Message(self.id, self.msg_counter)
                 self.send(msg)
             else:
-                # TODO do something more here? re-send?
                 logger.warning(f"Got invalid msg_counter {msg_counter} back")
+            time.sleep(FD_SLEEP)
 
     def send(self, msg):
         """TODO write me."""
-        self.socket.sendto(msg.as_bytes(), self.addr)
+        self.socket.sendto(msg.to_bytes(), self.addr)
 
     def recv(self):
         """TODO write me."""
         msg_bytes = self.socket.recv(self.bufsize)
-        msg = jsonpickle.decode(msg_bytes.decode())
-        return msg.get_msg_counter()
+        msg = Message.from_bytes(msg_bytes)
+        return msg
