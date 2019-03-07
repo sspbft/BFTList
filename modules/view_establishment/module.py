@@ -13,9 +13,9 @@ from modules.view_establishment.predicates import PredicatesAndAction
 from modules.enums import ViewEstablishmentEnums
 from resolve.enums import MessageType
 import conf.config as conf
-from modules.constants import (VIEWS, PHASE, WITNESSES, CURRENT, NEXT,
-                               RUN_SLEEP, INTEGRATION_RUN_SLEEP)
+from modules.constants import (VIEWS, PHASE, WITNESSES, CURRENT, NEXT)
 import modules.byzantine as byz
+from communication.rate_limiter import throttle
 
 logger = logging.getLogger(__name__)
 
@@ -99,14 +99,8 @@ class ViewEstablishmentModule(AlgorithmModule):
                 break
 
             # Send message to all other processors
-
             self.send_msg()
-
-            # throttle run method
-            if os.getenv("INTEGRATION_TEST"):
-                time.sleep(INTEGRATION_RUN_SLEEP)
-            else:
-                time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
+            throttle()
 
     # Macros
     def echo_no_witn(self, processor_k):
