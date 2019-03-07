@@ -13,7 +13,7 @@ from modules.enums import PrimaryMonitoringEnums as enums
 from modules.constants import (V_STATUS, PRIM, NEED_CHANGE, NEED_CHG_SET)
 from resolve.enums import MessageType
 import conf.config as conf
-from communication.rate_limiter import throttle
+from communication.zeromq.rate_limiter import throttle
 
 # global
 logger = logging.getLogger(__name__)

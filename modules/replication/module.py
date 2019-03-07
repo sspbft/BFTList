@@ -20,7 +20,7 @@ from .models.request import Request
 from .models.client_request import ClientRequest
 from .models.operation import Operation
 import modules.byzantine as byz
-from communication.rate_limiter import throttle
+from communication.zeromq.rate_limiter import throttle
 
 # globals
 logger = logging.getLogger(__name__)

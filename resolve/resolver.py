@@ -11,7 +11,7 @@ import time
 from resolve.enums import Function, Module, MessageType, SystemStatus
 from conf.config import get_nodes
 from modules.replication.models.client_request import ClientRequest
-from communication import rate_limiter
+from communication.zeromq import rate_limiter
 
 # globals
 logger = logging.getLogger(__name__)

@@ -10,8 +10,10 @@ from threading import Thread
 from prometheus_client import start_http_server
 
 # local
-from communication.sender import Sender
-from communication.receiver import Receiver
+from communication.zeromq.sender import Sender
+from communication.zeromq.receiver import Receiver
+from communication.udp.sender import Sender as FDSender
+from communication.udp.receiver import Receiver as FDReceiver
 import conf.config as config
 from api.server import start_server
 from modules.view_establishment.module import ViewEstablishmentModule
@@ -126,6 +128,29 @@ def setup_logging():
     logger.info("Logging configured")
 
 
+def setup_fd_communication():
+    nodes = config.get_nodes()
+    threads = []
+
+    # setup receiver to receiver channel messages from other nodes
+    receiver = FDReceiver("127.0.0.1", 7000 + id)
+    t = Thread(target=receiver.listen)
+    t.start()
+    threads.append(t)
+
+    # setup sender channel to other nodes
+    # senders = {}
+    for _, node in nodes.items():
+        if id != node.id:
+            sender = FDSender(id, (node.ip, 7000 + node.id))
+            t = Thread(target=sender.start)
+            t.start()
+            threads.append(t)
+            # senders[node.id] = sender
+
+    logger.info("All FDSenders connected")
+
+
 if __name__ == "__main__":
     resolver = Resolver()
 
@@ -136,4 +161,5 @@ if __name__ == "__main__":
     setup_metrics()
     start_modules(resolver)
     start_api(resolver)
-    setup_communication(resolver)
+    setup_fd_communication()
+    # setup_communication(resolver)

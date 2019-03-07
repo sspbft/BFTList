@@ -12,14 +12,14 @@ from modules.constants import (CNT_THRESHOLD, BEAT_THRESHOLD, VIEW_CHANGE)
 from resolve.enums import MessageType
 from queue import Queue
 import conf.config as conf
-from communication.rate_limiter import throttle
+from communication.zeromq.rate_limiter import throttle
 
 # globals
 logger = logging.getLogger(__name__)
 
 
 class FailureDetectorModule:
-    """Models the Primary Monitoring moduel - Failure detector algorithm."""
+    """Models the Primary Monitoring module - Failure detector algorithm."""
 
     first_run = True
 

@@ -15,7 +15,7 @@ from resolve.enums import MessageType
 import conf.config as conf
 from modules.constants import (VIEWS, PHASE, WITNESSES, CURRENT, NEXT)
 import modules.byzantine as byz
-from communication.rate_limiter import throttle
+from communication.zeromq.rate_limiter import throttle
 
 logger = logging.getLogger(__name__)
 
