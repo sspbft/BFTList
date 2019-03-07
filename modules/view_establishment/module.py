@@ -100,7 +100,6 @@ class ViewEstablishmentModule(AlgorithmModule):
 
             # Send message to all other processors
             self.send_msg()
-            self.lock.release()
             throttle()
 
     # Macros
