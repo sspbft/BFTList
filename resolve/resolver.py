@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class Resolver:
     """Module resolver that facilitates communication between modules."""
 
-    def __init__(self):
+    def __init__(self, testing=False):
         """Initializes the resolver."""
         self.modules = None
         self.senders = {}
@@ -35,8 +35,9 @@ class Resolver:
         self.system_status = SystemStatus.BOOTING
 
         # check other nodes for system ready before starting system
-        t = Thread(target=self.wait_for_other_nodes)
-        t.start()
+        if not testing:
+            t = Thread(target=self.wait_for_other_nodes)
+            t.start()
 
     def wait_for_other_nodes(self):
         """Write me."""

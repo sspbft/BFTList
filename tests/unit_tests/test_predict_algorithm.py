@@ -11,7 +11,7 @@ from modules.constants import CURRENT, NEXT
 class TestPredicatesAndAction(unittest.TestCase):
 
     def setUp(self):
-        self.resolver = Resolver()
+        self.resolver = Resolver(testing=True)
 
     def test_valid(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 5, 0)

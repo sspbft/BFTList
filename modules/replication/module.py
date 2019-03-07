@@ -44,8 +44,6 @@ class ReplicationModule(AlgorithmModule):
         [<rep_state, r_log, pend_req, req_q, last_req, con_flag, view_change>]
     """
 
-    run_forever = True
-
     def __init__(self, id: int, resolver, n, f, k):
         """Initializes the module."""
         self.id = id
@@ -82,13 +80,13 @@ class ReplicationModule(AlgorithmModule):
                         self.byz_rep.set_rep_state(byz_state)
                         self.byz_rep.set_r_log([byz_applied_req])
 
-    def run(self):
+    def run(self, testing=False):
         """Called whenever the module is launched in a separate thread."""
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
         time.sleep(int(sec) if sec is not None else 0)
 
         # block until system is ready
-        while not self.resolver.system_running():
+        while not testing and not self.resolver.system_running():
             time.sleep(0.1)
 
         while True:
@@ -138,7 +136,7 @@ class ReplicationModule(AlgorithmModule):
                (not (self.check_new_X_prefix(self.id,
                                              X_rep_state,
                                              is_default_prefix)) or
-               self.rep[self.id].is_rep_state_default() or self.delayed())):
+               self.rep[self.id].is_def_state() or self.delayed())):
                 # set own rep_state and r_log to consolidated values
                 self.rep[self.id].set_rep_state(deepcopy(X_rep_state))
                 self.rep[self.id].set_r_log(deepcopy(X_r_log))
@@ -314,6 +312,10 @@ class ReplicationModule(AlgorithmModule):
                             self.commit({REQUEST: request,
                                          X_SET: x_set})
             self.lock.release()
+            # Stopping the while loop, used for testing purpose
+            if(testing):
+                break
+
             self.send_msg()
 
             # throttle run method
@@ -321,10 +323,6 @@ class ReplicationModule(AlgorithmModule):
                 time.sleep(INTEGRATION_RUN_SLEEP)
             else:
                 time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
-
-            # Stopping the while loop, used for testing purpose
-            if(not self.run_forever):
-                break
 
     def send_msg(self):
         """Broadcasts its own replica_structure to other nodes."""
@@ -442,7 +440,7 @@ class ReplicationModule(AlgorithmModule):
         least 3f+1 processors. If no such request exist, returns None.
         """
         # Dummy request to start with
-        last_common_exec_request = None
+        last_common_exec_request = -1
         for replica_structure in self.rep:
             # If R_LOG is empty, ignore that processor
             if(replica_structure.get_r_log() and
@@ -454,7 +452,7 @@ class ReplicationModule(AlgorithmModule):
                                      f"x_set key: {x}")
                 if (len(x[X_SET]) >=
                    (3 * self.number_of_byzantine + 1)):
-                        if (last_common_exec_request is None or
+                        if (last_common_exec_request == -1 or
                                 x[REQUEST].get_seq_num() >
                                 last_common_exec_request):
                             last_common_exec_request = x[REQUEST].get_seq_num()
@@ -776,36 +774,18 @@ class ReplicationModule(AlgorithmModule):
                             # conditions, move on to next request in REQ_Q
                             continue
                         return True
-        return False
-
-    def accept_req_prep(self, request: REQUEST, prim: int):
-        """Method description.
-
-        True if a pre-prep msg exists for 3f+1 processors and
-        the content is the same for the processors in the same view and
-        sequence number.
-        """
-        if request.get_client_request() in self.known_pend_reqs():
-            # The request has a Pre_prep-message from the primary
-            # Good to double check, in case there has been a primary change
-            # and there was a pre_prep message from old prim
-            if self.exists_preprep_msg(request.get_client_request(), prim):
-                # A Prep message for the request should not already
-                # exist with the same sequence number or same client request
-                if (self.prep_request_already_exists(request)):
-                    return False
-                # Check so that 3f + 1 processor has this request with a
-                # PRE_PRE message
-                number_of_processors = 0
-                for rs in self.rep:
-                    for req_pair in rs.get_req_q():
-                        # Check if the request is the same and
-                        # that PRE_PREP is in the status set of the request
-                        if (req_pair[REQUEST] == request and
-                           {ReplicationEnums.PRE_PREP} <= req_pair[STATUS]):
-                            number_of_processors += 1
-                if number_of_processors >= (3 * self.number_of_byzantine + 1):
-                    return True
+        for applied_req in self.rep[prim].get_r_log():
+            if (applied_req[REQUEST].get_client_request() == request and
+                applied_req[REQUEST].get_view() == prim and
+                self.last_exec() < applied_req[REQUEST].get_seq_num() <=
+                    (self.last_exec() + SIGMA * self.number_of_clients)):
+                # A request should not already exist with the same
+                # sequence number or same client request
+                if (self.request_already_exists(applied_req[REQUEST])):
+                    # Request y[REQUEST] does not fulfill all
+                    # conditions, move on to next request in REQ_Q
+                    continue
+                return True
         return False
 
     def prep_request_already_exists(self, req: Request):

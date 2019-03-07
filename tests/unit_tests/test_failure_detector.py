@@ -15,7 +15,7 @@ from modules.constants import VIEW_CHANGE
 class TestFailureDetector(unittest.TestCase):
 
     def setUp(self):
-        self.resolver = Resolver()
+        self.resolver = Resolver(testing=True)
         self.clientRequest1 = ClientRequest(1, 1, Operation(OperationEnums.APPEND, 1))
         self.clientRequest2 = ClientRequest(2, 2, Operation(OperationEnums.APPEND, 2))
 

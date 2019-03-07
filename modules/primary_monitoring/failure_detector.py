@@ -8,8 +8,8 @@ import os
 
 # local
 from resolve.enums import Function, Module
-from modules.constants import (THRESHOLD, VIEW_CHANGE, RUN_SLEEP,
-                               INTEGRATION_RUN_SLEEP)
+from modules.constants import (CNT_THRESHOLD, BEAT_THRESHOLD, VIEW_CHANGE,
+                               RUN_SLEEP, INTEGRATION_RUN_SLEEP)
 from resolve.enums import MessageType
 from queue import Queue
 import conf.config as conf
@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 class FailureDetectorModule:
     """Models the Primary Monitoring moduel - Failure detector algorithm."""
 
-    run_forever = True
     first_run = True
 
     def __init__(self, id, resolver, n, f):
@@ -55,10 +54,10 @@ class FailureDetectorModule:
                     if "prim" in data:
                         self.prim = deepcopy(data["prim"])
 
-    def run(self):
+    def run(self, testing=False):
         """Called whenever the module is launched in a separate thread."""
         # block until system is ready
-        while not self.resolver.system_running():
+        while not testing and not self.resolver.system_running():
             time.sleep(0.1)
 
         while True:
@@ -71,7 +70,7 @@ class FailureDetectorModule:
                 self.upon_token_from_pj(processor_j, prim_susp_j)
                 self.send_msg(processor_j)
 
-            if not self.run_forever:
+            if testing:
                 break
 
             if self.first_run:
@@ -110,7 +109,7 @@ class FailureDetectorModule:
                 self.cnt = 0
             if(not self.prim_susp[self.id]):
                 self.prim_susp[self.id] = (self.prim not in self.fd_set or
-                                           self.cnt > THRESHOLD)
+                                           self.cnt > CNT_THRESHOLD)
         elif not self.allow_service():
             self.reset()
 
@@ -198,7 +197,7 @@ class FailureDetectorModule:
             if other_processor == self.id or other_processor == processor_j:
                 continue
             self.beat[other_processor] += 1
-            if self.beat[other_processor] < THRESHOLD:
+            if self.beat[other_processor] < BEAT_THRESHOLD:
                 new_fd_set.add(other_processor)
         self.fd_set = deepcopy(new_fd_set)
 
