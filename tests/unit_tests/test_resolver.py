@@ -4,7 +4,7 @@ from resolve.resolver import Resolver
 # TODO implement more tests
 class TestResolver(unittest.TestCase):
     def test_resolver_can_be_initialized(self):
-        resolver = Resolver()
+        resolver = Resolver(testing=True)
         self.assertIsNotNone(resolver)
         self.assertIsNone(resolver.modules)
 

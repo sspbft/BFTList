@@ -37,4 +37,5 @@ MAX_QUEUE_SIZE = 10  # Max allowed amount of messages in send queue
 V_STATUS = "v_status"
 NEED_CHANGE = "need_change"
 NEED_CHG_SET = "need_chg_set"
-THRESHOLD = 30  # Threshold for liveness, beat-variable
+BEAT_THRESHOLD = 30  # Threshold for liveness, beat-variable
+CNT_THRESHOLD = 10  # Threshold for progress, cnt-variable

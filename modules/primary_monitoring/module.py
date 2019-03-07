@@ -28,8 +28,6 @@ logger = logging.getLogger(__name__)
 class PrimaryMonitoringModule(AlgorithmModule):
     """Models the Primary Monitoring module - View Change algorithm."""
 
-    run_forever = True
-
     def __init__(self, id, resolver, n, f):
         """Initializes the module."""
         self.id = id
@@ -59,16 +57,17 @@ class PrimaryMonitoringModule(AlgorithmModule):
                         self.vcm[self.id][NEED_CHG_SET] = deepcopy(
                                                         data["need_chg_set"])
 
-    def run(self):
+    def run(self, testing=False):
         """Called whenever the module is launched in a separate thread."""
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
         time.sleep(int(sec) if sec is not None else 0)
 
         # block until system is ready
-        while not self.resolver.system_running():
+        while not testing and not self.resolver.system_running():
             time.sleep(0.1)
 
         while True:
+
             if self.vcm[self.id][PRIM] != self.get_current_view(self.id):
                 self.clean_state()
 
@@ -112,13 +111,13 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     logger.debug("Cleaning state")
                     self.clean_state()
 
+            # Stopping the while loop, used for testing purpose
+            if testing:
+                break
+
             # Send vcm to all nodes
             self.send_msg()
             throttle()
-
-            # Stopping the while loop, used for testing purpose
-            if(not self.run_forever):
-                break
 
     # Help functions for run-method
     def get_number_of_processors_in_no_service(self):
