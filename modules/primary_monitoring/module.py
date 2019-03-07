@@ -118,7 +118,6 @@ class PrimaryMonitoringModule(AlgorithmModule):
             # Send vcm to all nodes
             self.send_msg()
 
-
             # throttle run method
             if os.getenv("INTEGRATION_TEST"):
                 time.sleep(INTEGRATION_RUN_SLEEP)

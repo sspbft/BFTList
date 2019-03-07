@@ -92,7 +92,7 @@ class ViewEstablishmentModule(AlgorithmModule):
                     # logger.info(f"Phase: {self.phs[self.id]} Case: {case}")
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
-            
+
             self.lock.release()
             # Stopping the while loop, used for testing purpose
             if testing:
@@ -107,8 +107,6 @@ class ViewEstablishmentModule(AlgorithmModule):
                 time.sleep(INTEGRATION_RUN_SLEEP)
             else:
                 time.sleep(float(os.getenv("RUN_SLEEP", RUN_SLEEP)))
-
-
 
     # Macros
     def echo_no_witn(self, processor_k):
