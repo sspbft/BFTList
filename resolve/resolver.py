@@ -39,6 +39,7 @@ class Resolver:
         t = Thread(target=self.wait_for_other_nodes)
         t.start()
 
+        # inject resolver in rate limiter module
         rate_limiter.resolver = self
 
     def wait_for_other_nodes(self):

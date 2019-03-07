@@ -7,12 +7,9 @@ import jsonpickle
 
 # local
 from communication.node import Node
-from modules.constants import RUN_SLEEP
 
 # globals
 logger = logging.getLogger(__name__)
-
-run_sleep = RUN_SLEEP
 
 
 def get_nodes(hosts_path="conf/hosts.txt"):
