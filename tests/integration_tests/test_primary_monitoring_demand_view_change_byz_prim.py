@@ -74,7 +74,7 @@ class TestByzStopsAssigningSeqNumPrimaryMonitoringToTheRescue(AbstractIntegratio
         calls_left = helpers.MAX_NODE_CALLS
         test_result = False
 
-        await asyncio.sleep(50)
+        await asyncio.sleep(40)
 
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
@@ -100,8 +100,8 @@ class TestByzStopsAssigningSeqNumPrimaryMonitoringToTheRescue(AbstractIntegratio
                 test_result = True
                 break
 
-            # sleep for 2 seconds and re-try
-            await asyncio.sleep(2)
+            # sleep for 10 seconds and re-try
+            await asyncio.sleep(10)
             calls_left -= 1
 
         self.assertTrue(test_result)

@@ -89,7 +89,7 @@ class TestReplicationModule(unittest.TestCase):
             i,
             r_log = []
         ) for i in range(3, 6)]
-        self.assertIsNone(replication.last_common_exec())
+        self.assertEqual(replication.last_common_exec(), -1)
 
         # There is no common last executed request, 3 nodes have request 1 and 2 nodes request 2
         # This case should not happen, the last 2 nodes should not be able to add request 2 without
@@ -102,7 +102,7 @@ class TestReplicationModule(unittest.TestCase):
             r_log=[{REQUEST: self.dummyRequest2, X_SET:{3,4,5}}]
         ) for i in range(3, 6)]
 
-        self.assertIsNone(replication.last_common_exec())
+        self.assertEqual(replication.last_common_exec(), -1)
 
         # The common last executed request is request 1 (sequence number 1)
         # 3 nodes have only request 1 and 2 nodes request 1 and request 2
@@ -1304,37 +1304,6 @@ class TestReplicationModule(unittest.TestCase):
 
         self.assertEqual(replication.rep[replication.id].get_rep_state(), target_state)
 
-    def test_accept_req_prep(self):
-        # Indirect checks prep_request_already_exists-method
-        replication = ReplicationModule(0, Resolver(testing=True), 6, 1, 1)
-        req_q = [
-            {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}},
-            {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}]
-        replication.rep = [ReplicaStructure(
-            0,
-            pend_reqs=[
-                self.dummyRequest1.get_client_request(),
-                self.dummyRequest2.get_client_request()],
-            prim=1,
-            req_q = [
-                {REQUEST: self.dummyRequest1, STATUS: {ReplicationEnums.PRE_PREP}},
-                {REQUEST: self.dummyRequest2, STATUS: {ReplicationEnums.PRE_PREP, ReplicationEnums.PREP}}
-                ]
-            )]+ [ReplicaStructure(
-            i,
-            pend_reqs=[
-                self.dummyRequest1.get_client_request(),
-                self.dummyRequest2.get_client_request()
-                ],
-            req_q=req_q,
-            prim=1
-        ) for i in range(1,6)]
-        # dummyRequest1 is OK
-        self.assertTrue(replication.accept_req_prep(self.dummyRequest1, 0))
-        # dummyRequest2 does already exist with PREP in processor's req_Q
-        self.assertFalse(replication.accept_req_prep(self.dummyRequest2, 0))
-
-
     def test_renew_reqs(self):
         replication = ReplicationModule(0, Resolver(testing=True), 6, 1, 1)
         request3 = ClientRequest(0, 12313, None)
@@ -1846,3 +1815,18 @@ class TestReplicationModule(unittest.TestCase):
         )for i in range(3,6)]
 
         self.assertEqual(replication.get_unknown_supported_prep(), [])
+
+    def test_accept_req_preprep_req_in_rlog(self):
+        replication = ReplicationModule(0, Resolver(testing=True), 6, 1, 1)
+        replication.rep = [ReplicaStructure(
+            0,
+            pend_reqs=[self.dummyRequest1.get_client_request()],
+            prim = 1
+        )] + [ReplicaStructure(
+            i,
+            r_log=[{REQUEST: self.dummyRequest1, X_SET: {1,2,3,4,5}}],
+            prim = 1
+        ) for i in range(1,6)]
+
+        self.assertTrue(replication.accept_req_preprep(self.dummyRequest1.get_client_request(), 1))
+

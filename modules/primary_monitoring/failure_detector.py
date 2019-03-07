@@ -8,8 +8,8 @@ import os
 
 # local
 from resolve.enums import Function, Module
-from modules.constants import (THRESHOLD, VIEW_CHANGE, RUN_SLEEP,
-                               INTEGRATION_RUN_SLEEP)
+from modules.constants import (CNT_THRESHOLD, BEAT_THRESHOLD, VIEW_CHANGE,
+                               RUN_SLEEP, INTEGRATION_RUN_SLEEP)
 from resolve.enums import MessageType
 from queue import Queue
 import conf.config as conf
@@ -109,7 +109,7 @@ class FailureDetectorModule:
                 self.cnt = 0
             if(not self.prim_susp[self.id]):
                 self.prim_susp[self.id] = (self.prim not in self.fd_set or
-                                           self.cnt > THRESHOLD)
+                                           self.cnt > CNT_THRESHOLD)
         elif not self.allow_service():
             self.reset()
 
@@ -197,7 +197,7 @@ class FailureDetectorModule:
             if other_processor == self.id or other_processor == processor_j:
                 continue
             self.beat[other_processor] += 1
-            if self.beat[other_processor] < THRESHOLD:
+            if self.beat[other_processor] < BEAT_THRESHOLD:
                 new_fd_set.add(other_processor)
         self.fd_set = deepcopy(new_fd_set)
 
