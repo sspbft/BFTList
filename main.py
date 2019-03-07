@@ -144,7 +144,8 @@ def setup_fd_communication(resolver):
     senders = {}
     for _, node in nodes.items():
         if id != node.id:
-            sender = FDSender(id, (node.ip, 7000 + node.id))
+            sender = FDSender(id, (node.ip, 7000 + node.id),
+                              check_ready=resolver.system_running)
             t = Thread(target=sender.start)
             t.start()
 

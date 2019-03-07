@@ -61,7 +61,6 @@ class Receiver:
 
         self.msgs_recv += 1
         self.bytes_recv += len(msg_bytes)
-        logger.info(f"{self.msgs_recv} msgs received")
 
         return (msg, address)
 
