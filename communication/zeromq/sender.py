@@ -10,7 +10,7 @@ from queue import Queue
 import jsonpickle
 
 # local
-from metrics.messages import msgs_sent, msg_rtt, msgs_in_queue
+from metrics.messages import msgs_sent, msg_rtt, msgs_in_queue, msg_latency
 from .message import Message, MessageEnum
 
 # globals
@@ -79,8 +79,11 @@ class Sender():
 
         reply_bytes = await self.socket.recv()
         # emit rtt time for sent and ACKed message
-        msg_rtt.labels(self.id, self.recv.id, self.recv.hostname).set(
-            time.time() - sent_time)
+        latency = time.time() - sent_time
+        msg_rtt.labels(self.id, self.recv.id, self.recv.hostname).set(latency)
+        msg_latency.labels(self.id, self.recv.id, self.recv.hostname).observe(
+            latency
+        )
         try:
             reply_json = reply_bytes.decode()
             reply = jsonpickle.decode(reply_json)
