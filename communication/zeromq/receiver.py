@@ -1,4 +1,4 @@
-"""Self-stabilizing asynchronous sender channel."""
+"""Asynchronous receiver channel."""
 
 # standard
 import logging
@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 class Receiver():
-    """Models a self-stabilizing receiver channel.
+    """Models a receiver channel for the zeromq/TCP protocol.
 
-    The receiver sets up an async socketio server that clients (Senders) can
+    The receiver sets up a zeromq server that clients (Senders) can
     connect to in order to send messages.
     """
 
     def __init__(self, id, ip, port, resolver):
-        """Initializes the sender."""
+        """Initializes the receiver."""
         self.id = id
         self.ip = ip
         self.port = port

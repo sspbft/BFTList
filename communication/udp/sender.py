@@ -1,4 +1,8 @@
-"""TODO write me."""
+"""Models a sender in the self-stabilizing communication protocol.
+
+Each node sets up n-1 senders that each connect to a receiver on the other
+side of the communication link.
+"""
 
 # standard
 from threading import Thread
@@ -17,10 +21,10 @@ MAXINT = sys.maxsize
 
 
 class Sender:
-    """TODO write me."""
+    """Models a sender in the self-stabilizing communication protocol."""
 
     def __init__(self, id, addr, cap=MAXINT, bufsize=1024, check_ready=None):
-        """TODO write me."""
+        """Initalizes the sender."""
         self.id = id
         if type(addr) != tuple or type(addr[0]) != str or type(addr[1]) != int:
             raise ValueError(f"Arg addr must be tuple (ip, port)")
@@ -52,7 +56,14 @@ class Sender:
         return msg
 
     def start(self):
-        """TODO write me."""
+        """Main loop for the sender
+
+        This is the main loop of the sender in the self-stabilizing
+        token-passing algorithm with bounded sequence number proposed by Dolev.
+        It uses a token attached to each message which is sent back and forth
+        between the sender and receiver. Payload can be attached to
+        the messages to exchange application-level data.
+        """
         # busy-wait on check_ready function if supplied
         if self.check_ready is not None and callable(self.check_ready):
             while not self.check_ready():
@@ -84,7 +95,12 @@ class Sender:
             time.sleep(FD_SLEEP)
 
     def send(self, msg, timeout=True):
-        """TODO write me."""
+        """Sends a message over the link to the receiver
+
+        Helper method that blocks until the message is sent to the receiver.
+        A thread is launched that monitors the return of the token of the
+        message, which will eventually re-send the message if needed.
+        """
         self.socket.sendto(msg.to_bytes(), self.addr)
         self.last_sent_msg = msg
 
@@ -93,13 +109,21 @@ class Sender:
             t.start()
 
     def recv(self):
-        """TODO write me."""
+        """Receives a message from the receiver
+
+        Helper method that blocks until a message is received from the
+        receiver.
+        """
         msg_bytes = self.socket.recv(self.bufsize)
         msg = Message.from_bytes(msg_bytes)
         return msg
 
     def check_timeout(self, msg):
-        """TODO write me."""
+        """Helper method that re-sends a message if needed
+
+        If the token sent is not recevied within FD_TIMEOUT seconds, the
+        message is re-sent.
+        """
         start_time = time.time()
         msg_counter = msg.get_msg_counter()
         while time.time() - start_time < FD_TIMEOUT:

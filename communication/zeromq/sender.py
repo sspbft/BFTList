@@ -1,4 +1,4 @@
-"""Self-stabilizing asynchronous sender channel."""
+"""Asynchronous sender channel."""
 
 # standard
 import asyncio
@@ -10,7 +10,7 @@ from queue import Queue
 import jsonpickle
 
 # local
-from metrics.messages import msgs_sent, msg_rtt, msgs_in_queue, msg_latency
+from metrics.messages import msgs_sent, msg_rtt, msgs_in_queue
 from .message import Message, MessageEnum
 
 # globals
@@ -18,10 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 class Sender():
-    """Models a self-stabilizing sender channel.
+    """Models a sender channel for the zeromq/TCP protocol.
 
-    The sender connects to the running socket server on the receiving node in
-    order to send messages over the specified channel.
+    The sender setsconnects to a receiver that runs a zeromq server in
+    order to send messages.
     """
 
     def __init__(self, id, node):
@@ -81,9 +81,6 @@ class Sender():
         # emit rtt time for sent and ACKed message
         latency = time.time() - sent_time
         msg_rtt.labels(self.id, self.recv.id, self.recv.hostname).set(latency)
-        msg_latency.labels(self.id, self.recv.id, self.recv.hostname).observe(
-            latency
-        )
         try:
             reply_json = reply_bytes.decode()
             reply = jsonpickle.decode(reply_json)
