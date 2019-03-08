@@ -108,6 +108,6 @@ class Sender:
                 return
             else:
                 time.sleep(FD_SLEEP)
-        logger.info(f"Timeout, re-sending token {msg_counter}")
+        logger.warning(f"Timeout, re-sending msg {msg_counter} to {self.addr}")
         self.send(msg, timeout=False)
         self.check_timeout(msg)
