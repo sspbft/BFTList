@@ -212,8 +212,7 @@ class FailureDetectorModule:
                     "prim_susp": self.prim_susp[self.id],
                         }
                 }
-        # logger.info(f"sending {msg} to {processor_j}")
-        self.resolver.send_to_node(processor_j, msg)
+        self.resolver.send_to_node(processor_j, msg, fd_msg=True)
 
     def receive_msg(self, msg):
         """Method description.
@@ -221,7 +220,6 @@ class FailureDetectorModule:
         Called by the Resolver to recieve a message containing the vcm of
         processor j
         """
-        logger.info(f"got msg {msg}")
         self.msg_queue.put(msg)
 
     # Function to extract data

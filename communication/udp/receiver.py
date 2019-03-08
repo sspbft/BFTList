@@ -24,7 +24,7 @@ class Receiver:
         # setup socket
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(self.addr)
-        logger.info(f"Receiver listening on {self.addr}")
+        logger.info(f"FD receiver listening on {self.addr}")
 
         # store msg_counter for each sender
         self.msg_counters = {}

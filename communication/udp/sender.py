@@ -6,23 +6,26 @@ import socket
 import logging
 import time
 from queue import Queue
+import sys
 
 # local
 from communication.udp.message import Message
 from modules.constants import FD_SLEEP, FD_TIMEOUT
 
 logger = logging.getLogger(__name__)
+MAXINT = sys.maxsize
 
 
 class Sender:
     """TODO write me."""
 
-    def __init__(self, id, addr, bufsize=1024, check_ready=None):
+    def __init__(self, id, addr, cap=MAXINT, bufsize=1024, check_ready=None):
         """TODO write me."""
         self.id = id
         if type(addr) != tuple or type(addr[0]) != str or type(addr[1]) != int:
             raise ValueError(f"Arg addr must be tuple (ip, port)")
         self.addr = addr
+        self.cap = cap
         self.bufsize = bufsize
         self.check_ready = check_ready
 
@@ -66,13 +69,12 @@ class Sender:
 
             # token arrives
             if msg_counter >= self.msg_counter:
-
                 # busy wait until there is a new message to send
                 while self.msg_queue.empty():
                     time.sleep(0.1)
 
                 msg = self.get_msg_from_queue()
-                self.msg_counter += 1
+                self.msg_counter += 1 % self.cap
                 fd_msg = Message(self.id, self.msg_counter, payload=msg)
                 self.send(fd_msg)
             else:
