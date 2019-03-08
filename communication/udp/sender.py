@@ -5,6 +5,7 @@ from threading import Thread
 import socket
 import logging
 import time
+from queue import Queue
 
 # local
 from communication.udp.message import Message
@@ -29,8 +30,23 @@ class Sender:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         self.msg_counter = 0
+        self.msg_queue = Queue()
         self.last_sent_msg = None
         self.last_recv_msg_counter = -1
+
+    def add_msg_to_queue(self, msg):
+        """Adds the message to the FIFO queue for this sender channel."""
+        self.msg_queue.put(msg)
+
+    def get_msg_from_queue(self):
+        """Gets the next message from the queue
+
+        If there is no message, None will be returned. Non-blocking method.
+        """
+        if self.msg_queue.empty():
+            return None
+        msg = self.msg_queue.get()
+        return msg
 
     def start(self):
         """TODO write me."""
@@ -50,9 +66,15 @@ class Sender:
 
             # token arrives
             if msg_counter >= self.msg_counter:
+
+                # busy wait until there is a new message to send
+                while self.msg_queue.empty():
+                    time.sleep(0.1)
+
+                msg = self.get_msg_from_queue()
                 self.msg_counter += 1
-                msg = Message(self.id, self.msg_counter)
-                self.send(msg)
+                fd_msg = Message(self.id, self.msg_counter, payload=msg)
+                self.send(fd_msg)
             else:
                 # re-send last sent message
                 self.send(self.last_sent_msg)

@@ -138,17 +138,24 @@ class Resolver:
             raise ValueError("Bad function parameter")
 
     # inter-node communication methods
-    def send_to_node(self, node_id, msg_dct):
+    def send_to_node(self, node_id, msg_dct, fd_msg=False):
         """Sends a message to a given node.
 
         Message should be a dictionary, which will be serialized to json
         and converted to a byte object before sent over the links to
         the other node.
         """
-        if node_id in self.senders:
-            self.senders[node_id].add_msg_to_queue(msg_dct)
-        else:
+        if node_id not in self.senders and node_id not in self.fd_senders:
             logger.error(f"Non-existing sender for node {node_id}")
+            return
+
+        try:
+            sender = (self.senders[node_id] if not fd_msg else
+                      self.fd_senders[node_id])
+            sender.add_msg_to_queue(msg_dct)
+        except Exception as e:
+            logger.error(f"Something went wrong when sending msg to node" +
+                         f" {node_id}. Error: {e}")
 
     def broadcast(self, msg_dct):
         """Broadcasts a message to all nodes."""

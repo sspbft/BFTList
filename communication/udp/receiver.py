@@ -2,10 +2,11 @@
 
 # standard
 import socket
-import jsonpickle
 import logging
 
 # local
+from communication.udp.message import Message
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,17 +48,21 @@ class Receiver:
             # accept message if new token, otherwise send back
             if msg_counter != self.msg_counters[sender_id]:
                 self.msg_counters[sender_id] = msg_counter
+                # send back token to sender
+                self.send(msg, addr)
 
                 # call callback if supplied
-                if self.on_message_recv is not None:
-                    self.on_message_recv(msg)
+                if msg.has_payload() and self.on_message_recv is not None:
+                    self.on_message_recv(msg.get_payload())
 
-            self.send(msg, addr)
+            else:
+                # if token already received, send back token to sender
+                self.send(msg, addr)
 
     def recv(self):
         """TODO write me."""
         msg_bytes, address = self.socket.recvfrom(1024)
-        msg = jsonpickle.decode(msg_bytes.decode())
+        msg = Message.from_bytes(msg_bytes)
 
         self.msgs_recv += 1
         self.bytes_recv += len(msg_bytes)

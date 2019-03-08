@@ -131,11 +131,11 @@ def setup_logging():
 def setup_fd_communication(resolver):
     """TODO write me."""
     nodes = config.get_nodes()
-    threads = []
 
     # setup self-stabilizing receiver channel for failure detectors on
     # other nodes
-    receiver = FDReceiver("127.0.0.1", 7000 + id)
+    receiver = FDReceiver("127.0.0.1", 7000 + id,
+                          on_message_recv=resolver.dispatch_msg)
     t = Thread(target=receiver.listen)
     t.start()
 
@@ -146,6 +146,7 @@ def setup_fd_communication(resolver):
         if id != node.id:
             sender = FDSender(id, (node.ip, 7000 + node.id),
                               check_ready=resolver.system_running)
+            senders[node.id] = sender
             t = Thread(target=sender.start)
             t.start()
 

@@ -6,6 +6,7 @@ import jsonpickle
 
 class Message:
     """TODO write me."""
+
     def __init__(self, sender_id, msg_counter, payload={}):
         """TODO write me."""
         self.sender_id = sender_id
@@ -31,3 +32,7 @@ class Message:
     def get_payload(self):
         """TODO write me."""
         return self.payload
+
+    def has_payload(self):
+        """TODO write me."""
+        return self.payload != {}

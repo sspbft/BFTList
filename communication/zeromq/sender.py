@@ -43,9 +43,9 @@ class Sender():
         msgs_in_queue.labels(self.id, self.recv.id, self.recv.hostname).inc()
 
     def get_msg_from_queue(self):
-        """Gets the next message from the queue.
+        """Gets the next message from the queue
 
-        Will block until there is a message to send.
+        If there is no message, None will be returned. Non-blocking method.
         """
         if self.msg_queue.empty():
             return None
