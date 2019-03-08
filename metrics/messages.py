@@ -13,7 +13,7 @@ msg_rtt = Gauge("msg_rtt",
 
 msg_latency = Histogram("msg_latency",
                         "Time between sending a message and getting ACK",
-                        "node_id", "receiver_id", "receiver_hostname"
+                        ["node_id", "receiver_id", "receiver_hostname"]
                         )
 
 msgs_in_queue = Gauge("msgs_in_queue",
