@@ -115,7 +115,7 @@ def setup_logging():
 
     FORMAT = f"{node_color}BFTList.%(name)s : Node {id}" + " ==> " + \
              "[%(levelname)s] : %(message)s" + f"{end_color}"
-    level = logging.NOTSET if os.getenv("DEBUG") is not None else logging.INFO
+    level = logging.DEBUG if os.getenv("DEBUG") is not None else logging.INFO
     logging.basicConfig(format=FORMAT, level=level)
 
     # only log ERROR messages from external loggers
@@ -123,13 +123,15 @@ def setup_logging():
                  "engineio.server", "socketio.client", "socketio.server",
                  "urllib3.connectionpool"]
     for e in externals:
-        logging.getLogger(e).setLevel(logging.ERROR)
+        logging.getLogger(e).setLevel(logging.FATAL)
+    # for some reason asyncio logger needs to be silenced twice
+    logging.getLogger("asyncio").setLevel(logging.FATAL)
 
     logger.info("Logging configured")
 
 
 def setup_fd_communication(resolver):
-    """TODO write me."""
+    """Sets up the self-stabilizing communication for the failure detectors."""
     nodes = config.get_nodes()
 
     # setup self-stabilizing receiver channel for failure detectors on
