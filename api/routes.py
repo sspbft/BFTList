@@ -76,6 +76,12 @@ def set_byz_behavior():
     return jsonify({"behavior": byz.get_byz_behavior()})
 
 
+@routes.route("/byz-behaviors", methods=["GET"])
+def get_byz_behaviors():
+    """Returns the valid Byzantine behaviors."""
+    return jsonify(byz.BYZ_BEHAVIORS)
+
+
 @routes.route("/data", methods=["GET"])
 @cross_origin()
 def get_modules_data():
@@ -122,7 +128,8 @@ def render_global_view(view="view-est"):
     return render_template("view/main.html", data={
         "view": view,
         "nodes_data": nodes_data,
-        "test_data": test_data
+        "test_data": test_data,
+        "byz_behaviors": [byz.NONE] + byz.BYZ_BEHAVIORS
     })
 
 

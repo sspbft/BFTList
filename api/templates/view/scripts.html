@@ -127,7 +127,7 @@
 
     }
 
-    // fetches data for a nodes and updates its view
+    // fetches data for a node and updates its view
     const refreshNode = n => {
         fetch(`http://${n.ip}:400${n.id}/data`)
             .then(res => res.json())
@@ -196,4 +196,26 @@
         })
     }
     window.onload = onLoad;
+
+    const setByzBehavior = () => {
+        const byzNodeSelect = document.getElementById('byzNodeSelect')
+        const nodeID = byzNodeSelect.options[byzNodeSelect.selectedIndex].value
+
+        const byzBehaviorSelect = document.getElementById('byzBehaviorSelect')
+        const byzBehavior = byzBehaviorSelect.options[byzBehaviorSelect.selectedIndex].value
+
+        const node = nodes[nodeID]
+        fetch(`http://${node.hostname}:400${node.id}/set-byz-behavior`, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                "behavior": byzBehavior
+            })
+        })
+        .then(res => res.json())
+        .then(data => console.log(`Node ${node.id} byz behavior: ${data.behavior}`))
+        .catch(err => console.error(err))
+        
+    }
 </script>

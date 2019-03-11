@@ -11,6 +11,23 @@
     </div>
     {% endif %}
 
+    <div id="byz-control">
+        <h4>Byzantine behavior control</h4>
+        <select id="byzNodeSelect">
+            {% for item in data.nodes_data %}
+                <option value="{{ item.node.id }}">Node {{ item.node.id }}</option>
+            {% endfor %}
+        </select>
+
+        <select id="byzBehaviorSelect">
+            {% for item in data.byz_behaviors %}
+                <option value="{{ item }}">{{ item }}</option>
+            {% endfor %}
+        </select>
+
+        <button onclick="setByzBehavior()">Set behavior</button>
+    </div>
+
     <div class="nodes-container">
     {% for item in data.nodes_data %}
         <div class="node-wrapper">
