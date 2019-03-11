@@ -64,6 +64,18 @@ def handle_client_message():
         return abort(500)
 
 
+@routes.route("/set-byz-behavior", methods=["POST"])
+def set_byz_behavior():
+    """Route for setting Byzantine behavior for this node at runtime."""
+    data = request.get_json()
+    behavior = data["behavior"]
+    if not byz.is_valid_byz_behavior(behavior):
+        return abort(400)
+
+    byz.set_byz_behavior(behavior)
+    return jsonify({"behavior": byz.get_byz_behavior()})
+
+
 @routes.route("/data", methods=["GET"])
 @cross_origin()
 def get_modules_data():
