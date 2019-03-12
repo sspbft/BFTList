@@ -92,7 +92,7 @@ class PredicatesAndAction():
             # considered to be in the same view set
             if phase == 1:
                 if (view_pair[CURRENT] == enums.TEE or
-                    self.views[node_j][CURRENT] == enums.TEE):
+                   self.views[node_j][CURRENT] == enums.TEE):
                     if view_pair[NEXT] == self.views[node_j][NEXT]:
                         processor_set.add(processor_id)
 
