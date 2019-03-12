@@ -12,14 +12,15 @@ from modules.constants import (CNT_THRESHOLD, BEAT_THRESHOLD, VIEW_CHANGE)
 from resolve.enums import MessageType
 from queue import Queue
 import conf.config as conf
-from communication.rate_limiter import throttle
+from communication.zeromq.rate_limiter import throttle
+import modules.byzantine as byz
 
 # globals
 logger = logging.getLogger(__name__)
 
 
 class FailureDetectorModule:
-    """Models the Primary Monitoring moduel - Failure detector algorithm."""
+    """Models the Primary Monitoring module - Failure detector algorithm."""
 
     first_run = True
 
@@ -36,6 +37,7 @@ class FailureDetectorModule:
         self.fd_set = set()
         self.prim = -1
         self.msg_queue = Queue()
+        self.was_unresponsive = False
 
         if os.getenv("INTEGRATION_TEST"):
             start_state = conf.get_start_state()
@@ -61,6 +63,10 @@ class FailureDetectorModule:
             time.sleep(0.1)
 
         while True:
+            if (byz.is_byzantine() and
+               byz.get_byz_behavior() == byz.UNRESPONSIVE):
+                self.was_unresponsive = True
+
             if self.msg_queue.empty():
                 time.sleep(0.1)
             else:
@@ -73,7 +79,9 @@ class FailureDetectorModule:
             if testing:
                 break
 
-            if self.first_run:
+            if (self.first_run or
+               (not byz.is_byzantine() and self.was_unresponsive)):
+                self.was_unresponsive = False
                 nodes = conf.get_nodes()
                 for node_j, _ in nodes.items():
                     if node_j != self.id:
@@ -212,7 +220,7 @@ class FailureDetectorModule:
                     "prim_susp": self.prim_susp[self.id],
                         }
                 }
-        self.resolver.send_to_node(processor_j, msg)
+        self.resolver.send_to_node(processor_j, msg, fd_msg=True)
 
     def receive_msg(self, msg):
         """Method description.
@@ -220,8 +228,7 @@ class FailureDetectorModule:
         Called by the Resolver to recieve a message containing the vcm of
         processor j
         """
-        if msg["sender"] != self.id:
-            self.msg_queue.put(msg)
+        self.msg_queue.put(msg)
 
     # Function to extract data
     def get_data(self):

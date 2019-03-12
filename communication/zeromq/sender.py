@@ -1,4 +1,4 @@
-"""Self-stabilizing asynchronous sender channel."""
+"""Asynchronous sender channel."""
 
 # standard
 import asyncio
@@ -18,10 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 class Sender():
-    """Models a self-stabilizing sender channel.
+    """Models a sender channel for the zeromq/TCP protocol.
 
-    The sender connects to the running socket server on the receiving node in
-    order to send messages over the specified channel.
+    The sender setsconnects to a receiver that runs a zeromq server in
+    order to send messages.
     """
 
     def __init__(self, id, node):
@@ -43,9 +43,9 @@ class Sender():
         msgs_in_queue.labels(self.id, self.recv.id, self.recv.hostname).inc()
 
     def get_msg_from_queue(self):
-        """Gets the next message from the queue.
+        """Gets the next message from the queue
 
-        Will block until there is a message to send.
+        If there is no message, None will be returned. Non-blocking method.
         """
         if self.msg_queue.empty():
             return None
@@ -79,8 +79,8 @@ class Sender():
 
         reply_bytes = await self.socket.recv()
         # emit rtt time for sent and ACKed message
-        msg_rtt.labels(self.id, self.recv.id, self.recv.hostname).set(
-            time.time() - sent_time)
+        latency = time.time() - sent_time
+        msg_rtt.labels(self.id, self.recv.id, self.recv.hostname).set(latency)
         try:
             reply_json = reply_bytes.decode()
             reply = jsonpickle.decode(reply_json)

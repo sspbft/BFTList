@@ -29,6 +29,8 @@ REPLY = "reply"
 
 RUN_SLEEP = 0.05
 INTEGRATION_RUN_SLEEP = 0.05
+FD_SLEEP = 0.25
+FD_TIMEOUT = 5
 MAXINT = sys.maxsize  # Sequence number limit
 SIGMA = 10  # Threshold for assigning sequence numbers
 MAX_QUEUE_SIZE = 10  # Max allowed amount of messages in send queue

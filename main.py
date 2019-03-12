@@ -10,8 +10,10 @@ from threading import Thread
 from prometheus_client import start_http_server
 
 # local
-from communication.sender import Sender
-from communication.receiver import Receiver
+from communication.zeromq.sender import Sender
+from communication.zeromq.receiver import Receiver
+from communication.udp.sender import Sender as FDSender
+from communication.udp.receiver import Receiver as FDReceiver
 import conf.config as config
 from api.server import start_server
 from modules.view_establishment.module import ViewEstablishmentModule
@@ -113,7 +115,7 @@ def setup_logging():
 
     FORMAT = f"{node_color}BFTList.%(name)s : Node {id}" + " ==> " + \
              "[%(levelname)s] : %(message)s" + f"{end_color}"
-    level = logging.NOTSET if os.getenv("DEBUG") is not None else logging.INFO
+    level = logging.DEBUG if os.getenv("DEBUG") is not None else logging.INFO
     logging.basicConfig(format=FORMAT, level=level)
 
     # only log ERROR messages from external loggers
@@ -121,9 +123,40 @@ def setup_logging():
                  "engineio.server", "socketio.client", "socketio.server",
                  "urllib3.connectionpool"]
     for e in externals:
-        logging.getLogger(e).setLevel(logging.ERROR)
+        logging.getLogger(e).setLevel(logging.FATAL)
+    # for some reason asyncio logger needs to be silenced twice
+    logging.getLogger("asyncio").setLevel(logging.FATAL)
 
     logger.info("Logging configured")
+
+
+def setup_fd_communication(resolver):
+    """Sets up the self-stabilizing communication for the failure detectors."""
+    nodes = config.get_nodes()
+
+    # setup self-stabilizing receiver channel for failure detectors on
+    # other nodes
+    receiver = FDReceiver("127.0.0.1", 7000 + id,
+                          on_message_recv=resolver.dispatch_msg)
+    t = Thread(target=receiver.listen)
+    t.start()
+
+    # setup self-stabilizing sender channels for failure detectors for
+    # other nodes
+    senders = {}
+    for _, node in nodes.items():
+        if id != node.id:
+            sender = FDSender(id, (node.ip, 7000 + node.id),
+                              check_ready=resolver.system_running)
+            senders[node.id] = sender
+            t = Thread(target=sender.start)
+            t.start()
+
+    # inject to resolver
+    resolver.fd_senders = senders
+    resolver.fd_receiver = receiver
+
+    logger.info("All FD senders for connected")
 
 
 if __name__ == "__main__":
@@ -136,4 +169,5 @@ if __name__ == "__main__":
     setup_metrics()
     start_modules(resolver)
     start_api(resolver)
+    setup_fd_communication(resolver)
     setup_communication(resolver)

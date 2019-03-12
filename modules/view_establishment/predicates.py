@@ -88,6 +88,14 @@ class PredicatesAndAction():
         """
         processor_set = set()
         for processor_id, view_pair in enumerate(self.views):
+            # check if either have current as TEE and same next, if so they are
+            # considered to be in the same view set
+            if phase == 1:
+                if (view_pair[CURRENT] == enums.TEE or
+                   self.views[node_j][CURRENT] == enums.TEE):
+                    if view_pair[NEXT] == self.views[node_j][NEXT]:
+                        processor_set.add(processor_id)
+
             if phase is None:
                 if (view_pair == self.views[node_j] and not
                         self.stale_v(processor_id)):

@@ -6,7 +6,7 @@ import logging
 import jsonpickle
 
 # local
-from communication.node import Node
+from communication.zeromq.node import Node
 
 # globals
 logger = logging.getLogger(__name__)
