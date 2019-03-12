@@ -27,7 +27,7 @@ class Sender:
         """Initalizes the sender."""
         self.id = id
         if type(addr) != tuple or type(addr[0]) != str or type(addr[1]) != int:
-            raise ValueError(f"Arg addr must be tuple (ip, port)")
+            raise ValueError(f"Arg addr must be tuple (hostname, port)")
         self.addr = addr
         self.cap = cap
         self.bufsize = bufsize

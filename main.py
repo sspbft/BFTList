@@ -136,7 +136,7 @@ def setup_fd_communication(resolver):
 
     # setup self-stabilizing receiver channel for failure detectors on
     # other nodes
-    receiver = FDReceiver("127.0.0.1", 7000 + id,
+    receiver = FDReceiver((nodes[id].ip, 7000 + id),
                           on_message_recv=resolver.dispatch_msg)
     t = Thread(target=receiver.listen)
     t.start()
