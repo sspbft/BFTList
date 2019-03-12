@@ -8,6 +8,7 @@ import requests
 import time
 
 # local
+import modules.byzantine as byz
 from resolve.enums import Function, Module, MessageType, SystemStatus
 from conf.config import get_nodes
 from modules.replication.models.client_request import ClientRequest
@@ -147,7 +148,16 @@ class Resolver:
         """
         if node_id not in self.senders and node_id not in self.fd_senders:
             logger.error(f"Non-existing sender for node {node_id}")
+
+        # don't send messages if Byzantine and UNRESPONSIVE
+        if byz.is_byzantine() and byz.get_byz_behavior() == byz.UNRESPONSIVE:
             return
+
+        # if node_id in self.senders:
+        #     self.senders[node_id].add_msg_to_queue(msg_dct)
+        # else:
+        #     logger.error(f"Non-existing sender for node {node_id}")
+        #     return
 
         try:
             sender = (self.senders[node_id] if not fd_msg else

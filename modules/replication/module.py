@@ -172,10 +172,6 @@ class ReplicationModule(AlgorithmModule):
                                     (self.last_exec() +
                                         (SIGMA * self.number_of_clients)):
                                 if byz.is_byzantine():
-                                    logger.info(
-                                            f"Node is acting byzantine: \
-                                                {byz.get_byz_behavior()}"
-                                                )
                                     if (byz.get_byz_behavior() ==
                                             byz.ASSIGN_DIFFERENT_SEQNUMS):
                                         self.byz_rep.set_seq_num(
@@ -328,7 +324,6 @@ class ReplicationModule(AlgorithmModule):
                     (byz.get_byz_behavior() ==
                         byz.ASSIGN_DIFFERENT_SEQNUMS and
                         j % 2 == 1))):
-                logger.info(f"Node is acting byzantine: sending byz_rep")
                 msg = {
                     "type": MessageType.REPLICATION_MESSAGE,
                     "sender": self.id,
