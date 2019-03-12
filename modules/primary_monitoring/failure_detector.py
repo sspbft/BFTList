@@ -65,7 +65,6 @@ class FailureDetectorModule:
         while True:
             if (byz.is_byzantine() and
                byz.get_byz_behavior() == byz.UNRESPONSIVE):
-                logger.info("Setting was_unresponsive to True")
                 self.was_unresponsive = True
 
             if self.msg_queue.empty():
@@ -83,7 +82,6 @@ class FailureDetectorModule:
             if (self.first_run or
                (not byz.is_byzantine() and self.was_unresponsive)):
                 self.was_unresponsive = False
-                logger.info("Setting was_unresponsive to False")
                 nodes = conf.get_nodes()
                 for node_j, _ in nodes.items():
                     if node_j != self.id:
