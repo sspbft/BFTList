@@ -52,8 +52,9 @@ def is_valid_byz_behavior(behavior):
     return behavior in BYZ_BEHAVIORS or behavior == NONE
 
 
-def set_byz_behavior(behavior):
+def set_byz_behavior(new_behavior):
     """Sets the Byzantine behavior for this node. Used during runtime."""
     global byz_behavior
-    if behavior == NONE or is_valid_byz_behavior(behavior):
-        byz_behavior = behavior
+
+    if new_behavior == NONE or is_valid_byz_behavior(new_behavior):
+        byz_behavior = new_behavior

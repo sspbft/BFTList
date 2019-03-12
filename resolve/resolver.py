@@ -153,12 +153,6 @@ class Resolver:
         if byz.is_byzantine() and byz.get_byz_behavior() == byz.UNRESPONSIVE:
             return
 
-        # if node_id in self.senders:
-        #     self.senders[node_id].add_msg_to_queue(msg_dct)
-        # else:
-        #     logger.error(f"Non-existing sender for node {node_id}")
-        #     return
-
         try:
             sender = (self.senders[node_id] if not fd_msg else
                       self.fd_senders[node_id])
