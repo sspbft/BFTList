@@ -37,7 +37,7 @@ byz_behavior = os.getenv("BYZANTINE_BEHAVIOR", NONE)
 
 def is_byzantine():
     """Returns true if node is configured to act Byzantine."""
-    return byz_behavior is not None and byz_behavior in BYZ_BEHAVIORS
+    return byz_behavior is not NONE and byz_behavior in BYZ_BEHAVIORS
 
 
 def get_byz_behavior():
