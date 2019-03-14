@@ -160,6 +160,11 @@ class ReplicaStructure(object):
         # self.last_req[int(client_id)] = {
         #     REQUEST: deepcopy(request), REPLY: deepcopy(reply)
         # }
+        # Account for dynamic size of client set
+        for i in range(client_id + 1):
+            if len(self.last_req) < i:
+                self.last_req.append(None)
+        logger.info(client_id, len(self.last_req))
         self.last_req[client_id] = {REQUEST: request, REPLY: reply}
 
     def get_seq_num(self) -> int:

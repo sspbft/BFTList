@@ -916,7 +916,6 @@ class ReplicationModule(AlgorithmModule):
             # then add last executed sequence number
             new_seq = max(self.last_exec(), potential_seq)
             try:
-                logger.info(f"Updating seq_num with {new_seq}")
                 self.rep[self.id].set_seq_num(new_seq)
             except TypeError as e:
                 logger.error(f"Got error {e} when setting new seq_num. " +
@@ -980,7 +979,6 @@ class ReplicationModule(AlgorithmModule):
                 (4 * self.number_of_byzantine + 1) and
                 self.check_new_v_state(prim_id)):
             self.rep[self.id].set_replica_structure(self.rep[prim_id])
-            self.rep[self.id].set_seq_num = self.last_exec()
             self.rep[self.id].set_view_changed(False)
 
     # Interface functions
