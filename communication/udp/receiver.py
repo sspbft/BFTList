@@ -17,11 +17,9 @@ logger = logging.getLogger(__name__)
 class Receiver:
     """Models a receiver in the self-stabilizing communication protocol."""
 
-    def __init__(self, ip, port, buf_size=1024, on_message_recv=None):
+    def __init__(self, addr, buf_size=1024, on_message_recv=None):
         """Initializes the receiver."""
-        self.ip = ip
-        self.port = port
-        self.addr = (ip, port)
+        self.addr = addr
         self.buf_size = buf_size
         self.on_message_recv = on_message_recv
 

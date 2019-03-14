@@ -31,7 +31,8 @@
     <div class="nodes-container">
     {% for item in data.nodes_data %}
         <div class="node-wrapper">
-            <div class="node" id="node-{{ item.node.id }}">
+            <div class="node" id="node-{{ item.node.id }}"
+                 onclick="goToNode('{{ item.node.hostname }}', {{ item.node.id }});">
                 <p>Node {{ item.node.id }}</p>
                 <p>Hostname {{ item.node.hostname }}</p>
                 <p>IP:port {{ item.node.ip }}:{{ item.node.port }}</p></p>
