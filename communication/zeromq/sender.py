@@ -12,6 +12,7 @@ import jsonpickle
 # local
 from metrics.messages import msgs_sent, msg_rtt, msgs_in_queue
 from .message import Message, MessageEnum
+import modules.byzantine as byz
 
 # globals
 logger = logging.getLogger(__name__)
@@ -60,6 +61,10 @@ class Sender():
             if msg is None:
                 await asyncio.sleep(0.01)
             else:
+                # busy-wait if node is unresponsive before sending message
+                while byz.is_unresponsive():
+                    time.sleep(0.1)
+
                 reply = await self.send(msg)
                 if reply.get_counter() != self.counter:
                     raise ValueError("did not get same counter back")

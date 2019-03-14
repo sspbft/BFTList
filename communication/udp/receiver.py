@@ -7,9 +7,11 @@ system connect to.
 # standard
 import socket
 import logging
+import time
 
 # local
 from communication.udp.message import Message
+import modules.byzantine as byz
 
 logger = logging.getLogger(__name__)
 
@@ -88,4 +90,8 @@ class Receiver:
         Blocking helper method that sends a message over the socket to the
         specified address pair (host/ip:port).
         """
+        # busy-wait if node is unresponsive before sending message
+        while byz.is_unresponsive():
+            time.sleep(0.1)
+
         self.socket.sendto(msg.to_bytes(), addr)
