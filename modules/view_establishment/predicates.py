@@ -8,6 +8,7 @@ import logging
 from resolve.enums import Function, Module
 from modules.enums import ViewEstablishmentEnums as enums
 from modules.constants import CURRENT, NEXT
+from metrics.messages import view_change
 
 # globals
 logger = logging.getLogger(__name__)
@@ -191,6 +192,7 @@ class PredicatesAndAction():
         """Update the current view in the view pair to the next view."""
         self.views[self.id][CURRENT] = deepcopy(self.views[
                                                 self.id][NEXT])
+        view_change.labels(self.id).inc()
 
     def next_view(self):
         """Updates the next view in the view pair to upcoming view."""

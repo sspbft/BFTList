@@ -14,6 +14,7 @@ from modules.constants import (V_STATUS, PRIM, NEED_CHANGE, NEED_CHG_SET)
 from resolve.enums import MessageType
 import conf.config as conf
 from communication.zeromq.rate_limiter import throttle
+from metrics.messages import allow_service_rtt
 
 # global
 logger = logging.getLogger(__name__)
@@ -38,6 +39,8 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     PRIM: -1,
                     NEED_CHANGE: False,
                     NEED_CHG_SET: set()} for i in range(n)]
+        # Metric gathering
+        self.allow_service_denied = -1
 
         if os.getenv("INTEGRATION_TEST"):
             start_state = conf.get_start_state()
@@ -78,6 +81,14 @@ class PrimaryMonitoringModule(AlgorithmModule):
 
             if self.resolver.execute(
                Module.VIEW_ESTABLISHMENT_MODULE, Function.ALLOW_SERVICE):
+
+                # Metrics gathering
+                if self.allow_service_denied != -1:
+                    latency = time.time() - self.allow_service_denied
+                    self.allow_service_denied = -1
+                    allow_service_rtt.labels(
+                        self.id, self.vcm[self.id][PRIM]).set(latency)
+
                 # Line 9-10
                 if (self.vcm[self.id][PRIM] ==
                    self.get_current_view(self.id) and
@@ -110,6 +121,11 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 else:
                     logger.debug("Cleaning state")
                     self.clean_state()
+
+            # Metric gathering
+            else:
+                if self.allow_service_denied == -1:
+                    self.allow_service_denied = time.time()
 
             # Stopping the while loop, used for testing purpose
             if testing:
