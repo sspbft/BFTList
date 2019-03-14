@@ -25,7 +25,6 @@ phases = [0 for i in range(N)]
 vChanges = [False for i in range(N)]
 witnesses = [True for i in range(N)]
 start_state = {}
-client_req_1 = ClientRequest(0, 0, Operation("APPEND", 1))
 
 for i in range(N):
     start_state[str(i)] = {
@@ -39,7 +38,7 @@ for i in range(N):
             "rep": [
                 ReplicaStructure(
                     j,
-                    pend_reqs=[client_req_1],
+                    pend_reqs=[ClientRequest(0, i, Operation("APPEND", i)) for i in range(15)],
                 ) for j in range(N)
             ]
         }
@@ -51,6 +50,8 @@ args = {
         "BEHAVIOR": "UNRESPONSIVE_TO_HALF"
     }
 }
+
+target_rep=[i for i in range(15)]
 
 class TestByzNodeSendingDifferentViews(AbstractIntegrationTest):
     """Checks that a Byzantine primary being unresponsive to some is detected."""
@@ -65,7 +66,7 @@ class TestByzNodeSendingDifferentViews(AbstractIntegrationTest):
         test_result = False
 
         # sleep for 10 seconds, then check if no progress has been made
-        await asyncio.sleep(10)
+        await asyncio.sleep(30)
 
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
@@ -75,6 +76,8 @@ class TestByzNodeSendingDifferentViews(AbstractIntegrationTest):
             for a in asyncio.as_completed(aws):
                 result = await a
                 data = result["data"]["VIEW_ESTABLISHMENT_MODULE"]
+                data_rep = result["data"]["REPLICATION_MODULE"]
+                rep_state = data_rep["rep_state"]
                 views = data["views"]
                 id = data["id"]
                 target = {"current": 1, "next": 1}
@@ -86,6 +89,10 @@ class TestByzNodeSendingDifferentViews(AbstractIntegrationTest):
                                 self.assertEqual(vp, target)
                             else:
                                 checks.append(vp == target)
+                    if last_check:
+                        self.assertEqual(rep_state, target_rep)
+                    else:
+                        checks.append(rep_state == target_rep) 
 
             # if all checks passed, test passed
             if all(checks):
