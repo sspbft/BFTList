@@ -215,7 +215,11 @@
         })
         .then(res => res.json())
         .then(data => console.log(`Node ${node.id} byz behavior: ${data.behavior}`))
-        .catch(err => console.error(err))
-        
+        .catch(err => console.error(err))   
+    }
+
+    const goToNode = (hostname, id) => {
+        const url = `http://${hostname}:400${id}${window.location.pathname}`
+        window.location.href = url
     }
 </script>
