@@ -92,29 +92,37 @@ class ReplicationModule(AlgorithmModule):
         while True:
             # lines 1-3
             self.lock.acquire()
+            view_est_allow_service = self.resolver.execute(
+                                        Module.VIEW_ESTABLISHMENT_MODULE,
+                                        Function.ALLOW_SERVICE)
+
             if (not self.rep[self.id].get_view_changed() and
-                    self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
-                                          Function.ALLOW_SERVICE)):
+                    view_est_allow_service):
+                    # self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
+                                        # Function.ALLOW_SERVICE)):
                 view_changed = (not self.rep[self.id].is_tee() and
                                 (self.resolver.execute(
                                     Module.VIEW_ESTABLISHMENT_MODULE,
                                     Function.GET_CURRENT_VIEW, self.id) !=
                                     self.rep[self.id].get_prim()))
                 self.rep[self.id].set_view_changed(view_changed)
-            self.rep[self.id].set_prim(self.resolver.execute(
-                Module.VIEW_ESTABLISHMENT_MODULE,
-                Function.GET_CURRENT_VIEW, self.id))
-            prim_id = self.rep[self.id].get_prim()  # alias
+            if view_est_allow_service:
 
-            # lines 4-6
-            if (self.rep[self.id].get_view_changed() and prim_id == self.id):
-                self.act_as_prim_when_view_changed(prim_id)
+                self.rep[self.id].set_prim(self.resolver.execute(
+                    Module.VIEW_ESTABLISHMENT_MODULE,
+                    Function.GET_CURRENT_VIEW, self.id))
+                prim_id = self.rep[self.id].get_prim()  # alias
 
-            # lines 7-8
-            elif(self.rep[self.id].get_view_changed() and
-                 (self.rep[prim_id].get_view_changed() is False and
-                 prim_id == self.rep[prim_id].get_prim())):
-                self.act_as_nonprim_when_view_changed(prim_id)
+                # lines 4-6
+                if (self.rep[self.id].get_view_changed() and
+                   prim_id == self.id):
+                    self.act_as_prim_when_view_changed(prim_id)
+
+                # lines 7-8
+                elif(self.rep[self.id].get_view_changed() and
+                     (self.rep[prim_id].get_view_changed() is False and
+                     prim_id == self.rep[prim_id].get_prim())):
+                    self.act_as_nonprim_when_view_changed(prim_id)
 
             # lines 9 - 10
             # X and Y are tuples (rep_state, r_log, is_default_prefix)
@@ -156,9 +164,10 @@ class ReplicationModule(AlgorithmModule):
 
             self.rep[self.id].extend_pend_reqs(self.known_pend_reqs())
             # line 15 - 25
-            if (self.resolver.execute(
-                    Module.VIEW_ESTABLISHMENT_MODULE,
-                    Function.ALLOW_SERVICE) and (self.need_flush is False)):
+            # if (self.resolver.execute(
+            # Module.VIEW_ESTABLISHMENT_MODULE,
+            # Function.ALLOW_SERVICE) and (self.need_flush is False)):
+            if view_est_allow_service and self.need_flush is False:
                 if (self.resolver.execute(
                     Module.PRIMARY_MONITORING_MODULE,
                     Function.NO_VIEW_CHANGE) and
@@ -879,6 +888,7 @@ class ReplicationModule(AlgorithmModule):
         Processor is the new primary.
         """
         # this node is acting as primary
+        logger.info("Acting as prim")
         processor_ids = set()
         for replica_structure in self.rep:
             j = replica_structure.get_id()
@@ -906,6 +916,7 @@ class ReplicationModule(AlgorithmModule):
             # then add last executed sequence number
             new_seq = max(self.last_exec(), potential_seq)
             try:
+                logger.info(f"Updating seq_num with {new_seq}")
                 self.rep[self.id].set_seq_num(new_seq)
             except TypeError as e:
                 logger.error(f"Got error {e} when setting new seq_num. " +
