@@ -804,7 +804,7 @@ class TestReplicationModule(unittest.TestCase):
 
     def test_while_view_change_occur_check_calls(self):
         # Line 4-8
-        replication = ReplicationModule(0, Resolver(testing=True), 6, 1, 1)
+        replication = ReplicationModule(1, Resolver(testing=True), 6, 1, 1)
         # All functions called in while must be mocked:
 
         replication.com_pref_states = Mock()
@@ -826,9 +826,8 @@ class TestReplicationModule(unittest.TestCase):
 
         # Used to set prim of self.id
         # Node 0 is prim
-        replication.resolver.execute = MagicMock(return_value = 0)
-        replication.rep = [ReplicaStructure(i, view_changed=True, prim=0) for i in range(6)]
-
+        replication.resolver.execute = MagicMock(return_value = 1)
+        replication.rep = [ReplicaStructure(i, view_changed=True, prim=1) for i in range(6)]
         replication.run(testing=True)
         replication.act_as_prim_when_view_changed.assert_called_once()
 
