@@ -396,8 +396,7 @@ class ReplicationModule(AlgorithmModule):
         operation = req.get_client_request().get_operation()
         new_state = operation.execute(current_state)
         self.rep[self.id].set_rep_state(new_state)
-        logger.info(f"Applying request {req} on state {current_state}. " +
-                    f"New state: {new_state}")
+        logger.info(f"Applying request {req}. New state: {new_state}")
         return new_state
 
     # Macros
@@ -888,7 +887,6 @@ class ReplicationModule(AlgorithmModule):
         Processor is the new primary.
         """
         # this node is acting as primary
-        logger.info("Acting as prim")
         processor_ids = set()
         for replica_structure in self.rep:
             j = replica_structure.get_id()
