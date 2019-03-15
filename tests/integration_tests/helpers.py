@@ -56,9 +56,17 @@ async def GET(node_id, path):
     return {"status_code": r.status_code, "data": r.json()}
 
 
+def generate_hosts_file(n, path="./tests/fixtures"):
+    """Generates the hosts file to be used in the test."""
+    with open(f"{path}/hosts.txt", "w") as f:
+        for i in range(n):
+            f.write(f"{i},localhost,127.0.0.1,{5000+i}\n")
+
+
 # application runner helpers
 async def launch_bftlist(test_name="unknown test", n=N, f=F, args={}):
     """Launches BFTList for integration testing."""
+    generate_hosts_file(n)
     nodes = get_nodes()
     cmd = ". env/bin/activate && python3.7 main.py"
     cwd = os.path.abspath(".")
