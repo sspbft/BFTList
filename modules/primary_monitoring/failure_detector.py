@@ -112,8 +112,14 @@ class FailureDetectorModule:
             if self.prim == self.id:
                 self.cnt = 0
             if(not self.prim_susp[self.id]):
-                self.prim_susp[self.id] = (self.prim not in self.fd_set or
-                                           self.cnt > CNT_THRESHOLD)
+                beat_abv_thresh = self.prim not in self.fd_set
+                cntr_abv_thresh = self.cnt > CNT_THRESHOLD
+                self.prim_susp[self.id] = beat_abv_thresh or cntr_abv_thresh
+                if beat_abv_thresh:
+                    logger.info("Suspecting unresponsive primary")
+                if cntr_abv_thresh:
+                    logger.info("Suspecting non-progressing primary")
+
         elif not self.allow_service():
             self.reset()
 

@@ -161,9 +161,10 @@ class ReplicaStructure(object):
         #     REQUEST: deepcopy(request), REPLY: deepcopy(reply)
         # }
         # Account for dynamic size of client set
-        for i in range(client_id + 1):
-            if len(self.last_req) < i:
-                self.last_req.append(None)
+        if len(self.last_req) < client_id:
+            for i in range(client_id + 1):
+                if len(self.last_req) < i + 1:
+                    self.last_req.append(None)
         self.last_req[client_id] = {REQUEST: request, REPLY: reply}
 
     def get_seq_num(self) -> int:
