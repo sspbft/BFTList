@@ -149,9 +149,15 @@ class Resolver:
         if node_id not in self.senders and node_id not in self.fd_senders:
             logger.error(f"Non-existing sender for node {node_id}")
 
-        # don't send messages if Byzantine and UNRESPONSIVE
-        if byz.is_byzantine() and byz.get_byz_behavior() == byz.UNRESPONSIVE:
-            return
+        if byz.is_byzantine():
+            # don't send messages if Byzantine and UNRESPONSIVE
+            if byz.get_byz_behavior() == byz.UNRESPONSIVE:
+                return
+            # Only send message to half of the nodes if Byzantine and
+            # UNRESPONSIVE_TO_SOME
+            if (byz.get_byz_behavior() == byz.UNRESPONSIVE_TO_HALF and
+               (node_id % 2 != 0)):
+                return
 
         try:
             sender = (self.senders[node_id] if not fd_msg else

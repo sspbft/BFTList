@@ -841,13 +841,15 @@ class ReplicationModule(AlgorithmModule):
         for request_pair in self.rep[self.id].get_req_q():
             if (request_pair[REQUEST].get_client_request() ==
                 req.get_client_request() and
-               request_pair[REQUEST].get_seq_num() == req.get_seq_num()):
+               request_pair[REQUEST].get_seq_num() == req.get_seq_num() and
+               request_pair[REQUEST].get_view() == req.get_view()):
                 return True
         # Checks if the request already has been committed
         for request_pair in self.rep[self.id].get_r_log():
             if (request_pair[REQUEST].get_client_request() ==
                 req.get_client_request() and
-               request_pair[REQUEST].get_seq_num() == req.get_seq_num()):
+               request_pair[REQUEST].get_seq_num() == req.get_seq_num() and
+               request_pair[REQUEST].get_view() == req.get_view()):
                 return True
         return False
 
@@ -888,7 +890,6 @@ class ReplicationModule(AlgorithmModule):
         Processor is the new primary.
         """
         # this node is acting as primary
-        logger.info("Acting as prim")
         processor_ids = set()
         for replica_structure in self.rep:
             j = replica_structure.get_id()
@@ -916,7 +917,6 @@ class ReplicationModule(AlgorithmModule):
             # then add last executed sequence number
             new_seq = max(self.last_exec(), potential_seq)
             try:
-                logger.info(f"Updating seq_num with {new_seq}")
                 self.rep[self.id].set_seq_num(new_seq)
             except TypeError as e:
                 logger.error(f"Got error {e} when setting new seq_num. " +
@@ -980,7 +980,6 @@ class ReplicationModule(AlgorithmModule):
                 (4 * self.number_of_byzantine + 1) and
                 self.check_new_v_state(prim_id)):
             self.rep[self.id].set_replica_structure(self.rep[prim_id])
-            self.rep[self.id].set_seq_num = self.last_exec()
             self.rep[self.id].set_view_changed(False)
 
     # Interface functions
@@ -1191,15 +1190,17 @@ class ReplicationModule(AlgorithmModule):
                            r[REQUEST].get_seq_num() == dummy_seq_num):
                             return False
                     continue
-                elif (key not in req_exists_count and
-                      self.accept_req_preprep(key, prim)):
-                    # A request that is PRE_PREP:ed by the primary but didn't
-                    # have a PRE_PREP from last view
-                    continue
                 elif (key not in req_exists_count or
-                        req_exists_count[key] <
-                        (3 * self.number_of_byzantine + 1)):
-                    return False
+                      req_exists_count[key] <
+                      (3 * self.number_of_byzantine + 1)):  # and
+                    if self.accept_req_preprep(key, prim):
+                        # A request that is PRE_PREP:ed by the primary but
+                        # didn't have a supported PRE_PREP from last view
+                        continue
+                    else:
+                        # The request was not supported and should not be
+                        # accepted
+                        return False
 
         seen_reqs = {}
         for replica_structure in self.rep:
