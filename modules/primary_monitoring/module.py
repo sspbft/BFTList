@@ -113,7 +113,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 elif(self.vcm[self.id][PRIM] ==
                      self.get_current_view(self.id) and
                      self.vcm[self.id][V_STATUS] == enums.V_CHANGE):
-                    logger.debug("Telling ViewEst to change view as prim")
+                    logger.debug("Telling ViewEst to change view")
                     self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
