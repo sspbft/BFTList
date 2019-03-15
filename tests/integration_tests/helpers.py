@@ -57,7 +57,7 @@ async def GET(node_id, path):
 
 
 # application runner helpers
-async def launch_bftlist(test_name="unknown test", args={}):
+async def launch_bftlist(test_name="unknown test", n=N, f=F, args={}):
     """Launches BFTList for integration testing."""
     nodes = get_nodes()
     cmd = ". env/bin/activate && python3.7 main.py"
@@ -68,8 +68,8 @@ async def launch_bftlist(test_name="unknown test", args={}):
         env = os.environ.copy()
         env["ID"] = str(node_id)
         env["API_PORT"] = str(4000 + node_id)
-        env["NUMBER_OF_NODES"] = str(N)
-        env["NUMBER_OF_BYZANTINE"] = str(F)
+        env["NUMBER_OF_NODES"] = str(n)
+        env["NUMBER_OF_BYZANTINE"] = str(f)
         env["NUMBER_OF_CLIENTS"] = "1"
         env["HOSTS_PATH"] = os.path.abspath(RELATIVE_PATH_FIXTURES_HOST)
         env["INTEGRATION_TEST"] = test_name
