@@ -39,10 +39,20 @@ client_req2 = ClientRequest(0, 189276399, Operation(
     "APPEND",
     2
 ))
+client_req4 = ClientRequest(0, 189276399, Operation(
+    "APPEND",
+    4
+))
+client_req5 = ClientRequest(0, 189276399, Operation(
+    "APPEND",
+    5
+))
 
 req1 = Request(client_req1, 0, 0)
 req2 = Request(client_req2, 0, 1)
 req3 = Request(client_req3, 0, 2)
+req4 = Request(client_req4, 0, 3)
+req5 = Request(client_req5, 0, 3)
 
 for i in range(N):
     start_state[str(i)] = {
@@ -53,33 +63,33 @@ for i in range(N):
         "REPLICATION_MODULE": {
             "rep": [
                 ReplicaStructure(0, rep_state=[1],r_log=[
-                    {REQUEST: req1, X_SET:{0,1,2,3,4}}],
+                    {REQUEST: req1, X_SET:{0,1,2,3,4,5,6,7}}],
                     pend_reqs=[client_req2, client_req3], prim=0, seq_num=0),
-                ReplicaStructure(1, rep_state=[1,2], r_log=[
-                    {REQUEST: req1, X_SET:{0,1,2,3,4}}],
+                ReplicaStructure(1, rep_state=[1], r_log=[
+                    {REQUEST: req1, X_SET:{0,1,2,3,4,5,6,7}}],
                     pend_reqs=[client_req2, client_req3], prim=0),
                 ReplicaStructure(2, rep_state=[1], r_log=[
-                    {REQUEST: req1, X_SET:{0,1,2,3,4}}],
+                    {REQUEST: req1, X_SET:{0,1,2,3,4,5,6,7}}],
                     pend_reqs=[client_req2, client_req3], prim=0),
                 ReplicaStructure(3, rep_state=[1], r_log=[
-                    {REQUEST: req1, X_SET:{0,1,2,3,4}}],
+                    {REQUEST: req1, X_SET:{0,1,2,3,4,5,6,7}}],
                     pend_reqs=[client_req2, client_req3], prim=0),
                 ReplicaStructure(4, rep_state=[1], r_log=[
-                    {REQUEST: req1, X_SET:{0,1,2,3,4}}],
+                    {REQUEST: req1, X_SET:{0,1,2,3,4,5,6,7}}],
                     pend_reqs=[client_req2, client_req3], prim=0),
-                ReplicaStructure(5, rep_state=[2], r_log=[{REQUEST: req2, X_SET:{0,2,3,5}}], prim=0),
-                ReplicaStructure(6, rep_state=[2], r_log=[{REQUEST: req2, X_SET:{0,2,3,5}}], prim=0),
-                ReplicaStructure(7, rep_state=[3], r_log=[{REQUEST: req3, X_SET:{0,2,3,5}}], prim=0),
-                ReplicaStructure(8, rep_state=[2], r_log=[{REQUEST: req2, X_SET:{0,2,3,5}}], prim=0),
-                ReplicaStructure(9, rep_state=[2], r_log=[{REQUEST: req2, X_SET:{0,2,3,5}}], prim=0),
-                ReplicaStructure(10, rep_state=[3], r_log=[{REQUEST: req3, X_SET:{0,2,3,5}}], prim=0),
-                ReplicaStructure(11, rep_state=[3], r_log=[{REQUEST: req3, X_SET:{0,2,3,5}}], prim=0),
+                ReplicaStructure(5, rep_state=[], r_log=[], prim=0),
+                ReplicaStructure(6, rep_state=[], r_log=[], prim=0),
+                ReplicaStructure(7, rep_state=[5], pend_reqs=[client_req2, client_req3], r_log=[{REQUEST: req5, X_SET:{0,2,3,5,6,7,8}}], prim=0),
+                ReplicaStructure(8, rep_state=[5], pend_reqs=[client_req2, client_req3], r_log=[{REQUEST: req5, X_SET:{0,2,3,5,6,7,8}}], prim=0),
+                ReplicaStructure(9, rep_state=[], r_log=[], prim=0),
+                ReplicaStructure(10, rep_state=[], r_log=[], prim=0),
+                ReplicaStructure(11, rep_state=[], r_log=[], prim=0),
+
             ]
         }
     }
 
-args = { "FORCE_VIEW": "0", "ALLOW_SERVICE": "1", "FORCE_NO_VIEW_CHANGE": "1",
-        "HOSTS_PATH": "./tests/fixtures/hosts_double.txt"}
+args = { "FORCE_VIEW": "0", "ALLOW_SERVICE": "1", "FORCE_NO_VIEW_CHANGE": "1"}
 
 class TestNonConsistentRLogLeadToReset(AbstractIntegrationTest):
     """Checks that a Byzantine node can not trick some nodes to do a view change."""
@@ -93,7 +103,7 @@ class TestNonConsistentRLogLeadToReset(AbstractIntegrationTest):
         calls_left = helpers.MAX_NODE_CALLS
         test_result = False
 
-        await asyncio.sleep(10)
+        await asyncio.sleep(20)
 
         while calls_left > 0:
             aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
@@ -105,7 +115,6 @@ class TestNonConsistentRLogLeadToReset(AbstractIntegrationTest):
                 data = result["data"]["REPLICATION_MODULE"]
                 id = data["id"]
 
-                # nodes should probably reset their state
                 if last_check:
                     self.assertEqual(data["rep_state"], [1,2,3])                  
                 else:
