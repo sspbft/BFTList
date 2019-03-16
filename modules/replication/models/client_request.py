@@ -46,7 +46,8 @@ class ClientRequest(object):
         """Overrides the default implementation"""
         if type(other) is type(self):
             return (self.client_id == other.get_client_id() and
-                    self.timestamp == other.get_timestamp())
+                    self.timestamp == other.get_timestamp() and
+                    self.operation == other.get_operation())
         return False
 
     def __hash__(self):

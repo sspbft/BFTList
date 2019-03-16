@@ -396,7 +396,7 @@ class ReplicationModule(AlgorithmModule):
         operation = req.get_client_request().get_operation()
         new_state = operation.execute(current_state)
         self.rep[self.id].set_rep_state(new_state)
-        logger.info(f"Applying request {req}. New state: {new_state}")
+        logger.info(f"Applying request {req}.")
         return new_state
 
     # Macros
