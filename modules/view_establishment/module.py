@@ -12,10 +12,12 @@ from modules.algorithm_module import AlgorithmModule
 from modules.view_establishment.predicates import PredicatesAndAction
 from modules.enums import ViewEstablishmentEnums
 from resolve.enums import MessageType
+from resolve.enums import Module
 import conf.config as conf
 from modules.constants import (VIEWS, PHASE, WITNESSES, CURRENT, NEXT)
 import modules.byzantine as byz
 from communication.zeromq.rate_limiter import throttle
+from metrics.messages import run_method_time
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +72,7 @@ class ViewEstablishmentModule(AlgorithmModule):
 
         while True:
             self.lock.acquire()
+            start_time = time.time()
             if(self.pred_and_action.need_reset()):
                 self.pred_and_action.reset_all()
             self.witnesses[self.id] = self.noticed_recent_value()
@@ -93,6 +96,11 @@ class ViewEstablishmentModule(AlgorithmModule):
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
 
+            # Emit run time metric
+            run_time = time.time() - start_time
+            run_method_time.labels(self.id,
+                                   Module.VIEW_ESTABLISHMENT_MODULE).set(
+                                       run_time)
             self.lock.release()
             # Stopping the while loop, used for testing purpose
             if testing:

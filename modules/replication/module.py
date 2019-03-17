@@ -21,6 +21,7 @@ from .models.client_request import ClientRequest
 from .models.operation import Operation
 import modules.byzantine as byz
 from communication.zeromq.rate_limiter import throttle
+from metrics.messages import run_method_time
 
 # globals
 logger = logging.getLogger(__name__)
@@ -92,6 +93,7 @@ class ReplicationModule(AlgorithmModule):
         while True:
             # lines 1-3
             self.lock.acquire()
+            start_time = time.time()
             view_est_allow_service = self.resolver.execute(
                                         Module.VIEW_ESTABLISHMENT_MODULE,
                                         Function.ALLOW_SERVICE)
@@ -164,9 +166,6 @@ class ReplicationModule(AlgorithmModule):
 
             self.rep[self.id].extend_pend_reqs(self.known_pend_reqs())
             # line 15 - 25
-            # if (self.resolver.execute(
-            # Module.VIEW_ESTABLISHMENT_MODULE,
-            # Function.ALLOW_SERVICE) and (self.need_flush is False)):
             if view_est_allow_service and self.need_flush is False:
                 if (self.resolver.execute(
                     Module.PRIMARY_MONITORING_MODULE,
@@ -272,14 +271,6 @@ class ReplicationModule(AlgorithmModule):
                                         # Add Prep
                                         req_pair[STATUS].add(
                                             ReplicationEnums.PREP)
-                            # if not request_found:
-                            #     # Request is not found in own req_q, the
-                            #     # request is supported by 3f + 1 other
-                            #     # processors.
-                            #     new_req_pair = {REQUEST: request, STATUS: {
-                            #         ReplicationEnums.PRE_PREP,
-                            #         ReplicationEnums.PREP}}
-                            #     self.rep[self.id].add_to_req_q(new_req_pair)
 
                     # Find request to be COMMIT:ed
                     for request in self.supported_reqs(
@@ -316,11 +307,16 @@ class ReplicationModule(AlgorithmModule):
                                     self.last_exec() + 1)):
                             self.commit({REQUEST: request,
                                          X_SET: x_set})
+
+            # Emit run time metric
+            run_time = time.time() - start_time
+            run_method_time.labels(self.id,
+                                   Module.REPLICATION_MODULE).set(
+                                       run_time)
             self.lock.release()
             # Stopping the while loop, used for testing purpose
             if(testing):
                 break
-
             self.send_msg()
             throttle()
 

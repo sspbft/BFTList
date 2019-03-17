@@ -13,6 +13,7 @@ from resolve.enums import Function, Module, MessageType, SystemStatus
 from conf.config import get_nodes
 from modules.replication.models.client_request import ClientRequest
 from communication.zeromq import rate_limiter
+from metrics.messages import msg_rtt, msg_sent_size, msgs_sent, bytes_sent
 
 # globals
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ class Resolver:
         # locks used to avoid race conditions with modules
         self.view_est_lock = Lock()
         self.replication_lock = Lock()
+        self.prim_mon_lock = Lock()
 
         self.own_comm_ready = False
         self.other_comm_ready = False
@@ -188,12 +190,44 @@ class Resolver:
             finally:
                 self.replication_lock.release()
         elif msg_type == MessageType.PRIMARY_MONITORING_MESSAGE:
-            self.modules[Module.PRIMARY_MONITORING_MODULE].receive_msg(msg)
+            try:
+                self.prim_mon_lock.acquire()
+                self.modules[Module.PRIMARY_MONITORING_MODULE].receive_msg(msg)
+            finally:
+                self.prim_mon_lock.release()
         elif msg_type == MessageType.FAILURE_DETECTOR_MESSAGE:
             self.modules[Module.FAILURE_DETECTOR_MODULE].receive_msg(msg)
         else:
             logger.warning(f"Message with invalid type {msg_type} cannot be" +
                            "dispatched")
+
+    def on_message_sent(self, msg={}, metric_data={}):
+        """Callback function when a communication module has sent the message.
+
+        Used for metrics purpose.
+        """
+        id = int(os.getenv("ID"))
+        # emit message sent message
+        msgs_sent.labels(id).inc()
+
+        # Emit roundtrip time for message
+        if ("rec_id" in metric_data and "recv_hostname" in metric_data and
+           "latency" in metric_data):
+            msg_rtt.labels(id,
+                           metric_data["rec_id"],
+                           metric_data["recv_hostname"]).set(
+                                metric_data["latency"])
+        # Emit size of sent message
+        if ("msg_type" in metric_data and "bytes_size" in metric_data):
+            bytes_sent.labels(id,
+                              metric_data["msg_type"]).inc(
+                                  metric_data["bytes_size"])
+            if("type" in msg):
+                msg_sent_size.labels(
+                                id,
+                                msg["type"],
+                                metric_data["msg_type"]).set(
+                                    metric_data["bytes_size"])
 
     # Methods to extract data
     def get_view_establishment_data(self):
