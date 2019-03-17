@@ -21,6 +21,7 @@ from .models.client_request import ClientRequest
 from .models.operation import Operation
 import modules.byzantine as byz
 from communication.zeromq.rate_limiter import throttle
+from metrics.messages import run_method_time
 
 # globals
 logger = logging.getLogger(__name__)
@@ -90,6 +91,7 @@ class ReplicationModule(AlgorithmModule):
             time.sleep(0.1)
 
         while True:
+            start_time = time.time()
             # lines 1-3
             self.lock.acquire()
             view_est_allow_service = self.resolver.execute(
@@ -320,7 +322,11 @@ class ReplicationModule(AlgorithmModule):
             # Stopping the while loop, used for testing purpose
             if(testing):
                 break
-
+            # Emit run time metric
+            run_time = time.time() - start_time
+            run_method_time.labels(self.id,
+                                   Module.REPLICATION_MODULE).set(
+                                       run_time)
             self.send_msg()
             throttle()
 

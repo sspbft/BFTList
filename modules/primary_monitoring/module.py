@@ -14,7 +14,7 @@ from modules.constants import (V_STATUS, PRIM, NEED_CHANGE, NEED_CHG_SET)
 from resolve.enums import MessageType
 import conf.config as conf
 from communication.zeromq.rate_limiter import throttle
-from metrics.messages import allow_service_rtt
+from metrics.messages import allow_service_rtt, run_method_time
 
 # global
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
             time.sleep(0.1)
 
         while True:
-
+            start_time = time.time()
             if self.vcm[self.id][PRIM] != self.get_current_view(self.id):
                 self.clean_state()
 
@@ -131,6 +131,11 @@ class PrimaryMonitoringModule(AlgorithmModule):
             if testing:
                 break
 
+            # Emit run time metric
+            run_time = time.time() - start_time
+            run_method_time.labels(self.id,
+                                   Module.PRIMARY_MONITORING_MODULE).set(
+                                       run_time)
             # Send vcm to all nodes
             self.send_msg()
             throttle()

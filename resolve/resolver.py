@@ -201,24 +201,25 @@ class Resolver:
 
         Used for metrics purpose.
         """
+        id = int(os.getenv("ID"))
         # emit message sent message
-        msgs_sent.labels(self.id).inc()
+        msgs_sent.labels(id).inc()
 
         # Emit roundtrip time for message
         if ("rec_id" in metric_data and "recv_hostname" in metric_data and
            "latency" in metric_data):
-            msg_rtt.labels(self.id,
+            msg_rtt.labels(id,
                            metric_data["rec_id"],
                            metric_data["recv_hostname"]).set(
                                 metric_data["latency"])
         # Emit size of sent message
         if ("msg_type" in metric_data and "bytes_size" in metric_data):
-            bytes_sent.labels(self.id,
+            bytes_sent.labels(id,
                               metric_data["msg_type"]).inc(
                                   metric_data["bytes_size"])
             if("type" in msg):
                 msg_sent_size.labels(
-                                self.id,
+                                id,
                                 msg["type"],
                                 metric_data["msg_type"]).set(
                                     metric_data["bytes_size"])

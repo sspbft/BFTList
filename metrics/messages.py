@@ -26,3 +26,7 @@ msg_sent_size = Gauge("msg_sent_size",
 bytes_sent = Counter("bytes_sent",
                      "Number of bytes sent from node over com_mod",
                      ["node_id", "com_mod"])
+
+run_method_time = Gauge("run_method_time",
+                        "Time taken to run the run-forever-loop",
+                        ["node_id", "module"])
