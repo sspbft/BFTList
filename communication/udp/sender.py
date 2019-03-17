@@ -14,6 +14,7 @@ from queue import Queue
 # local
 from communication.udp.message import Message
 from modules.constants import FD_SLEEP, FD_TIMEOUT
+import modules.byzantine as byz
 from communication.constants import UDP, MAXINT
 
 logger = logging.getLogger(__name__)
@@ -102,11 +103,15 @@ class Sender:
         A thread is launched that monitors the return of the token of the
         message, which will eventually re-send the message if needed.
         """
+        # busy-wait if node is unresponsive before sending message
+        while byz.is_unresponsive():
+            time.sleep(0.1)
+
         msg_as_bytes = msg.to_bytes()
         self.socket.sendto(msg_as_bytes, self.addr)
         self.last_sent_msg = msg
-        # Emit size of sent message
 
+        # Emit size of sent message
         if self.on_message_sent is not None:
             metric_data = {"bytes_size": len(msg_as_bytes),
                            "msg_type": UDP}

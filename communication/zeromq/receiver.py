@@ -42,6 +42,7 @@ class Receiver():
             msg_json = msg_bytes.decode()
             msg = jsonpickle.decode(msg_json)
             self.resolver.dispatch_msg(msg.get_data())
+
             self.ack(msg.get_counter())
 
     def ack(self, counter):

@@ -10,10 +10,13 @@ rLog, (pending req. queue) pendReqs, (requests under process queue) reqQ,
 # standard
 from typing import List, Dict
 from copy import deepcopy
+import logging
 
 # local
 from modules.constants import (REQUEST, REPLY, STATUS, X_SET)
 from .request import Request, ClientRequest
+
+logger = logging.getLogger(__name__)
 
 
 class ReplicaStructure(object):
@@ -160,7 +163,15 @@ class ReplicaStructure(object):
         # self.last_req[int(client_id)] = {
         #     REQUEST: deepcopy(request), REPLY: deepcopy(reply)
         # }
-        self.last_req[client_id] = {REQUEST: request, REPLY: reply}
+        # Account for dynamic size of client set
+        try:
+            self.last_req[client_id] = {REQUEST: request, REPLY: reply}
+        except IndexError:
+            for i in range(len(self.last_req), client_id + 1):
+                self.last_req.append(None)
+            self.last_req[client_id] = {
+                REQUEST: deepcopy(request), REPLY: deepcopy(reply)
+            }
 
     def get_seq_num(self) -> int:
         """Returns the last assigned sequence number for this processor."""

@@ -60,3 +60,8 @@ def set_byz_behavior(new_behavior):
 
     if new_behavior == NONE or is_valid_byz_behavior(new_behavior):
         byz_behavior = new_behavior
+
+
+def is_unresponsive():
+    """Helper method that returns True if this node is UNRESPONSIVE."""
+    return byz_behavior == UNRESPONSIVE
