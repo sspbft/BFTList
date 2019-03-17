@@ -10,8 +10,9 @@ from queue import Queue
 import jsonpickle
 
 # local
-from metrics.messages import msgs_sent, msg_rtt, msgs_in_queue
+from metrics.messages import msgs_in_queue
 from .message import Message, MessageEnum
+ZERO_MQ = "ZERO_MQ"
 
 # globals
 logger = logging.getLogger(__name__)
@@ -24,10 +25,11 @@ class Sender():
     order to send messages.
     """
 
-    def __init__(self, id, node):
+    def __init__(self, id, node, on_message_sent=None):
         """Initializes the sender."""
         self.id = id
         self.recv = node
+        self.on_message_sent = on_message_sent
 
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)
@@ -71,16 +73,23 @@ class Sender():
         Constructs a message consisting of the token and the payload and sends
         it over the socket.
         """
-        # emit message sent message
-        msgs_sent.labels(self.id).inc()
         msg = Message(MessageEnum.SENDER_MESSAGE, self.counter, self.id, data)
         sent_time = time.time()
-        await self.socket.send(msg.as_bytes())
+        msg_as_bytes = msg.as_bytes()
+        await self.socket.send(msg_as_bytes)
 
         reply_bytes = await self.socket.recv()
-        # emit rtt time for sent and ACKed message
+        # metric rtt time for sent and ACKed message
         latency = time.time() - sent_time
-        msg_rtt.labels(self.id, self.recv.id, self.recv.hostname).set(latency)
+
+        if self.on_message_sent is not None:
+            metric_data = {"rec_id": self.recv.id,
+                           "rec_hostname": self.recv.hostname,
+                           "latency": latency,
+                           "bytes_size": len(msg_as_bytes),
+                           "msg_type": ZERO_MQ}
+            self.on_message_sent(data, metric_data)
+
         try:
             reply_json = reply_bytes.decode()
             reply = jsonpickle.decode(reply_json)

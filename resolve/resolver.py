@@ -13,6 +13,7 @@ from resolve.enums import Function, Module, MessageType, SystemStatus
 from conf.config import get_nodes
 from modules.replication.models.client_request import ClientRequest
 from communication.zeromq import rate_limiter
+from metrics.messages import msg_rtt, msg_sent_size, msgs_sent, bytes_sent
 
 # globals
 logger = logging.getLogger(__name__)
@@ -194,6 +195,33 @@ class Resolver:
         else:
             logger.warning(f"Message with invalid type {msg_type} cannot be" +
                            "dispatched")
+
+    def on_sent_msg(self, msg={}, metric_data={}):
+        """Callback function when a communication module has sent the message.
+
+        Used for metrics purpose.
+        """
+        # emit message sent message
+        msgs_sent.labels(self.id).inc()
+
+        # Emit roundtrip time for message
+        if ("rec_id" in metric_data and "recv_hostname" in metric_data and
+           "latency" in metric_data):
+            msg_rtt.labels(self.id,
+                           metric_data["rec_id"],
+                           metric_data["recv_hostname"]).set(
+                                metric_data["latency"])
+        # Emit size of sent message
+        if ("msg_type" in metric_data and "bytes_size" in metric_data):
+            bytes_sent.labels(self.id,
+                              metric_data["msg_type"]).inc(
+                                  metric_data["bytes_size"])
+            if("type" in msg):
+                msg_sent_size.labels(
+                                self.id,
+                                msg["type"],
+                                metric_data["msg_type"]).set(
+                                    metric_data["bytes_size"])
 
     # Methods to extract data
     def get_view_establishment_data(self):

@@ -18,12 +18,14 @@ from modules.constants import FD_SLEEP, FD_TIMEOUT
 
 logger = logging.getLogger(__name__)
 MAXINT = sys.maxsize
+UDP = "UDP"
 
 
 class Sender:
     """Models a sender in the self-stabilizing communication protocol."""
 
-    def __init__(self, id, addr, cap=MAXINT, bufsize=1024, check_ready=None):
+    def __init__(self, id, addr, cap=MAXINT, bufsize=1024, check_ready=None,
+                 on_message_sent=None):
         """Initalizes the sender."""
         self.id = id
         if type(addr) != tuple or type(addr[0]) != str or type(addr[1]) != int:
@@ -32,6 +34,7 @@ class Sender:
         self.cap = cap
         self.bufsize = bufsize
         self.check_ready = check_ready
+        self.on_message_sent = on_message_sent
 
         # setup socket
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -101,8 +104,15 @@ class Sender:
         A thread is launched that monitors the return of the token of the
         message, which will eventually re-send the message if needed.
         """
-        self.socket.sendto(msg.to_bytes(), self.addr)
+        msg_as_bytes = msg.to_bytes()
+        self.socket.sendto(msg_as_bytes, self.addr)
         self.last_sent_msg = msg
+        # Emit size of sent message
+
+        if self.on_message_sent is not None:
+            metric_data = {"bytes_size": len(msg_as_bytes),
+                           "msg_type": UDP}
+            self.on_message_sent(msg.get_payload(), metric_data)
 
         if timeout:
             t = Thread(target=self.check_timeout, args=(msg,))

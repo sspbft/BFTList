@@ -71,7 +71,8 @@ def setup_communication(resolver):
     nodes = config.get_nodes()
 
     # setup receiver to receiver channel messages from other nodes
-    receiver = Receiver(id, nodes[id].ip, nodes[id].port, resolver)
+    receiver = Receiver(id, nodes[id].ip, nodes[id].port, resolver,
+                        resolver.on_sent_msg)
     t = Thread(target=receiver.start)
     t.start()
 
@@ -79,7 +80,7 @@ def setup_communication(resolver):
     senders = {}
     for _, node in nodes.items():
         if id != node.id:
-            sender = Sender(id, node)
+            sender = Sender(id, node, resolver.on_sent_msg)
             senders[node.id] = sender
     logger.info("All senders connected")
 
@@ -147,7 +148,8 @@ def setup_fd_communication(resolver):
     for _, node in nodes.items():
         if id != node.id:
             sender = FDSender(id, (node.hostname, 7000 + node.id),
-                              check_ready=resolver.system_running)
+                              check_ready=resolver.system_running,
+                              on_message_sent=resolver.on_sent_msg)
             senders[node.id] = sender
             t = Thread(target=sender.start)
             t.start()
