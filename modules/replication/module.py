@@ -507,7 +507,11 @@ class ReplicationModule(AlgorithmModule):
             states = []
             for id in processors:
                 states.append(dct[id]["REP_STATE"])
-            length = len(self.find_prefix(states))
+            prefixes = self.find_prefix(states)
+            if prefixes is not None:
+                length = len(prefixes)
+            else:
+                length = -1
             if length > longest_prefix_found:
                 longest_prefix_found = length
                 returning_processors = processors

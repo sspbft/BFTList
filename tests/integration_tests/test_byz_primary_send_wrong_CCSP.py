@@ -65,7 +65,7 @@ class TestByzAssignSeqNumOutsideBoundInterval(AbstractIntegrationTest):
     async def bootstrap(self):
         """Sets up BFTList for the test."""
         helpers.write_state_conf_file(start_state)
-        return await helpers.launch_bftlist(__name__, args)
+        return await helpers.launch_bftlist(__name__, N, F, args)
 
     async def validate(self):
         calls_left = helpers.MAX_NODE_CALLS
