@@ -15,7 +15,7 @@ def monitor_node_latencies():
     while True:
         for n_id in other_nodes:
             node = nodes[n_id]
-            cmd = f"sh ./metrics/ping.sh {node.hostname}".split(" ")
+            cmd = f"sudo sh ./metrics/ping.sh {node.hostname}".split(" ")
             res = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()
             latency = float(res[0].decode().replace("\n", ""))
             host_latency.labels(ID, nodes[ID].hostname, n_id,
