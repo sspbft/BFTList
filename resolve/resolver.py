@@ -201,7 +201,7 @@ class Resolver:
             logger.warning(f"Message with invalid type {msg_type} cannot be" +
                            "dispatched")
 
-    def on_sent_msg(self, msg={}, metric_data={}):
+    def on_message_sent(self, msg={}, metric_data={}):
         """Callback function when a communication module has sent the message.
 
         Used for metrics purpose.
