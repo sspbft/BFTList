@@ -12,7 +12,7 @@ import jsonpickle
 # local
 from metrics.messages import msgs_in_queue
 from .message import Message, MessageEnum
-ZERO_MQ = "ZERO_MQ"
+from communication.constants import ZERO_MQ
 
 # globals
 logger = logging.getLogger(__name__)

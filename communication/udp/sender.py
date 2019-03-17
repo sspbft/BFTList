@@ -15,10 +15,10 @@ import sys
 # local
 from communication.udp.message import Message
 from modules.constants import FD_SLEEP, FD_TIMEOUT
+from communication.constants import UDP, MAXINT
 
 logger = logging.getLogger(__name__)
-MAXINT = sys.maxsize
-UDP = "UDP"
+
 
 
 class Sender:
