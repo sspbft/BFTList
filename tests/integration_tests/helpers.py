@@ -58,6 +58,8 @@ async def GET(node_id, path):
 
 def generate_hosts_file(n, path="./tests/fixtures"):
     """Generates the hosts file to be used in the test."""
+    if not os.path.isdir(path):
+        os.mkdir(path)
     with open(f"{path}/hosts.txt", "w") as f:
         for i in range(n):
             f.write(f"{i},localhost,127.0.0.1,{5000+i}\n")
