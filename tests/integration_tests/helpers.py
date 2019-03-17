@@ -56,9 +56,17 @@ async def GET(node_id, path):
     return {"status_code": r.status_code, "data": r.json()}
 
 
+def generate_hosts_file(n, path="./tests/fixtures"):
+    """Generates the hosts file to be used in the test."""
+    with open(f"{path}/hosts.txt", "w") as f:
+        for i in range(n):
+            f.write(f"{i},localhost,127.0.0.1,{5000+i}\n")
+
+
 # application runner helpers
-async def launch_bftlist(test_name="unknown test", args={}):
+async def launch_bftlist(test_name="unknown test", n=N, f=F, args={}):
     """Launches BFTList for integration testing."""
+    generate_hosts_file(n)
     nodes = get_nodes()
     cmd = ". env/bin/activate && python3.7 main.py"
     cwd = os.path.abspath(".")
@@ -68,8 +76,8 @@ async def launch_bftlist(test_name="unknown test", args={}):
         env = os.environ.copy()
         env["ID"] = str(node_id)
         env["API_PORT"] = str(4000 + node_id)
-        env["NUMBER_OF_NODES"] = str(N)
-        env["NUMBER_OF_BYZANTINE"] = str(F)
+        env["NUMBER_OF_NODES"] = str(n)
+        env["NUMBER_OF_BYZANTINE"] = str(f)
         env["NUMBER_OF_CLIENTS"] = "1"
         env["HOSTS_PATH"] = os.path.abspath(RELATIVE_PATH_FIXTURES_HOST)
         env["INTEGRATION_TEST"] = test_name
