@@ -34,6 +34,7 @@ class Resolver:
         # locks used to avoid race conditions with modules
         self.view_est_lock = Lock()
         self.replication_lock = Lock()
+        self.prim_mon_lock = Lock()
 
         self.own_comm_ready = False
         self.other_comm_ready = False
@@ -189,7 +190,11 @@ class Resolver:
             finally:
                 self.replication_lock.release()
         elif msg_type == MessageType.PRIMARY_MONITORING_MESSAGE:
-            self.modules[Module.PRIMARY_MONITORING_MODULE].receive_msg(msg)
+            try:
+                self.prim_mon_lock.acquire()
+                self.modules[Module.PRIMARY_MONITORING_MODULE].receive_msg(msg)
+            finally:
+                self.prim_mon_lock.release()
         elif msg_type == MessageType.FAILURE_DETECTOR_MESSAGE:
             self.modules[Module.FAILURE_DETECTOR_MODULE].receive_msg(msg)
         else:

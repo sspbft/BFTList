@@ -71,8 +71,8 @@ class ViewEstablishmentModule(AlgorithmModule):
             time.sleep(0.1)
 
         while True:
-            start_time = time.time()
             self.lock.acquire()
+            start_time = time.time()
             if(self.pred_and_action.need_reset()):
                 self.pred_and_action.reset_all()
             self.witnesses[self.id] = self.noticed_recent_value()
@@ -96,15 +96,16 @@ class ViewEstablishmentModule(AlgorithmModule):
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
 
-            self.lock.release()
-            # Stopping the while loop, used for testing purpose
-            if testing:
-                break
             # Emit run time metric
             run_time = time.time() - start_time
             run_method_time.labels(self.id,
                                    Module.VIEW_ESTABLISHMENT_MODULE).set(
                                        run_time)
+            self.lock.release()
+            # Stopping the while loop, used for testing purpose
+            if testing:
+                break
+
             # Send message to all other processors
             self.send_msg()
             throttle()

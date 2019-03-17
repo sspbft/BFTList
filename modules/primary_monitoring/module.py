@@ -33,6 +33,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
         """Initializes the module."""
         self.id = id
         self.resolver = resolver
+        self.lock = resolver.prim_mon_lock
         self.number_of_nodes = n
         self.number_of_byzantine = f
         self.vcm = [{V_STATUS: enums.OK,
@@ -70,6 +71,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
             time.sleep(0.1)
 
         while True:
+            self.lock.acquire()
             start_time = time.time()
             if self.vcm[self.id][PRIM] != self.get_current_view(self.id):
                 self.clean_state()
@@ -127,15 +129,17 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 if self.allow_service_denied == -1:
                     self.allow_service_denied = time.time()
 
-            # Stopping the while loop, used for testing purpose
-            if testing:
-                break
-
             # Emit run time metric
             run_time = time.time() - start_time
             run_method_time.labels(self.id,
                                    Module.PRIMARY_MONITORING_MODULE).set(
                                        run_time)
+            self.lock.release()
+
+            # Stopping the while loop, used for testing purpose
+            if testing:
+                break
+
             # Send vcm to all nodes
             self.send_msg()
             throttle()
