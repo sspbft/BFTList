@@ -109,7 +109,7 @@ def fetch_data_for_all_nodes():
     try:
         data = []
         for _, node in conf.get_nodes().items():
-            r = requests.get(f"http://{node.ip}:400{node.id}/data")
+            r = requests.get(f"http://{node.ip}:{4000+node.id}/data")
             data.append({"node": node.to_dct(), "data": r.json()})
         return data
     except Exception as e:

@@ -14,6 +14,7 @@ from modules.constants import (V_STATUS, PRIM, NEED_CHANGE, NEED_CHG_SET)
 from resolve.enums import MessageType
 import conf.config as conf
 from communication.zeromq.rate_limiter import throttle
+from metrics.messages import allow_service_rtt, run_method_time
 
 # global
 logger = logging.getLogger(__name__)
@@ -32,12 +33,15 @@ class PrimaryMonitoringModule(AlgorithmModule):
         """Initializes the module."""
         self.id = id
         self.resolver = resolver
+        self.lock = resolver.prim_mon_lock
         self.number_of_nodes = n
         self.number_of_byzantine = f
         self.vcm = [{V_STATUS: enums.OK,
                     PRIM: -1,
                     NEED_CHANGE: False,
                     NEED_CHG_SET: set()} for i in range(n)]
+        # Metric gathering
+        self.allow_service_denied = -1
 
         if os.getenv("INTEGRATION_TEST"):
             start_state = conf.get_start_state()
@@ -67,7 +71,8 @@ class PrimaryMonitoringModule(AlgorithmModule):
             time.sleep(0.1)
 
         while True:
-
+            self.lock.acquire()
+            start_time = time.time()
             if self.vcm[self.id][PRIM] != self.get_current_view(self.id):
                 self.clean_state()
 
@@ -78,6 +83,14 @@ class PrimaryMonitoringModule(AlgorithmModule):
 
             if self.resolver.execute(
                Module.VIEW_ESTABLISHMENT_MODULE, Function.ALLOW_SERVICE):
+
+                # Metrics gathering
+                if self.allow_service_denied != -1:
+                    latency = time.time() - self.allow_service_denied
+                    self.allow_service_denied = -1
+                    allow_service_rtt.labels(
+                        self.id, self.vcm[self.id][PRIM]).set(latency)
+
                 # Line 9-10
                 if (self.vcm[self.id][PRIM] ==
                    self.get_current_view(self.id) and
@@ -102,7 +115,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 elif(self.vcm[self.id][PRIM] ==
                      self.get_current_view(self.id) and
                      self.vcm[self.id][V_STATUS] == enums.V_CHANGE):
-                    logger.debug("Telling ViewEst to change view as prim")
+                    logger.debug("Telling ViewEst to change view")
                     self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
@@ -110,6 +123,18 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 else:
                     logger.debug("Cleaning state")
                     self.clean_state()
+
+            # Metric gathering
+            else:
+                if self.allow_service_denied == -1:
+                    self.allow_service_denied = time.time()
+
+            # Emit run time metric
+            run_time = time.time() - start_time
+            run_method_time.labels(self.id,
+                                   Module.PRIMARY_MONITORING_MODULE).set(
+                                       run_time)
+            self.lock.release()
 
             # Stopping the while loop, used for testing purpose
             if testing:

@@ -7,7 +7,6 @@ import jsonpickle
 import time
 
 # local
-from metrics.messages import msgs_sent
 from .message import Message, MessageEnum
 
 # globals
@@ -21,12 +20,13 @@ class Receiver():
     connect to in order to send messages.
     """
 
-    def __init__(self, id, ip, port, resolver):
+    def __init__(self, id, ip, port, resolver, on_ack=None):
         """Initializes the receiver."""
         self.id = id
         self.ip = ip
         self.port = port
         self.resolver = resolver
+        self.on_ack = on_ack
 
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REP)
@@ -47,9 +47,10 @@ class Receiver():
 
     def ack(self, counter):
         """Sends a message over the specified channel."""
-        msgs_sent.labels(self.id).inc(1)
         if self.msgs_received == 0:
             self.start_time = time.time()
         self.msgs_received += 1
         msg = Message(MessageEnum.RECEIVER_MESSAGE, counter, self.id)
+        if self.on_ack is not None:
+            self.on_ack()
         self.socket.send(msg.as_bytes())
