@@ -99,7 +99,7 @@ def setup_communication(resolver):
 
 
 def setup_metrics():
-    """Starts metrics server for Prometheus scraper on port 600{ID}."""
+    """Starts metrics server for Prometheus scraper on port 300{ID}."""
     try:
         port = 3000 + id
         start_http_server(port, addr="0.0.0.0")
