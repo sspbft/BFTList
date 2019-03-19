@@ -20,7 +20,7 @@ from modules.view_establishment.module import ViewEstablishmentModule
 from modules.replication.module import ReplicationModule
 from modules.primary_monitoring.module import PrimaryMonitoringModule
 from modules.primary_monitoring.failure_detector import FailureDetectorModule
-from modules.event_fd.module import EventDrivenFDModule
+from modules.event_driven_fd.module import EventDrivenFDModule
 from resolve.enums import Module, SystemStatus
 from resolve.resolver import Resolver
 from metrics.latency_monitor import monitor_node_latencies

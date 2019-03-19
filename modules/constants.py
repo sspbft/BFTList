@@ -43,5 +43,5 @@ BEAT_THRESHOLD = 30  # Threshold for liveness, beat-variable
 CNT_THRESHOLD = 20  # Threshold for progress, cnt-variable
 
 # Event driven FD module
-K_ADMISSIBILITY_THRESHOLD = 10
+K_ADMISSIBILITY_THRESHOLD = 5
 EVENT_FD_WAIT = 0.1
