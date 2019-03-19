@@ -20,6 +20,7 @@ from modules.view_establishment.module import ViewEstablishmentModule
 from modules.replication.module import ReplicationModule
 from modules.primary_monitoring.module import PrimaryMonitoringModule
 from modules.primary_monitoring.failure_detector import FailureDetectorModule
+from modules.event_fd.module import EventDrivenFDModule
 from resolve.enums import Module, SystemStatus
 from resolve.resolver import Resolver
 from metrics.latency_monitor import monitor_node_latencies
@@ -56,7 +57,9 @@ def start_modules(resolver):
         Module.PRIMARY_MONITORING_MODULE:
             PrimaryMonitoringModule(id, resolver, n, f),
         Module.FAILURE_DETECTOR_MODULE:
-            FailureDetectorModule(id, resolver, n, f)
+            FailureDetectorModule(id, resolver, n, f),
+        Module.EVENT_DRIVEN_FD_MODULE:
+            EventDrivenFDModule(id, resolver, n, f)
     }
 
     resolver.set_modules(modules)
