@@ -48,16 +48,24 @@ def start_modules(resolver):
     if k == 0:
         logger.warning("Env var NUMBER_OF_CLIENTS not set or set to 0")
 
-    modules = {
-        Module.VIEW_ESTABLISHMENT_MODULE:
-            ViewEstablishmentModule(id, resolver, n, f),
-        Module.REPLICATION_MODULE:
-            ReplicationModule(id, resolver, n, f, k),
-        Module.PRIMARY_MONITORING_MODULE:
-            PrimaryMonitoringModule(id, resolver, n, f),
-        Module.FAILURE_DETECTOR_MODULE:
-            FailureDetectorModule(id, resolver, n, f)
-    }
+    if os.getenv("NON_SELF_STAB"):
+        modules = {
+            Module.REPLICATION_MODULE:
+                ReplicationModule(id, resolver, n, f, k),
+            Module.FAILURE_DETECTOR_MODULE:
+                FailureDetectorModule(id, resolver, n, f)
+        }
+    else:
+        modules = {
+            Module.VIEW_ESTABLISHMENT_MODULE:
+                ViewEstablishmentModule(id, resolver, n, f),
+            Module.REPLICATION_MODULE:
+                ReplicationModule(id, resolver, n, f, k),
+            Module.PRIMARY_MONITORING_MODULE:
+                PrimaryMonitoringModule(id, resolver, n, f),
+            Module.FAILURE_DETECTOR_MODULE:
+                FailureDetectorModule(id, resolver, n, f)
+        }
 
     resolver.set_modules(modules)
 

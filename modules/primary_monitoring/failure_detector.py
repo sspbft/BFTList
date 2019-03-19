@@ -95,12 +95,15 @@ class FailureDetectorModule:
         # Line 9-11
         self.update_beat(processor_j)
 
+        # Stop executing if non self-stablizing:
+        if os.getenv("NON_SELF_STAB"):
+            return
+
         # Line 13-14
         new_prim = self.get_current_view(self.id)
         if self.prim != new_prim:
             self.reset()
         self.prim = new_prim
-
         if self.allow_service() and self.resolver.execute(
                                         Module.PRIMARY_MONITORING_MODULE,
                                         Function.NO_VIEW_CHANGE):

@@ -48,6 +48,9 @@ class Resolver:
         # inject resolver in rate limiter module
         rate_limiter.resolver = self
 
+        # Support non-self-stabilizing mode
+        self.non_self_stab = os.getenv("NON_SELF_STAB")
+
     def wait_for_other_nodes(self):
         """Write me."""
         if len(self.nodes) == 1:
@@ -83,11 +86,19 @@ class Resolver:
     def execute(self, module, func, *args):
         """API for executing a function on a given module."""
         if module == Module.VIEW_ESTABLISHMENT_MODULE:
-            return self.view_establishment_exec(func, *args)
+            if self.non_self_stab:
+                if func == Function.GET_CURRENT_VIEW:
+                    return 0
+                elif func == Function.ALLOW_SERVICE:
+                    return True
+            else:
+                return self.view_establishment_exec(func, *args)
         elif module == Module.REPLICATION_MODULE:
             return self.replication_exec(func, *args)
         elif module == Module.PRIMARY_MONITORING_MODULE:
-            return self.primary_monitoring_exec(func, *args)
+            if self.non_self_stab:
+            else:
+                return self.primary_monitoring_exec(func, *args)
         elif module == Module.FAILURE_DETECTOR_MODULE:
             return self.failure_detector_exec(func, *args)
         else:
