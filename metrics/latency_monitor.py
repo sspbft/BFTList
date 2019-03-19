@@ -27,8 +27,12 @@ def monitor_node_latencies():
     while True:
         for n_id in other_nodes:
             node = nodes[n_id]
-            cmd = f"sudo sh ./metrics/ping.sh {node.hostname}".split(" ")
-            res = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()
-            latency = float(res[0].decode().replace("\n", ""))
-            host_latency.labels(ID, nodes[ID].hostname, n_id,
-                                node.hostname).set(latency)
+            try:
+                cmd = f"sudo sh ./metrics/ping.sh {node.hostname}".split(" ")
+                res = subprocess.Popen(cmd,
+                                       stdout=subprocess.PIPE).communicate()
+                latency = float(res[0].decode().replace("\n", ""))
+                host_latency.labels(ID, nodes[ID].hostname, n_id,
+                                    node.hostname).set(latency)
+            except Exception as e:
+                logger.error(f"Got error {e} when pinging {node.hostname}")
