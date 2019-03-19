@@ -227,6 +227,7 @@ class PredicatesAndAction():
 
     def view_change(self):
         """A view change is required."""
+        logger.info("vChange is set to True by PrimMon")
         self.vChange = True
 
     def get_current_view(self, node_j):
@@ -286,6 +287,7 @@ class PredicatesAndAction():
                             # Assert that the view_pair is transit adoptable
                             if self.transit_adopble(
                                processor_id, 0, enums.FOLLOW):
+                                logger.info(f"ADOPTING: {view_pair} with views: {self.views}")
                                 self.view_pair_to_adopt = deepcopy(view_pair)
                                 return True
                 return False

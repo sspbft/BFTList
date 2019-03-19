@@ -104,10 +104,12 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     if(self.vcm[self.id][V_STATUS] == enums.OK and
                        self.sup_change(3 * self.number_of_byzantine + 1)):
                         self.vcm[self.id][V_STATUS] = enums.NO_SERVICE
+                        logger.info("NO_SERVICE")
                     # Line 13
-                    elif self.sup_change(4 * self.number_of_byzantine + 1):
+                    if self.sup_change(4 * self.number_of_byzantine + 1):
                         self.vcm[self.id][V_STATUS] = enums.V_CHANGE
-                        logger.debug("Telling ViewEst to change view")
+                        logger.info("Telling ViewEst to change view")
+
                         self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
@@ -115,7 +117,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 elif(self.vcm[self.id][PRIM] ==
                      self.get_current_view(self.id) and
                      self.vcm[self.id][V_STATUS] == enums.V_CHANGE):
-                    logger.debug("Telling ViewEst to change view")
+                    logger.info("Telling ViewEst to change view")
                     self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
@@ -128,6 +130,8 @@ class PrimaryMonitoringModule(AlgorithmModule):
             else:
                 if self.allow_service_denied == -1:
                     self.allow_service_denied = time.time()
+                # logger.info("Cleaning state once again")
+                # self.clean_state()
 
             # Emit run time metric
             run_time = time.time() - start_time
@@ -193,7 +197,8 @@ class PrimaryMonitoringModule(AlgorithmModule):
         for k, v in prim_dct.items():
             if len(v) >= size_processors:
                 processor_set = v
-
+            else:
+                return False
             # Check the intersection of needChgSet
             need_chg_set_intersection = set()
             for processor_id in processor_set:
@@ -207,6 +212,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
             # Check if the intersection is large enough
             if (len(need_chg_set_intersection) >=
                     (3 * self.number_of_byzantine + 1)):
+                    logger.info(need_chg_set_intersection)
                     return True
         return False
 
