@@ -1,16 +1,28 @@
 """Module containing a latency monitor used for latency metrics."""
+
+# standard
 import subprocess
 import os
+import logging
 
+# local
 from conf.config import get_nodes
 from metrics.latency import host_latency
+
+# globals
+logger = logging.getLogger(__name__)
 
 
 def monitor_node_latencies():
     """Continously emits latency metric for other nodes by pinging them."""
     ID = int(os.getenv("ID"))
     nodes = get_nodes()
-    other_nodes = {k: nodes[k] for k in nodes if k != ID}
+    other_nodes = {k: nodes[k] for k in nodes if k != ID and
+                   nodes[k].hostname != "localhost"}
+
+    if len(other_nodes) == 0:
+        logger.info(f"No use to ping when running locally, aborting")
+        return
 
     while True:
         for n_id in other_nodes:
