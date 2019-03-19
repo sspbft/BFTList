@@ -66,6 +66,9 @@ class EventDrivenFDModule:
             # increment token
             self.token += 1
 
+            if testing:
+                break
+
     def on_msg_recv(self, msg):
         """Called whenever a token is received from another processor
 
@@ -115,7 +118,7 @@ class EventDrivenFDModule:
                 "owner_id": owner_id
             }
         }
-        self.resolver.send_to_node(processor_id, msg, fd_msg=True)
+        self.resolver.send_to_node(processor_id, msg, True)
 
     def broadcast(self):
         """Broadcasts a fresh token to all other processors
