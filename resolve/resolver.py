@@ -125,10 +125,11 @@ class Resolver:
 
     def primary_monitoring_exec(self, func):
         """Executes a function on the Primary Monitoring module."""
+        module = self.modules[Module.PRIMARY_MONITORING_MODULE]
         if func == Function.NO_VIEW_CHANGE:
             if os.getenv("FORCE_NEW_VIEW_CHANGE"):
                 return True
-            return True
+            return module.no_view_change()
         else:
             raise ValueError("Bad function parameter")
 
