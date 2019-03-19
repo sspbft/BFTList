@@ -36,10 +36,10 @@ Both linting and testing is setup to be run for all Pull Requests and on each pu
 ## System description
 
 ### Ports
-Each running node uses three ports: one for the API (default to `400{node_id}`), one for the self-stabilizing communication channel with other nodes (`500{node_id}`) and one for exposing metrics to the Prometheus scraper (`600{node_id}`). Node with id `1` would therefore be using ports `4001`, `5001` and `6001` for example.
+Each running node uses three ports: one for the API (default to `400{node_id}`), one for the self-stabilizing communication channel with other nodes (`500{node_id}`) and one for exposing metrics to the Prometheus scraper (`300{node_id}`). Node with id `1` would therefore be using ports `3001`, `4001` and `5001` for example.
 
 | Port number   | Service                       | 
 | ------------- |:-----------------------------:|
+| 300{ID}       | Prometheus metrics endpoint   |
 | 400{ID}       | REST API                      |
 | 500{ID}       | Inter-node communication      |
-| 600{ID}       | Prometheus metrics endpoint   |

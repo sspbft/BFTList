@@ -22,6 +22,7 @@ from modules.primary_monitoring.module import PrimaryMonitoringModule
 from modules.primary_monitoring.failure_detector import FailureDetectorModule
 from resolve.enums import Module, SystemStatus
 from resolve.resolver import Resolver
+from metrics.latency_monitor import monitor_node_latencies
 
 # globals
 id = int(os.getenv("ID", 0))
@@ -98,13 +99,16 @@ def setup_communication(resolver):
 
 
 def setup_metrics():
-    """Starts metrics server for Prometheus scraper on port 600{ID}."""
+    """Starts metrics server for Prometheus scraper on port 300{ID}."""
     try:
-        port = 6000 + id
+        port = 3000 + id
         start_http_server(port, addr="0.0.0.0")
         logger.info(f"Metrics server setup on port {port}")
     except Exception as e:
         logger.error(f"Could not setup metrics. Got error: {e}")
+
+    # start latency monitor in other thread
+    Thread(target=monitor_node_latencies).start()
 
 
 def setup_logging():
