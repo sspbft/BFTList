@@ -22,7 +22,7 @@ from .models.operation import Operation
 import modules.byzantine as byz
 from communication.zeromq.rate_limiter import throttle
 from metrics.messages import run_method_time
-from metrics.state import state_length
+from metrics.state import state_length, client_req_executed
 
 # globals
 logger = logging.getLogger(__name__)
@@ -386,6 +386,9 @@ class ReplicationModule(AlgorithmModule):
         # remove request from pend_reqs and req_q
         self.rep[self.id].remove_from_pend_reqs(request.get_client_request())
         self.rep[self.id].remove_from_req_q(request)
+
+        # notify state metric that request has been committed
+        client_req_executed(request.get_client_request())
 
     def apply(self, req: Request):
         """Applies a request and returns the resulting state."""
