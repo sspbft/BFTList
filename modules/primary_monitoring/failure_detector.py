@@ -97,6 +97,7 @@ class FailureDetectorModule:
 
         # Stop executing if non self-stablizing:
         if os.getenv("NON_SELF_STAB"):
+            self.prim = 0
             return
 
         # Line 13-14

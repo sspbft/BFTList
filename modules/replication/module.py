@@ -172,6 +172,7 @@ class ReplicationModule(AlgorithmModule):
             else:
                 # This variable is used later on
                 view_est_allow_service = True
+                prim_id = 0
 
             self.rep[self.id].extend_pend_reqs(self.known_pend_reqs())
             # line 15 - 25

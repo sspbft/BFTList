@@ -49,7 +49,10 @@ class Resolver:
         rate_limiter.resolver = self
 
         # Support non-self-stabilizing mode
-        self.non_self_stab = os.getenv("NON_SELF_STAB")
+        if os.getenv("NON_SELF_STAB"):
+            self.non_self_stab = int(os.getenv("NON_SELF_STAB"))
+        else:
+            self.non_self_stab = False
 
     def wait_for_other_nodes(self):
         """Write me."""
@@ -88,7 +91,7 @@ class Resolver:
         if module == Module.VIEW_ESTABLISHMENT_MODULE:
             if self.non_self_stab:
                 if func == Function.GET_CURRENT_VIEW:
-                    return 0
+                    return 0  # Always let Primary be 0, change to an env?
                 elif func == Function.ALLOW_SERVICE:
                     return True
             else:
@@ -97,6 +100,7 @@ class Resolver:
             return self.replication_exec(func, *args)
         elif module == Module.PRIMARY_MONITORING_MODULE:
             if self.non_self_stab:
+                return True
             else:
                 return self.primary_monitoring_exec(func, *args)
         elif module == Module.FAILURE_DETECTOR_MODULE:
@@ -247,7 +251,10 @@ class Resolver:
 
         View Establishment module.
         """
-        return self.modules[Module.VIEW_ESTABLISHMENT_MODULE].get_data()
+        if self.non_self_stab:
+            return {}
+        else:
+            return self.modules[Module.VIEW_ESTABLISHMENT_MODULE].get_data()
 
     def get_replication_data(self):
         """Returns current values of variables.
@@ -261,9 +268,13 @@ class Resolver:
 
         Primary Monitoring module.
         """
-        prim_mon = self.modules[Module.PRIMARY_MONITORING_MODULE].get_data()
         fail_det = self.modules[Module.FAILURE_DETECTOR_MODULE].get_data()
-        return {**prim_mon, **fail_det}
+        if self.non_self_stab:
+            return {**fail_det}
+        else:
+            prim_mon = self.modules[
+                            Module.PRIMARY_MONITORING_MODULE].get_data()
+            return {**prim_mon, **fail_det}
 
     def get_failure_detector_data(self):
         """Returns current values of variables.
