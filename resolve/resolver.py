@@ -167,8 +167,8 @@ class Resolver:
                       self.fd_senders[node_id])
             sender.add_msg_to_queue(msg_dct)
         except Exception as e:
-            logger.error(f"Something went wrong when sending msg to node" +
-                         f" {node_id}. Error: {e}")
+            logger.error(f"Something went wrong when sending msg {msg_dct} " +
+                         f"to node {node_id}. Error: {e}")
 
     def broadcast(self, msg_dct):
         """Broadcasts a message to all nodes."""
@@ -198,9 +198,11 @@ class Resolver:
                 self.prim_mon_lock.release()
         elif msg_type == MessageType.FAILURE_DETECTOR_MESSAGE:
             self.modules[Module.FAILURE_DETECTOR_MODULE].receive_msg(msg)
+        elif msg_type == MessageType.EVENT_DRIVEN_FD_MESSAGE:
+            self.modules[Module.EVENT_DRIVEN_FD_MODULE].on_msg_recv(msg)
         else:
             logger.warning(f"Message with invalid type {msg_type} cannot be" +
-                           "dispatched")
+                           " dispatched")
 
     def on_message_sent(self, msg={}, metric_data={}):
         """Callback function when a communication module has sent the message.
@@ -260,6 +262,13 @@ class Resolver:
         Failure detector module.
         """
         return self.modules[Module.FAILURE_DETECTOR_MODULE].get_data()
+
+    def get_event_driven_fd_data(self):
+        """Returns current values of variables.
+
+        Event-driven failure detector module.
+        """
+        return self.modules[Module.EVENT_DRIVEN_FD_MODULE].get_data()
 
     def inject_client_req(self, req: ClientRequest):
         """Injects a ClientRequest sent from a client through the API."""
