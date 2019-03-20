@@ -22,6 +22,7 @@ from .models.operation import Operation
 import modules.byzantine as byz
 from communication.zeromq.rate_limiter import throttle
 from metrics.messages import run_method_time
+from metrics.state import state_length
 
 # globals
 logger = logging.getLogger(__name__)
@@ -393,6 +394,9 @@ class ReplicationModule(AlgorithmModule):
         new_state = operation.execute(current_state)
         self.rep[self.id].set_rep_state(new_state)
         logger.info(f"Applying request {req}.")
+
+        # state length can only increment by 1 for each APPEND request
+        state_length.inc()
         return new_state
 
     # Macros
