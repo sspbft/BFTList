@@ -49,6 +49,7 @@ def start_modules(resolver):
         logger.warning("Env var NUMBER_OF_CLIENTS not set or set to 0")
 
     if os.getenv("NON_SELF_STAB"):
+        logger.warning("Running system without self-stabilizing properties")
         modules = {
             Module.REPLICATION_MODULE:
                 ReplicationModule(id, resolver, n, f, k),
