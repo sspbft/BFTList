@@ -129,10 +129,6 @@ class EventDrivenFDModule:
             if processor_id != self.id:
                 self.send_token(processor_id, self.token, self.id)
 
-    def get_last_correct_processor(self):
-        """Returns the IDs of the most recent correct processors."""
-        return self.last_correct_processors["correct_processors"]
-
     def get_data(self):
         """Returns current values on local variables."""
         return {

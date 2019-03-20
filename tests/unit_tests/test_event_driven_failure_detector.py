@@ -89,7 +89,3 @@ class TestEventDrivenFailureDetector(unittest.TestCase):
         self.module.counters = {i: K for i in range(N - 2*F)}
         self.assertTrue(self.module.correct_processors_have_replied())
     
-    def test_get_last_correct_processor(self):
-        # TODO
-        pass
-    
