@@ -19,12 +19,16 @@ client_req_exec_time = Gauge("client_req_exec_time",
                              ["client_id", "timestamp"])
 
 # dict to keep track of all client_requests and when they arrived in pending
-# structure: { client_req: UNIX timestamp of added to pending }
 client_reqs = {}
 
 
 def client_req_added_to_pending(client_req: ClientRequest):
-    """TODO write me."""
+    """Called whenever a client request is added to pending requests
+
+    The request is stored along with the current timestamp in client_reqs
+    until client_req_executed is called for the same request. This enables
+    the tracking of client request execution time.
+    """
     if client_req in client_reqs:
         logger.error(f"ClientRequest {client_req} already tracked")
         return
@@ -33,7 +37,11 @@ def client_req_added_to_pending(client_req: ClientRequest):
 
 
 def client_req_executed(client_req: ClientRequest):
-    """TODO write me."""
+    """Called whenever a client request is fully executed, i.e. committed
+
+    The total execution time is calculated and emitted to the gauge tracking
+    the client request execution time.
+    """
     if client_req not in client_reqs:
         logger.error(f"ClientRequest {client_req} not tracked")
         return
