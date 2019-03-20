@@ -58,9 +58,8 @@ class ReplicationModule(AlgorithmModule):
         self.need_flush = False
         self.rep = [ReplicaStructure(i, k) for i in range(n)] \
             # type: List[ReplicaStructure]
-        self.self_stab = True
-        if os.getenv("NON_SELF_STAB"):
-            self.self_stab = False
+        # Support for non-self-stab
+        self.self_stab = os.getenv("NON_SELF_STAB") is None
 
         if os.getenv("INTEGRATION_TEST"):
             start_state = conf.get_start_state()
