@@ -92,7 +92,7 @@ class ViewEstablishmentModule(AlgorithmModule):
                 # Onces a predicates is fulfilled, perfom action if valid case
                 if(self.pred_and_action.auto_max_case(self.phs[self.id]) >=
                         case):
-                    logger.info(f"Phase: {self.phs[self.id]} Case: {case}")
+                    # logger.debug(f"Phase: {self.phs[self.id]} Case: {case}")
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
 
@@ -117,7 +117,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         Checks if processor k has reported(echo) a view and phase matching
         the current view and phase.
         """
-        return (self.pred_and_action.get_info(self.id) ==
+        return (self.pred_and_action.get_info(self.id)[0] ==
                 self.echo[processor_k].get(VIEWS) and
                 self.phs[self.id] == self.echo[processor_k].get(PHASE))
 
@@ -204,21 +204,24 @@ class ViewEstablishmentModule(AlgorithmModule):
             # update own echo instead of sending message
             if node_j == self.id:
                 self.echo[self.id] = {
-                    VIEWS: self.pred_and_action.get_info(self.id),
+                    VIEWS: self.pred_and_action.get_info(self.id)[0],
                     PHASE: self.phs[self.id],
                     WITNESSES: self.witnesses[self.id]
                 }
             else:
                 # node_i's own data
+                pred_and_action_data = self.pred_and_action.get_info(self.id)
                 own_data = [deepcopy(self.phs[self.id]),
                             deepcopy(self.witnesses[self.id]),
-                            deepcopy(self.pred_and_action.get_info(self.id))
+                            deepcopy(pred_and_action_data[0]),
+                            deepcopy(pred_and_action_data[1])
                             ]
 
                 # what node_i thinks about node_j
                 about_data = [deepcopy(self.phs[node_j]),
                               deepcopy(self.witnesses[node_j]),
-                              deepcopy(self.pred_and_action.get_info(node_j))
+                              deepcopy(
+                                  self.pred_and_action.get_info(node_j)[0])
                               ]
 
                 # Overwriting own_data to send different views to different
@@ -229,17 +232,20 @@ class ViewEstablishmentModule(AlgorithmModule):
                         if (node_j % 2 == 0):
                             own_data = [0,
                                         True,
-                                        {CURRENT: 1, NEXT: 1}
+                                        {CURRENT: 1, NEXT: 1},
+                                        False
                                         ]
                         else:
                             own_data = [0,
                                         True,
-                                        {CURRENT: 2, NEXT: 2}
+                                        {CURRENT: 2, NEXT: 2},
+                                        False
                                         ]
                     elif byz.get_byz_behavior() == byz.FORCING_RESET:
                         own_data = [0,
                                     True,
-                                    self.pred_and_action.RST_PAIR
+                                    self.pred_and_action.RST_PAIR,
+                                    False
                                     ]
 
                 msg = {"type": MessageType.VIEW_ESTABLISHMENT_MESSAGE,
@@ -275,7 +281,9 @@ class ViewEstablishmentModule(AlgorithmModule):
 
             self.phs[j] = deepcopy(j_own_data[0])
             self.witnesses[j] = deepcopy(j_own_data[1])
-            self.pred_and_action.set_info(deepcopy(j_own_data[2]), j)
+            self.pred_and_action.set_info(deepcopy(j_own_data[2]),
+                                          deepcopy(j_own_data[3]),
+                                          j)
         else:
             logger.info(f"Not a valid message from " +
                         f"node {j}: {j_own_data}")

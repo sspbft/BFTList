@@ -25,7 +25,7 @@ start_state = {
     "0": {
         "VIEW_ESTABLISHMENT_MODULE": {
             "views": [{"current": 1, "next": 1} for i in range(N)],
-            "vChange": True,
+            "vChange": [True for i in range(5)] + [False],
             "phs": [0 for i in range(N)]
         }
     }
@@ -33,7 +33,7 @@ start_state = {
 
 for i in range(1, N):
     start_state[str(i)] = deepcopy(start_state["0"])
-start_state["5"]["VIEW_ESTABLISHMENT_MODULE"]["vChange"] = False
+#start_state["5"]["VIEW_ESTABLISHMENT_MODULE"]["vChange"] = [True for i in range(5)] + [False]
 
 class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
     """Performs health check on all nodes base endpoint (/)."""

@@ -104,9 +104,8 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     if(self.vcm[self.id][V_STATUS] == enums.OK and
                        self.sup_change(3 * self.number_of_byzantine + 1)):
                         self.vcm[self.id][V_STATUS] = enums.NO_SERVICE
-                        logger.info("NO_SERVICE")
                     # Line 13
-                    if self.sup_change(4 * self.number_of_byzantine + 1):
+                    elif self.sup_change(4 * self.number_of_byzantine + 1):
                         self.vcm[self.id][V_STATUS] = enums.V_CHANGE
                         logger.info("Telling ViewEst to change view")
 
@@ -130,8 +129,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
             else:
                 if self.allow_service_denied == -1:
                     self.allow_service_denied = time.time()
-                # logger.info("Cleaning state once again")
-                # self.clean_state()
+                self.clean_state()
 
             # Emit run time metric
             run_time = time.time() - start_time
@@ -153,7 +151,8 @@ class PrimaryMonitoringModule(AlgorithmModule):
         """Returns the number of processors which is in NO_SERVICE."""
         processors = 0
         for processor_vcm in self.vcm:
-            if processor_vcm[V_STATUS] == enums.NO_SERVICE:
+            if (processor_vcm[V_STATUS] == enums.NO_SERVICE or
+               processor_vcm[V_STATUS] == enums.V_CHANGE):
                 processors += 1
         return processors
 
@@ -212,7 +211,6 @@ class PrimaryMonitoringModule(AlgorithmModule):
             # Check if the intersection is large enough
             if (len(need_chg_set_intersection) >=
                     (3 * self.number_of_byzantine + 1)):
-                    logger.info(need_chg_set_intersection)
                     return True
         return False
 

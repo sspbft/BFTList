@@ -30,7 +30,7 @@ class PredicatesAndAction():
         self.number_of_byzantine = f
         self.number_of_nodes = n
         self.resolver = resolver
-        self.vChange = False
+        self.vChange = [False for i in range(n)]
         self.RST_PAIR = {CURRENT: enums.TEE, NEXT: enums.DF_VIEW}
 
     # Macros
@@ -203,7 +203,7 @@ class PredicatesAndAction():
 
     def reset_v_change(self):
         """The node is no longer in a view change."""
-        self.vChange = False
+        self.vChange = [False for i in range(self.number_of_nodes)]
 
     # Interface functions
     def need_reset(self):
@@ -215,7 +215,6 @@ class PredicatesAndAction():
 
     def reset_all(self):
         """Reset all modules."""
-        logger.info(f"Resetting views:{self.views} ")
         self.views = [deepcopy(self.RST_PAIR) for i in range(
                                                 self.number_of_nodes)]
         self.view_module.init_module()
@@ -229,7 +228,7 @@ class PredicatesAndAction():
     def view_change(self):
         """A view change is required."""
         logger.info("vChange is set to True by PrimMon")
-        self.vChange = True
+        self.vChange[self.id] = True
 
     def get_current_view(self, node_j):
         """Returns the most recent reported *current* view of node_j."""
@@ -288,15 +287,16 @@ class PredicatesAndAction():
                             # Assert that the view_pair is transit adoptable
                             if self.transit_adopble(
                                processor_id, 0, enums.FOLLOW):
-                                logger.info(f"ADOPTING: {view_pair} with views: {self.views}")
                                 self.view_pair_to_adopt = deepcopy(view_pair)
                                 return True
                 return False
 
             # True if a view change was instructed by Primary Monitoring
             elif(case == 1):
+                enough_support = len([v for (v) in self.vChange if v is True])
                 return(
-                    (self.vChange and self.establishable(0, enums.FOLLOW)) or
+                    (enough_support >= (4 * self.number_of_byzantine + 1) and
+                     self.establishable(0, enums.FOLLOW)) or
                     (self.views[self.id] == self.RST_PAIR and
                      self.establishable(0, enums.FOLLOW))
                 )
@@ -324,7 +324,7 @@ class PredicatesAndAction():
                     self.adopt(self.view_pair_to_adopt)
                     self.view_pair_to_adopt = -1
                     self.view_module.next_phs()
-                    self.reset_v_change()
+                    # self.reset_v_change()
                     return enums.NO_RETURN_VALUE
                 else:
                     logger.error(f"Not a valid view pair to adopt: \
@@ -333,10 +333,11 @@ class PredicatesAndAction():
             # Two subcases
             elif(case == 1):
                 # Case 1a (increment view and move to next face
-                if(self.vChange):
+                enough_support = len([v for (v) in self.vChange if v is True])
+                if(enough_support >= (4 * self.number_of_byzantine + 1)):
                     self.next_view()
                     self.view_module.next_phs()
-                    self.reset_v_change()
+                    # self.reset_v_change()
                     return enums.NO_RETURN_VALUE
                 # Case 1b (do NOT increment view, stay in RST_PAIR but move to
                 #  next phase)
@@ -346,7 +347,7 @@ class PredicatesAndAction():
 
             # No action and reset the v_change-variable
             elif(case == 2):
-                self.reset_v_change()
+                # self.reset_v_change()
                 return enums.NO_ACTION
 
             # Full reset
@@ -450,8 +451,9 @@ class PredicatesAndAction():
 
     def get_info(self, node_k):
         """Returns the most recent reported view of node k."""
-        return self.views[node_k]
+        return (self.views[node_k], self.vChange[node_k])
 
-    def set_info(self, vpair, node_k):
+    def set_info(self, vpair, vC, node_k):
         """Sets the most recent view of node k to the reported view."""
         self.views[node_k] = vpair
+        self.vChange[node_k] = vC
