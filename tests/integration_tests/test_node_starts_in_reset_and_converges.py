@@ -30,7 +30,7 @@ for i in range(N):
         "VIEW_ESTABLISHMENT_MODULE": {
             "views": views,
             "phs": phases,
-            "vChange": vChanges[i]
+            "vChange": vChanges
         }
     }
 
@@ -62,17 +62,18 @@ class TestNodeConvergeAfterReset(AbstractIntegrationTest):
 
                 vp_target = {"current": 2, "next": 2}
                 phases_target = [0 for i in range(N)]
+                vChange_target = [False for i in range(N)]
 
                 if last_check:
                     for i,vp in enumerate(views):
                         self.assertEqual(vp, vp_target)
                     self.assertEqual(phases, phases_target)
-                    self.assertEqual(vChange, False)
+                    self.assertEqual(vChange, vChange_target)
                 else:
                     for i,vp in enumerate(views):
                         checks.append(vp == vp_target)
                     checks.append(phases == phases_target)
-                    checks.append(vChange == False)
+                    checks.append(vChange == vChange_target)
 
             # all checks passed means test passed
             if all(checks):

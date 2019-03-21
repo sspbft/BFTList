@@ -33,7 +33,7 @@ for i in range(N):
         "VIEW_ESTABLISHMENT_MODULE": {
             "views": views,
             "phs": phases,
-            "vChange": vChanges[i]
+            "vChange": vChanges
         }
     }
 
@@ -66,15 +66,16 @@ class TestNodesResetsUponStaleInfo(AbstractIntegrationTest):
 
                 vp_target = [{"current": 0, "next": 0} for i in range(N)]
                 phases_target = [0 for i in range(N)]
+                vChange_target = [False for i in range(N)]
 
                 if last_check:
                     self.assertEqual(views, vp_target)
                     self.assertEqual(phases, phases_target)
-                    self.assertEqual(vChange, False)
+                    self.assertEqual(vChange, vChange_target)
                 else:
                     checks.append(views == vp_target)
                     checks.append(phases == phases_target)
-                    checks.append(vChange == False)
+                    checks.append(vChange == vChange_target)
 
             # all checks passed means test passed
             if all(checks):

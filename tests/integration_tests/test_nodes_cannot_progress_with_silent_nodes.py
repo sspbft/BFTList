@@ -41,7 +41,7 @@ for i in range(N):
         "VIEW_ESTABLISHMENT_MODULE": {
             "views": views if i <= 2 else views_2,
             "phs": phases,
-            "vChange": vChanges[i],
+            "vChange": vChanges,
             "witnesses": witnesses
         }
     }
