@@ -40,8 +40,10 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     PRIM: -1,
                     NEED_CHANGE: False,
                     NEED_CHG_SET: set()} for i in range(n)]
+        self.self_stab = os.getenv("NON_SELF_STAB") is None
         # Metric gathering
         self.allow_service_denied = -1
+        self.mock_prim = 0
 
         if os.getenv("INTEGRATION_TEST"):
             start_state = conf.get_start_state()
@@ -80,10 +82,15 @@ class PrimaryMonitoringModule(AlgorithmModule):
             self.vcm[self.id][NEED_CHANGE] = self.resolver.execute(
                                                 Module.FAILURE_DETECTOR_MODULE,
                                                 Function.SUSPECTED)
+            # Mock if non-self-stabilizing
+            if self.self_stab:
+                allowed_service_view = self.resolver.execute(
+                                        Module.VIEW_ESTABLISHMENT_MODULE,
+                                        Function.ALLOW_SERVICE)
+            else:
+                allowed_service_view = True
 
-            if self.resolver.execute(
-               Module.VIEW_ESTABLISHMENT_MODULE, Function.ALLOW_SERVICE):
-
+            if allowed_service_view:
                 # Metrics gathering
                 if self.allow_service_denied != -1:
                     latency = time.time() - self.allow_service_denied
@@ -108,10 +115,12 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     elif self.sup_change(4 * self.number_of_byzantine + 1):
                         self.vcm[self.id][V_STATUS] = enums.V_CHANGE
                         logger.debug("Telling ViewEst to change view")
-
-                        self.resolver.execute(
-                            Module.VIEW_ESTABLISHMENT_MODULE,
-                            Function.VIEW_CHANGE)
+                        if self.self_stab:
+                            self.resolver.execute(
+                                Module.VIEW_ESTABLISHMENT_MODULE,
+                                Function.VIEW_CHANGE)
+                        else:
+                            self.mock_prim += 1
                 # Line 14
                 elif(self.vcm[self.id][PRIM] ==
                      self.get_current_view(self.id) and
@@ -219,9 +228,13 @@ class PrimaryMonitoringModule(AlgorithmModule):
     # Functions added for inter-module communication
     def get_current_view(self, processor_id):
         """Calls get_current_view method at View Establishment module."""
-        return self.resolver.execute(
+        # Mock if non self-stablizing:
+        if self.self_stab:
+            return self.resolver.execute(
                                     Module.VIEW_ESTABLISHMENT_MODULE,
                                     Function.GET_CURRENT_VIEW, processor_id)
+        else:
+            return self.mock_prim
 
     # Functions added for default values
     def get_default_vcm(self, id):
