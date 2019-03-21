@@ -59,6 +59,8 @@ class ReplicationModule(AlgorithmModule):
         self.need_flush = False
         self.rep = [ReplicaStructure(i, k) for i in range(n)] \
             # type: List[ReplicaStructure]
+        # Support for non-self-stab
+        self.self_stab = os.getenv("NON_SELF_STAB") is None
 
         if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
@@ -96,75 +98,82 @@ class ReplicationModule(AlgorithmModule):
             # lines 1-3
             self.lock.acquire()
             start_time = time.time()
-            view_est_allow_service = self.resolver.execute(
+
+            # Only execute of self-stablizing
+            if self.self_stab:
+                view_est_allow_service = self.resolver.execute(
+                                            Module.VIEW_ESTABLISHMENT_MODULE,
+                                            Function.ALLOW_SERVICE)
+
+                if (not self.rep[self.id].get_view_changed() and
+                        view_est_allow_service):
+                        # self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
+                                            # Function.ALLOW_SERVICE)):
+                    view_changed = (not self.rep[self.id].is_tee() and
+                                    (self.resolver.execute(
                                         Module.VIEW_ESTABLISHMENT_MODULE,
-                                        Function.ALLOW_SERVICE)
+                                        Function.GET_CURRENT_VIEW, self.id) !=
+                                        self.rep[self.id].get_prim()))
+                    self.rep[self.id].set_view_changed(view_changed)
+                if view_est_allow_service:
 
-            if (not self.rep[self.id].get_view_changed() and
-                    view_est_allow_service):
-                    # self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
-                                        # Function.ALLOW_SERVICE)):
-                view_changed = (not self.rep[self.id].is_tee() and
-                                (self.resolver.execute(
-                                    Module.VIEW_ESTABLISHMENT_MODULE,
-                                    Function.GET_CURRENT_VIEW, self.id) !=
-                                    self.rep[self.id].get_prim()))
-                self.rep[self.id].set_view_changed(view_changed)
-            if view_est_allow_service:
+                    self.rep[self.id].set_prim(self.resolver.execute(
+                        Module.VIEW_ESTABLISHMENT_MODULE,
+                        Function.GET_CURRENT_VIEW, self.id))
+                    prim_id = self.rep[self.id].get_prim()  # alias
 
-                self.rep[self.id].set_prim(self.resolver.execute(
-                    Module.VIEW_ESTABLISHMENT_MODULE,
-                    Function.GET_CURRENT_VIEW, self.id))
-                prim_id = self.rep[self.id].get_prim()  # alias
+                    # lines 4-6
+                    if (self.rep[self.id].get_view_changed() and
+                            prim_id == self.id):
+                        self.act_as_prim_when_view_changed(prim_id)
 
-                # lines 4-6
-                if (self.rep[self.id].get_view_changed() and
-                   prim_id == self.id):
-                    self.act_as_prim_when_view_changed(prim_id)
+                    # lines 7-8
+                    elif(self.rep[self.id].get_view_changed() and
+                         (self.rep[prim_id].get_view_changed() is False and
+                            prim_id == self.rep[prim_id].get_prim())):
+                        self.act_as_nonprim_when_view_changed(prim_id)
 
-                # lines 7-8
-                elif(self.rep[self.id].get_view_changed() and
-                     (self.rep[prim_id].get_view_changed() is False and
-                     prim_id == self.rep[prim_id].get_prim())):
-                    self.act_as_nonprim_when_view_changed(prim_id)
-
-            # lines 9 - 10
-            # X and Y are tuples (rep_state, r_log, is_default_prefix)
-            # -1 in X[0] and Y[0] is used to indicate failure
-            X = self.find_cons_state(self.com_pref_states(
-                (3 * self.number_of_byzantine) + 1
-            ))
-            Y = self.get_ds_state()
-            if X[0] == -1 and Y[0] != -1:
-                X = Y
-            # lines 11 - 14
-            # TODO check if X[1] should be a prefix of self.rep[self.id].r_log?
-            # https://bit.ly/2Iu6I0E
-            X_rep_state = X[0]
-            X_r_log = X[1]
-            is_default_prefix = X[2]
-            self.rep[self.id].set_con_flag(X_rep_state == -1)
-            if (not (self.rep[self.id].get_con_flag()) and
-               (not (self.check_new_X_prefix(self.id,
-                                             X_rep_state,
-                                             is_default_prefix)) or
-               self.rep[self.id].is_def_state() or self.delayed())):
-                # set own rep_state and r_log to consolidated values
-                self.rep[self.id].set_rep_state(deepcopy(X_rep_state))
-                self.rep[self.id].set_r_log(deepcopy(X_r_log))
-            # A byzantine node does not care if it is in conflict or stale
-            if not byz.is_byzantine():
-                if self.stale_rep() or self.conflict():
-                    logger.debug(f"Flushing because stale_rep: " +
-                                 f"{self.stale_rep()} or conflict:" +
-                                 f" {self.conflict()}")
+                # lines 9 - 10
+                # X and Y are tuples (rep_state, r_log, is_default_prefix)
+                # -1 in X[0] and Y[0] is used to indicate failure
+                X = self.find_cons_state(self.com_pref_states(
+                    (3 * self.number_of_byzantine) + 1
+                ))
+                Y = self.get_ds_state()
+                if X[0] == -1 and Y[0] != -1:
+                    X = Y
+                # lines 11 - 14
+                # TODO check if X[1] should be a prefix of r_log?
+                # https://bit.ly/2Iu6I0E
+                X_rep_state = X[0]
+                X_r_log = X[1]
+                is_default_prefix = X[2]
+                self.rep[self.id].set_con_flag(X_rep_state == -1)
+                if (not (self.rep[self.id].get_con_flag()) and
+                    (not (self.check_new_X_prefix(self.id,
+                                                  X_rep_state,
+                                                  is_default_prefix)) or
+                     self.rep[self.id].is_def_state() or self.delayed())):
+                    # set own rep_state and r_log to consolidated values
+                    self.rep[self.id].set_rep_state(deepcopy(X_rep_state))
+                    self.rep[self.id].set_r_log(deepcopy(X_r_log))
+                # A byzantine node does not care if it is in conflict or stale
+                if not byz.is_byzantine():
+                    if self.stale_rep() or self.conflict():
+                        logger.debug(f"Flushing because stale_rep: " +
+                                     f"{self.stale_rep()} or conflict:" +
+                                     f" {self.conflict()}")
+                        self.flush_local()
+                        self.rep[self.id].set_to_tee()
+                        self.need_flush = True
+                if self.flush:
+                    logger.debug(f"Flushing because flush is true")
                     self.flush_local()
-                    self.rep[self.id].set_to_tee()
-                    self.need_flush = True
-            if self.flush:
-                logger.debug(f"Flushing because flush is true")
-                self.flush_local()
-                self.flush = False
+                    self.flush = False
+            else:
+                # These variables are used later
+                view_est_allow_service = True
+                prim_id = 0
 
             self.rep[self.id].extend_pend_reqs(self.known_pend_reqs())
             # line 15 - 25

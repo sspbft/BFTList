@@ -48,6 +48,9 @@ class Resolver:
         # inject resolver in rate limiter module
         rate_limiter.resolver = self
 
+        # Support non-self-stabilizing mode
+        self.self_stab = os.getenv("NON_SELF_STAB") is None
+
     def wait_for_other_nodes(self):
         """Write me."""
         if len(self.nodes) == 1:
@@ -83,7 +86,13 @@ class Resolver:
     def execute(self, module, func, *args):
         """API for executing a function on a given module."""
         if module == Module.VIEW_ESTABLISHMENT_MODULE:
-            return self.view_establishment_exec(func, *args)
+            if not self.self_stab:
+                if func == Function.GET_CURRENT_VIEW:
+                    return 0  # Always let Primary be 0, change to an env?
+                elif func == Function.ALLOW_SERVICE:
+                    return True
+            else:
+                return self.view_establishment_exec(func, *args)
         elif module == Module.REPLICATION_MODULE:
             return self.replication_exec(func, *args)
         elif module == Module.PRIMARY_MONITORING_MODULE:
@@ -238,7 +247,10 @@ class Resolver:
 
         View Establishment module.
         """
-        return self.modules[Module.VIEW_ESTABLISHMENT_MODULE].get_data()
+        if not self.self_stab:
+            return {}
+        else:
+            return self.modules[Module.VIEW_ESTABLISHMENT_MODULE].get_data()
 
     def get_replication_data(self):
         """Returns current values of variables.
@@ -252,8 +264,9 @@ class Resolver:
 
         Primary Monitoring module.
         """
-        prim_mon = self.modules[Module.PRIMARY_MONITORING_MODULE].get_data()
         fail_det = self.modules[Module.FAILURE_DETECTOR_MODULE].get_data()
+        prim_mon = self.modules[
+                        Module.PRIMARY_MONITORING_MODULE].get_data()
         return {**prim_mon, **fail_det}
 
     def get_failure_detector_data(self):

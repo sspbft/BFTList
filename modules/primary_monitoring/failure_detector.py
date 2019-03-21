@@ -101,7 +101,6 @@ class FailureDetectorModule:
         if self.prim != new_prim:
             self.reset()
         self.prim = new_prim
-
         if self.allow_service() and self.resolver.execute(
                                         Module.PRIMARY_MONITORING_MODULE,
                                         Function.NO_VIEW_CHANGE):
@@ -150,8 +149,13 @@ class FailureDetectorModule:
     # Functions added for inter-module communication
     def get_current_view(self, processor_id):
         """Calls get_current_view method at View Establishment module."""
-        return self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
-                                     Function.GET_CURRENT_VIEW, processor_id)
+        # Mock if non self-stablizing:
+        if os.getenv("NON_SELF_STAB"):
+            return 0
+        else:
+            return self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
+                                         Function.GET_CURRENT_VIEW,
+                                         processor_id)
 
     def get_pend_reqs(self):
         """Calls get_pend_reqs in Replication module"""
@@ -169,8 +173,12 @@ class FailureDetectorModule:
 
     def allow_service(self):
         """Calls allow_service in View Establishment module"""
-        return self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
-                                     Function.ALLOW_SERVICE)
+        # Mock if non self-stablizing:
+        if os.getenv("NON_SELF_STAB"):
+            return True
+        else:
+            return self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
+                                         Function.ALLOW_SERVICE)
 
     # Added functions
     def check_progress_by_prim(self, prim):

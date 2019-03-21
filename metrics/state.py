@@ -43,7 +43,7 @@ def client_req_executed(client_req: ClientRequest):
     the client request execution time.
     """
     if client_req not in client_reqs:
-        logger.error(f"ClientRequest {client_req} not tracked")
+        logger.debug(f"ClientRequest {client_req} not tracked")
         return
     exec_time = time.time() - client_reqs[client_req]
     logger.info(f"req execed in {exec_time} s")

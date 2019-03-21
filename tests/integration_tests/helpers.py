@@ -90,6 +90,8 @@ async def launch_bftlist(test_name="unknown test", n=N, f=F, args={}):
             env["ALLOW_SERVICE"] = args["ALLOW_SERVICE"]
         if "FORCE_NO_VIEW_CHANGE" in args:
             env["FORCE_NO_VIEW_CHANGE"] = args["FORCE_NO_VIEW_CHANGE"]
+        if "NON_SELF_STAB" in args:
+            env["NON_SELF_STAB"] = "1"
 
         if "BYZANTINE" in args:
             if node_id in args["BYZANTINE"]["NODES"]:
