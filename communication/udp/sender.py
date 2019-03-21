@@ -93,7 +93,7 @@ class Sender:
             else:
                 # re-send last sent message
                 self.send(self.last_sent_msg)
-                logger.warning(f"Got invalid msg_counter {msg_counter} back")
+                logger.debug(f"Got invalid msg_counter {msg_counter} back")
             time.sleep(FD_SLEEP)
 
     def send(self, msg, timeout=True):
@@ -145,6 +145,6 @@ class Sender:
                 return
             else:
                 time.sleep(FD_SLEEP)
-        logger.warning(f"Timeout, re-sending msg {msg_counter} to {self.addr}")
+        logger.debug(f"Timeout, re-sending msg {msg_counter} to {self.addr}")
         self.send(msg, timeout=False)
         self.check_timeout(msg)

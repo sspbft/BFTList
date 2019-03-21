@@ -58,7 +58,7 @@ def handle_client_message():
         op = Operation(data["operation"]["type"], data["operation"]["args"])
         req = ClientRequest(data["client_id"], data["timestamp"], op)
         pend_reqs = app.resolver.inject_client_req(req)
-        logger.info(f"Injected req {req} to pend_reqs")
+        logger.debug(f"Injected req {req} to pend_reqs")
         return jsonify({"pend_reqs": jsonpickle.encode(pend_reqs)})
     except Exception as e:
         logger.error(f"Error when injecting client request through API: {e}")
