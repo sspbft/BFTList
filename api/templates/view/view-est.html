@@ -16,7 +16,13 @@
     {% endif %}
 {% endfor %}
 </p>
-<p>vChange: {{ item.data.VIEW_ESTABLISHMENT_MODULE.vChange }}</p>
+<p>vChange: {% for w in item.data.VIEW_ESTABLISHMENT_MODULE.vChange %}
+    {% if item.node.id == (loop.index - 1) %}
+        <b><u>{{ w }}</u></b>
+    {% else %}
+        {{ w }}
+    {% endif %}
+{% endfor %}
 <p>Witnesses: 
 {% for w in item.data.VIEW_ESTABLISHMENT_MODULE.witnesses %}
     {% if item.node.id == (loop.index - 1) %}
