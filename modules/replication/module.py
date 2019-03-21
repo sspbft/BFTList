@@ -169,7 +169,7 @@ class ReplicationModule(AlgorithmModule):
                     self.flush_local()
                     self.flush = False
             else:
-                # This variable is used later on
+                # These variables are used later
                 view_est_allow_service = True
                 prim_id = 0
 
