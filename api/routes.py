@@ -96,6 +96,8 @@ def get_modules_data():
             app.resolver.get_replication_data(),
             "PRIMARY_MONITORING_MODULE":
             app.resolver.get_primary_monitoring_data(),
+            "EVENT_DRIVEN_FD_MODULE":
+            app.resolver.get_event_driven_fd_data(),
             "node_id": int(os.getenv("ID")),
             "test_data": test_data,
             "byzantine": byz.is_byzantine(),
