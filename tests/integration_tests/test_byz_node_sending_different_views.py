@@ -36,7 +36,7 @@ for i in range(N):
         "VIEW_ESTABLISHMENT_MODULE": {
             "views": views,
             "phs": phases,
-            "vChange": vChanges[i],
+            "vChange": vChanges,
             "witnesses": witnesses
         }
     }
