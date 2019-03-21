@@ -60,7 +60,7 @@ class ReplicationModule(AlgorithmModule):
         self.rep = [ReplicaStructure(i, k) for i in range(n)] \
             # type: List[ReplicaStructure]
 
-        if os.getenv("INTEGRATION_TEST"):
+        if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
             if (start_state is not {} and str(self.id) in start_state and
                "REPLICATION_MODULE" in start_state[str(self.id)]):

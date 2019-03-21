@@ -49,6 +49,9 @@ def start_modules(resolver):
     if k == 0:
         logger.warning("Env var NUMBER_OF_CLIENTS not set or set to 0")
 
+    if os.getenv("INJECT_START_STATE"):
+        logger.warning("Node will load state from conf/start_state.json")
+
     modules = {
         Module.VIEW_ESTABLISHMENT_MODULE:
             ViewEstablishmentModule(id, resolver, n, f),

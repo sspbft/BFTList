@@ -39,7 +39,7 @@ class FailureDetectorModule:
         self.msg_queue = Queue()
         self.was_unresponsive = False
 
-        if os.getenv("INTEGRATION_TEST"):
+        if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
             if (start_state is not {} and str(self.id) in start_state and
                "FAILURE_DETECTOR_MODULE" in start_state[str(self.id)]):

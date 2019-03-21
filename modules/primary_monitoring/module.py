@@ -43,7 +43,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
         # Metric gathering
         self.allow_service_denied = -1
 
-        if os.getenv("INTEGRATION_TEST"):
+        if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
             if (start_state is not {} and str(self.id) in start_state and
                "PRIMARY_MONITORING_MODULE" in start_state[str(self.id)]):
