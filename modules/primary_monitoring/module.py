@@ -107,7 +107,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     # Line 13
                     elif self.sup_change(4 * self.number_of_byzantine + 1):
                         self.vcm[self.id][V_STATUS] = enums.V_CHANGE
-                        logger.info("Telling ViewEst to change view")
+                        logger.debug("Telling ViewEst to change view")
 
                         self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
@@ -116,7 +116,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                 elif(self.vcm[self.id][PRIM] ==
                      self.get_current_view(self.id) and
                      self.vcm[self.id][V_STATUS] == enums.V_CHANGE):
-                    logger.info("Telling ViewEst to change view")
+                    logger.debug("Telling ViewEst to change view")
                     self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
@@ -129,7 +129,6 @@ class PrimaryMonitoringModule(AlgorithmModule):
             else:
                 if self.allow_service_denied == -1:
                     self.allow_service_denied = time.time()
-                self.clean_state()
 
             # Emit run time metric
             run_time = time.time() - start_time
@@ -196,8 +195,6 @@ class PrimaryMonitoringModule(AlgorithmModule):
         for k, v in prim_dct.items():
             if len(v) >= size_processors:
                 processor_set = v
-            else:
-                return False
             # Check the intersection of needChgSet
             need_chg_set_intersection = set()
             for processor_id in processor_set:
