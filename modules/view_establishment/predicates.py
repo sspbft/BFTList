@@ -215,6 +215,7 @@ class PredicatesAndAction():
 
     def reset_all(self):
         """Reset all modules."""
+        logger.info(f"Resetting views:{self.views} ")
         self.views = [deepcopy(self.RST_PAIR) for i in range(
                                                 self.number_of_nodes)]
         self.view_module.init_module()
