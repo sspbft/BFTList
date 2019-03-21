@@ -45,6 +45,7 @@ class FailureDetectorModule:
                "FAILURE_DETECTOR_MODULE" in start_state[str(self.id)]):
                 data = start_state[str(self.id)]["FAILURE_DETECTOR_MODULE"]
                 if data is not None:
+                    logger.warning("Injecting start state")
                     if "beat" in data:
                         self.beat = deepcopy(data["beat"])
                     if "cnt" in data:

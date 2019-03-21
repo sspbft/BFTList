@@ -49,6 +49,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                "PRIMARY_MONITORING_MODULE" in start_state[str(self.id)]):
                 data = start_state[str(self.id)]["PRIMARY_MONITORING_MODULE"]
                 if data is not None:
+                    logger.warning("Injecting start state")
                     if "v_status" in data:
                         self.vcm[self.id][V_STATUS] = deepcopy(
                                                     data["v_status"])

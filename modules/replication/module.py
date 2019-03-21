@@ -66,6 +66,7 @@ class ReplicationModule(AlgorithmModule):
                "REPLICATION_MODULE" in start_state[str(self.id)]):
                 data = start_state[str(self.id)]["REPLICATION_MODULE"]
                 rep = data["rep"]
+                logger.warning("Injecting start state")
                 if rep is not None and len(rep) == n:
                     self.rep = rep
                 if byz.is_byzantine():

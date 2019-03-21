@@ -49,6 +49,7 @@ class ViewEstablishmentModule(AlgorithmModule):
                "VIEW_ESTABLISHMENT_MODULE" in start_state[str(self.id)]):
                 data = start_state[str(self.id)]["VIEW_ESTABLISHMENT_MODULE"]
                 if data is not None:
+                    logger.warning("Injecting start state")
                     if "phs" in data:
                         self.phs = deepcopy(data["phs"])
                     if "views" in data:
