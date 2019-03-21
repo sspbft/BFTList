@@ -55,7 +55,11 @@ def start_modules(resolver):
             Module.REPLICATION_MODULE:
                 ReplicationModule(id, resolver, n, f, k),
             Module.FAILURE_DETECTOR_MODULE:
-                FailureDetectorModule(id, resolver, n, f)
+                FailureDetectorModule(id, resolver, n, f),
+            Module.PRIMARY_MONITORING_MODULE:
+                PrimaryMonitoringModule(id, resolver, n, f),
+            Module.EVENT_DRIVEN_FD_MODULE:
+                EventDrivenFDModule(id, resolver, n, f)
         }
     else:
         modules = {

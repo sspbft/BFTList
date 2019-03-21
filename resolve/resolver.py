@@ -96,10 +96,7 @@ class Resolver:
         elif module == Module.REPLICATION_MODULE:
             return self.replication_exec(func, *args)
         elif module == Module.PRIMARY_MONITORING_MODULE:
-            if not self.self_stab:
-                return True
-            else:
-                return self.primary_monitoring_exec(func, *args)
+            return self.primary_monitoring_exec(func, *args)
         elif module == Module.FAILURE_DETECTOR_MODULE:
             return self.failure_detector_exec(func, *args)
         else:
@@ -268,12 +265,9 @@ class Resolver:
         Primary Monitoring module.
         """
         fail_det = self.modules[Module.FAILURE_DETECTOR_MODULE].get_data()
-        if not self.self_stab:
-            return fail_det
-        else:
-            prim_mon = self.modules[
-                            Module.PRIMARY_MONITORING_MODULE].get_data()
-            return {**prim_mon, **fail_det}
+        prim_mon = self.modules[
+                        Module.PRIMARY_MONITORING_MODULE].get_data()
+        return {**prim_mon, **fail_det}
 
     def get_failure_detector_data(self):
         """Returns current values of variables.
