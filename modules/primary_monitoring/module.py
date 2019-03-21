@@ -108,6 +108,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     elif self.sup_change(4 * self.number_of_byzantine + 1):
                         self.vcm[self.id][V_STATUS] = enums.V_CHANGE
                         logger.debug("Telling ViewEst to change view")
+
                         self.resolver.execute(
                             Module.VIEW_ESTABLISHMENT_MODULE,
                             Function.VIEW_CHANGE)
@@ -149,7 +150,8 @@ class PrimaryMonitoringModule(AlgorithmModule):
         """Returns the number of processors which is in NO_SERVICE."""
         processors = 0
         for processor_vcm in self.vcm:
-            if processor_vcm[V_STATUS] == enums.NO_SERVICE:
+            if (processor_vcm[V_STATUS] == enums.NO_SERVICE or
+               processor_vcm[V_STATUS] == enums.V_CHANGE):
                 processors += 1
         return processors
 
@@ -193,7 +195,6 @@ class PrimaryMonitoringModule(AlgorithmModule):
         for k, v in prim_dct.items():
             if len(v) >= size_processors:
                 processor_set = v
-
             # Check the intersection of needChgSet
             need_chg_set_intersection = set()
             for processor_id in processor_set:

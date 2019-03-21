@@ -35,7 +35,7 @@
     }
 
     const renderViewEstData = (id, data) => {
-        let phases = 'Phases: ', views = 'Views: ', witnesses = 'Witnesses: '
+        let phases = 'Phases: ', views = 'Views: ', witnesses = 'Witnesses: ', vChange = 'vChange: '
 
         // build phases string
         data.phs.forEach((p,i) => {
@@ -52,11 +52,15 @@
             witnesses += i == id ? `${strongify(w_)} `: `${w_} `
         })
 
-        vChange = data.vChange ? 'True' : 'False'
+        data.vChange.forEach((v,i) => {
+            vc = v ? 'True' : 'False'
+            vChange += i == id ? `${strongify(vc)} ` : `${vc} `
+        })
+        //vChange = data.vChange ? 'True' : 'False'
         
         nodeElements[id].data.children[0].innerHTML = phases
         nodeElements[id].data.children[1].innerHTML = views
-        nodeElements[id].data.children[2].innerHTML = `vChange: ${vChange}`
+        nodeElements[id].data.children[2].innerHTML = vChange
         nodeElements[id].data.children[3].innerHTML = witnesses
     }
 
