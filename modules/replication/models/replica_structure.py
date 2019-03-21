@@ -15,6 +15,7 @@ import logging
 # local
 from modules.constants import (REQUEST, REPLY, STATUS, X_SET)
 from .request import Request, ClientRequest
+from metrics.state import client_req_added_to_pending
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +111,8 @@ class ReplicaStructure(object):
         for r in req:
             if r not in self.pend_reqs:
                 self.pend_reqs.append(deepcopy(r))
+                # notify state metric that client request added to pend_reqs
+                client_req_added_to_pending(r)
 
     def remove_from_pend_reqs(self, req: ClientRequest):
         """Removes the first occurrence of req from pend_reqs."""
