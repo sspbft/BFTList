@@ -62,12 +62,13 @@ class ReplicationModule(AlgorithmModule):
         # Support for non-self-stab
         self.self_stab = os.getenv("NON_SELF_STAB") is None
 
-        if os.getenv("INTEGRATION_TEST"):
+        if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
             if (start_state is not {} and str(self.id) in start_state and
                "REPLICATION_MODULE" in start_state[str(self.id)]):
                 data = start_state[str(self.id)]["REPLICATION_MODULE"]
                 rep = data["rep"]
+                logger.warning("Injecting start state")
                 if rep is not None and len(rep) == n:
                     self.rep = rep
                 if byz.is_byzantine():

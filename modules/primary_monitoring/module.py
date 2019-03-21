@@ -45,12 +45,13 @@ class PrimaryMonitoringModule(AlgorithmModule):
         self.allow_service_denied = -1
         self.mock_prim = 0
 
-        if os.getenv("INTEGRATION_TEST"):
+        if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
             if (start_state is not {} and str(self.id) in start_state and
                "PRIMARY_MONITORING_MODULE" in start_state[str(self.id)]):
                 data = start_state[str(self.id)]["PRIMARY_MONITORING_MODULE"]
                 if data is not None:
+                    logger.warning("Injecting start state")
                     if "v_status" in data:
                         self.vcm[self.id][V_STATUS] = deepcopy(
                                                     data["v_status"])

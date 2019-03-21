@@ -39,12 +39,13 @@ class FailureDetectorModule:
         self.msg_queue = Queue()
         self.was_unresponsive = False
 
-        if os.getenv("INTEGRATION_TEST"):
+        if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
             if (start_state is not {} and str(self.id) in start_state and
                "FAILURE_DETECTOR_MODULE" in start_state[str(self.id)]):
                 data = start_state[str(self.id)]["FAILURE_DETECTOR_MODULE"]
                 if data is not None:
+                    logger.warning("Injecting start state")
                     if "beat" in data:
                         self.beat = deepcopy(data["beat"])
                     if "cnt" in data:
@@ -115,9 +116,9 @@ class FailureDetectorModule:
                 cntr_abv_thresh = self.cnt > CNT_THRESHOLD
                 self.prim_susp[self.id] = beat_abv_thresh or cntr_abv_thresh
                 if beat_abv_thresh:
-                    logger.info("Suspecting unresponsive primary")
+                    logger.debug("Suspecting unresponsive primary")
                 if cntr_abv_thresh:
-                    logger.info("Suspecting non-progressing primary")
+                    logger.debug("Suspecting non-progressing primary")
 
         elif not self.allow_service():
             self.reset()

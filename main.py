@@ -49,6 +49,21 @@ def start_modules(resolver):
     if k == 0:
         logger.warning("Env var NUMBER_OF_CLIENTS not set or set to 0")
 
+    if os.getenv("INJECT_START_STATE"):
+        logger.warning("Node will load state from conf/start_state.json")
+
+    modules = {
+        Module.VIEW_ESTABLISHMENT_MODULE:
+            ViewEstablishmentModule(id, resolver, n, f),
+        Module.REPLICATION_MODULE:
+            ReplicationModule(id, resolver, n, f, k),
+        Module.PRIMARY_MONITORING_MODULE:
+            PrimaryMonitoringModule(id, resolver, n, f),
+        Module.FAILURE_DETECTOR_MODULE:
+            FailureDetectorModule(id, resolver, n, f),
+        Module.EVENT_DRIVEN_FD_MODULE:
+            EventDrivenFDModule(id, resolver, n, f)
+    }
     if os.getenv("NON_SELF_STAB"):
         logger.warning("Running system without self-stabilizing properties")
         modules = {
