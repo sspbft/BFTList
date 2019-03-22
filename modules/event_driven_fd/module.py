@@ -3,7 +3,6 @@
 # standard
 import logging
 import time
-# from threading import Lock
 
 # local
 from modules.constants import K_ADMISSIBILITY_THRESHOLD as K, EVENT_FD_WAIT
@@ -34,7 +33,6 @@ class EventDrivenFDModule:
         self.counters = {n_id: 0 for n_id in range(self.number_of_nodes)
                          if n_id != self.id}
         self.last_correct_processors = {}
-        # self.lock = Lock()
 
     def run(self, testing=False):
         """Main loop for the event-driven failure detector
@@ -56,7 +54,6 @@ class EventDrivenFDModule:
                 time.sleep(EVENT_FD_WAIT)
 
             # tokens received from n-2f processors, save their IDs
-            # self.lock.acquire()
             correct_ids = self.get_correct_processors()
             logger.debug(f"Nodes {correct_ids} correct for token {self.token}")
             self.last_correct_processors = {
@@ -68,8 +65,6 @@ class EventDrivenFDModule:
                              if n_id != self.id}
             # increment token
             self.token = time.time()
-
-            # self.lock.release()
 
             if testing:
                 break
@@ -121,18 +116,10 @@ class EventDrivenFDModule:
 
     def get_correct_processors_for_timestamp(self, timestamp):
         """Helper function to get the most recent correct processors."""
-        # reset most recent correct processor set
-        # self.lock.acquire()
-        # self.last_correct_processors = {}
-        # self.lock.release()
-
         if ("token" not in self.last_correct_processors or
                 self.last_correct_processors["token"] < timestamp):
             return []
 
-        # # busy-wait until correct processors have replied
-        # while self.last_correct_processors == {}:
-        #     time.sleep(0.001)
         return self.get_last_correct_processors()
 
     def send_token(self, processor_id, token, owner_id):
