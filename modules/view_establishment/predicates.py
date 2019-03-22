@@ -293,7 +293,7 @@ class PredicatesAndAction():
 
             # True if a view change was instructed by Primary Monitoring
             elif(case == 1):
-                enough_support = len([v for (v) in self.vChange if v is True])
+                enough_support = len([v for v in self.vChange if v is True])
                 return(
                     (enough_support >= (4 * self.number_of_byzantine + 1) and
                      self.establishable(0, enums.FOLLOW)) or
@@ -333,7 +333,7 @@ class PredicatesAndAction():
             # Two subcases
             elif(case == 1):
                 # Case 1a (increment view and move to next face
-                enough_support = len([v for (v) in self.vChange if v is True])
+                enough_support = len([v for v in self.vChange if v is True])
                 if(enough_support >= (4 * self.number_of_byzantine + 1)):
                     self.next_view()
                     self.view_module.next_phs()

@@ -3,6 +3,7 @@
 # standard
 import logging
 import time
+# from threading import Lock
 
 # local
 from modules.constants import K_ADMISSIBILITY_THRESHOLD as K, EVENT_FD_WAIT
@@ -29,15 +30,16 @@ class EventDrivenFDModule:
         self.number_of_nodes = n
         self.number_of_byzantine = f
 
-        self.token = 0
+        self.token = time.time()
         self.counters = {n_id: 0 for n_id in range(self.number_of_nodes)
                          if n_id != self.id}
         self.last_correct_processors = {}
+        # self.lock = Lock()
 
     def run(self, testing=False):
         """Main loop for the event-driven failure detector
 
-        This loop contonously broadcasts a token, waits for at least n - 2f
+        This loop continuously broadcasts a token, waits for at least n - 2f
         processors to send a token back at least K times and then increments
         the token and repeats. The last set of correct processors are stored
         along with the token used in that round.
@@ -54,6 +56,7 @@ class EventDrivenFDModule:
                 time.sleep(EVENT_FD_WAIT)
 
             # tokens received from n-2f processors, save their IDs
+            # self.lock.acquire()
             correct_ids = self.get_correct_processors()
             logger.debug(f"Nodes {correct_ids} correct for token {self.token}")
             self.last_correct_processors = {
@@ -64,7 +67,9 @@ class EventDrivenFDModule:
             self.counters = {n_id: 0 for n_id in range(self.number_of_nodes)
                              if n_id != self.id}
             # increment token
-            self.token += 1
+            self.token = time.time()
+
+            # self.lock.release()
 
             if testing:
                 break
@@ -100,13 +105,35 @@ class EventDrivenFDModule:
         A correct processor is a processor that has acked a this processor's
         current token at least K times.
         """
-        return [n_id for n_id in self.counters if self.counters[n_id] >= K]
+        return [n_id for n_id in self.counters if self.counters[n_id] > 0]
 
     def correct_processors_have_replied(self):
         """Returns True if >= n-2f processors have rent, i.e. acked K tokens"""
         correct_processors = self.get_correct_processors()
         return len(correct_processors) >= (self.number_of_nodes - 2 *
                                            self.number_of_byzantine)
+
+    def get_last_correct_processors(self):
+        """Returns the IDs of the most recent correct processors"""
+        if len(self.last_correct_processors) == 0:
+            return []
+        return self.last_correct_processors["correct_processors"]
+
+    def get_correct_processors_for_timestamp(self, timestamp):
+        """Helper function to get the most recent correct processors."""
+        # reset most recent correct processor set
+        # self.lock.acquire()
+        # self.last_correct_processors = {}
+        # self.lock.release()
+
+        if ("token" not in self.last_correct_processors or
+                self.last_correct_processors["token"] < timestamp):
+            return []
+
+        # # busy-wait until correct processors have replied
+        # while self.last_correct_processors == {}:
+        #     time.sleep(0.001)
+        return self.get_last_correct_processors()
 
     def send_token(self, processor_id, token, owner_id):
         """Sends a token to another processor."""

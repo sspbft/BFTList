@@ -12,7 +12,7 @@ from modules.algorithm_module import AlgorithmModule
 from modules.view_establishment.predicates import PredicatesAndAction
 from modules.enums import ViewEstablishmentEnums
 from resolve.enums import MessageType
-from resolve.enums import Module
+from resolve.enums import Module, Function
 import conf.config as conf
 from modules.constants import (VIEWS, PHASE, WITNESSES, CURRENT, NEXT)
 import modules.byzantine as byz
@@ -62,6 +62,14 @@ class ViewEstablishmentModule(AlgorithmModule):
                         self.pred_and_action.vChange = deepcopy(
                                                         data["vChange"])
 
+    def reset_incorrect_processors(self, ids):
+        """TODO write me"""
+        logger.info(f"Resetting values of processors {ids}")
+        for i in ids:
+            self.phs[i] = 0
+            self.witnesses[i] = False
+            self.pred_and_action.views[i] = self.pred_and_action.RST_PAIR
+
     def run(self, testing=False):
         """Called whenever the module is launched in a separate thread."""
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
@@ -71,41 +79,61 @@ class ViewEstablishmentModule(AlgorithmModule):
         while not testing and not self.resolver.system_running():
             time.sleep(0.1)
 
+        ts = time.time()
         while True:
-            self.lock.acquire()
-            start_time = time.time()
-            if(self.pred_and_action.need_reset()):
-                self.pred_and_action.reset_all()
-            self.witnesses[self.id] = self.noticed_recent_value()
-            self.witnesses_set = self.witnesses_set.union(self.get_witnesses())
-            if (self.witnes_seen()):
-                case = 0
-                # Find the current case by testing the predicates and
-                # moving to next case if not fulfilled
-                while (self.pred_and_action.auto_max_case(
-                    self.phs[self.id]) >= case and not
-                    (self.pred_and_action.automation(
-                        ViewEstablishmentEnums.PREDICATE,
-                        self.phs[self.id],
-                        case))
-                ):
-                    case += 1
-                # Onces a predicates is fulfilled, perfom action if valid case
-                if(self.pred_and_action.auto_max_case(self.phs[self.id]) >=
-                        case):
-                    # logger.debug(f"Phase: {self.phs[self.id]} Case: {case}")
-                    self.pred_and_action.automation(
-                        ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
+            correct_ids = self.resolver.execute(
+                Module.EVENT_DRIVEN_FD_MODULE,
+                Function.GET_CORRECT_PROCESSORS_FOR_TIMESTAMP,
+                ts)
+            if correct_ids != []:
+                self.lock.acquire()
+                start_time = time.time()
 
-            # Emit run time metric
-            run_time = time.time() - start_time
-            run_method_time.labels(self.id,
-                                   Module.VIEW_ESTABLISHMENT_MODULE).set(
-                                       run_time)
-            self.lock.release()
-            # Stopping the while loop, used for testing purpose
-            if testing:
-                break
+                # reset incorrect processor values
+                incorrect_ids = [x for x in range(self.number_of_nodes)
+                                 if x not in correct_ids and x != self.id]
+                if incorrect_ids != []:
+                    self.reset_incorrect_processors(incorrect_ids)
+
+                if(self.pred_and_action.need_reset()):
+                    self.pred_and_action.reset_all()
+                self.witnesses[self.id] = self.noticed_recent_value()
+                self.witnesses_set = self.witnesses_set.union(
+                    self.get_witnesses())
+                if (self.witnes_seen()):
+                    case = 0
+                    # Find the current case by testing the predicates and
+                    # moving to next case if not fulfilled
+                    while (self.pred_and_action.auto_max_case(
+                        self.phs[self.id]) >= case and not
+                        (self.pred_and_action.automation(
+                            ViewEstablishmentEnums.PREDICATE,
+                            self.phs[self.id],
+                            case))
+                    ):
+                        case += 1
+                    # Onces a predicate is fulfilled, perfom action if valid
+                    # case
+                    if(self.pred_and_action.auto_max_case(self.phs[self.id]) >=
+                            case):
+                        self.pred_and_action.automation(
+                            ViewEstablishmentEnums.ACTION,
+                            self.phs[self.id],
+                            case
+                        )
+
+                ts = time.time()
+                # Emit run time metric
+                run_time = time.time() - start_time
+                run_method_time.labels(
+                    self.id,
+                    Module.VIEW_ESTABLISHMENT_MODULE).set(
+                    run_time
+                )
+                self.lock.release()
+                # Stopping the while loop, used for testing purpose
+                if testing:
+                    break
 
             # Send message to all other processors
             self.send_msg()

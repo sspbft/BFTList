@@ -99,6 +99,8 @@ class Resolver:
             return self.primary_monitoring_exec(func, *args)
         elif module == Module.FAILURE_DETECTOR_MODULE:
             return self.failure_detector_exec(func, *args)
+        elif module == Module.EVENT_DRIVEN_FD_MODULE:
+            return self.event_driven_fd_exec(func, *args)
         else:
             raise ValueError("Bad module parameter")
 
@@ -118,7 +120,7 @@ class Resolver:
         else:
             raise ValueError("Bad function parameter")
 
-    def replication_exec(self, func):
+    def replication_exec(self, func, *args):
         """Executes a function on the Replication module."""
         module = self.modules[Module.REPLICATION_MODULE]
         if func == Function.GET_PEND_REQS:
@@ -132,7 +134,7 @@ class Resolver:
         else:
             raise ValueError("Bad function parameter")
 
-    def primary_monitoring_exec(self, func):
+    def primary_monitoring_exec(self, func, *args):
         """Executes a function on the Primary Monitoring module."""
         module = self.modules[Module.PRIMARY_MONITORING_MODULE]
         if func == Function.NO_VIEW_CHANGE:
@@ -142,11 +144,19 @@ class Resolver:
         else:
             raise ValueError("Bad function parameter")
 
-    def failure_detector_exec(self, func):
+    def failure_detector_exec(self, func, *args):
         """Executes a function on the Failure Detector module."""
         module = self.modules[Module.FAILURE_DETECTOR_MODULE]
         if func == Function.SUSPECTED:
             return module.suspected()
+        else:
+            raise ValueError("Bad function parameter")
+
+    def event_driven_fd_exec(self, func, *args):
+        """Executes a function on the event driven FD module."""
+        module = self.modules[Module.EVENT_DRIVEN_FD_MODULE]
+        if func == Function.GET_CORRECT_PROCESSORS_FOR_TIMESTAMP:
+            return module.get_correct_processors_for_timestamp(args[0])
         else:
             raise ValueError("Bad function parameter")
 

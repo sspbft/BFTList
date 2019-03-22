@@ -23,9 +23,6 @@ N = 6
 DF_VIEW = 0
 logger = logging.getLogger(__name__)
 
-views = [{"current": 2, "next": 2}, {"current": 2, "next": 2},
-         {"current": 2, "next": 2}, {"current": DF_VIEW, "next": 0},
-         {"current": DF_VIEW, "next": 0}, {"current": 1, "next": 1}]
 phases = [0 for i in range(N)]
 vChanges = [False for i in range(N)]
 witnesses = [False for i in range(N)]

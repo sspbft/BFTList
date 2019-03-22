@@ -89,3 +89,17 @@ class TestEventDrivenFailureDetector(unittest.TestCase):
         self.module.counters = {i: K for i in range(N - 2*F)}
         self.assertTrue(self.module.correct_processors_have_replied())
     
+    def test_get_last_correct_processors(self):
+        # should be empty at first
+        self.assertCountEqual(self.module.get_last_correct_processors(), [])
+
+        # inject last_correct_processor set of N-1 processors
+        self.module.last_correct_processors = {
+            "token": 1,
+            "correct_processors": [i for i in range(N-1)]
+        }
+        # should return their IDs
+        self.assertCountEqual(self.module.get_last_correct_processors(), [
+            i for i in range(N-1)
+        ])
+    

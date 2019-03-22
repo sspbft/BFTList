@@ -40,6 +40,9 @@ class Function(Enum):
     # Failure detector module
     SUSPECTED = 9
 
+    # Event driven FD module
+    GET_CORRECT_PROCESSORS_FOR_TIMESTAMP = 10
+
 
 class MessageType(IntEnum):
     """Represents a message type sent between nodes."""
