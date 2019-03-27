@@ -1,4 +1,5 @@
 import unittest
+import time
 from unittest.mock import Mock, MagicMock, call
 from resolve.resolver import Resolver
 from modules.event_driven_fd.module import EventDrivenFDModule
@@ -26,24 +27,28 @@ class TestEventDrivenFailureDetector(unittest.TestCase):
     
     def test_run(self):
         self.module.broadcast = MagicMock()
+        ts = time.time()
+        self.module.token = ts
 
         # inject valid counters, module should run through and set last_correct_processors
         # and increment counter
         self.module.counters = {n_id: K for n_id in range(1, N)}
         self.module.run(True)
         self.assertCountEqual({
-            "token": 0,
+            "token": ts,
             "correct_processors": [i for i in range(1, N)]
         }, self.module.last_correct_processors)
         self.assertEqual(self.module.counters, {n_id: 0 for n_id in range(1, N)})
-        self.assertEqual(self.module.token, 1)
+        self.assertGreater(self.module.token, ts)
     
     def test_on_msg_recv(self):
         self.module.send_token = MagicMock()
+        ts = time.time()
+        self.module.token = ts
 
         # counter for sender should be incremented when receiving current token
         self.assertEqual(self.module.counters[3], 0)
-        msg = self.build_msg(3, 0, 0)
+        msg = self.build_msg(3, ts, 0)
         self.module.on_msg_recv(msg)
         self.assertEqual(self.module.counters[3], 1)
         # should send token back to sender
@@ -51,7 +56,7 @@ class TestEventDrivenFailureDetector(unittest.TestCase):
 
         # counter for sender should stay the same when sending invalid token
         self.assertEqual(self.module.counters[3], 1)
-        msg = self.build_msg(3, -1, 0)
+        msg = self.build_msg(3, time.time(), 0)
         self.module.on_msg_recv(msg)
         self.assertEqual(self.module.counters[3], 1)
         # should not send token back due to invalid token, call_count should be the same
@@ -59,7 +64,7 @@ class TestEventDrivenFailureDetector(unittest.TestCase):
 
         # no counter should change when current processor is not owner
         old_counters = deepcopy(self.module.counters)
-        msg = self.build_msg(3, 0, 1)
+        msg = self.build_msg(3, ts, 1)
         self.module.on_msg_recv(msg)
         self.assertEqual(old_counters, self.module.counters)
         # token should be sent back
@@ -79,7 +84,7 @@ class TestEventDrivenFailureDetector(unittest.TestCase):
         self.module.counters[0] = K
         self.module.counters[2] = K + 1
         self.module.counters[3] = K - 1
-        self.assertCountEqual(self.module.get_correct_processors(), [0,2])
+        self.assertCountEqual(self.module.get_correct_processors(), [0,2,3])
     
     def test_correct_processors_have_replied(self):
         # should be False since no processors have yet replied

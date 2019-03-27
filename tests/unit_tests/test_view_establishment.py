@@ -7,6 +7,7 @@ from modules.enums import ViewEstablishmentEnums
 from resolve.enums import Function, Module
 from modules.constants import VIEWS, PHASE, WITNESSES
 
+N = 6
 
 class ViewEstablishmentModuleTest(unittest.TestCase):
     
@@ -15,6 +16,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
     def test_while_true_case_1_is_true_and_return_is_an_action(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        self.resolver.execute = MagicMock(return_value = [i for i in range(N)])
 
         # (1)Predicates and action reset all should be called
         view_est_mod.pred_and_action.need_reset = MagicMock(return_value = True)
@@ -65,6 +67,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
     def test_while_true_case_1_is_true_and_return_is_no_action(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        self.resolver.execute = MagicMock(return_value = [i for i in range(N)])
 
         # (1)Predicates and action reset all should be called
         view_est_mod.pred_and_action.need_reset = MagicMock(return_value = True)
@@ -103,6 +106,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         
     def test_while_true_no_case_is_true(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        self.resolver.execute = MagicMock(return_value = [i for i in range(N)])
 
         # (1)Predicates and action reset all should not be called
         view_est_mod.pred_and_action.need_reset = MagicMock(return_value = False)
