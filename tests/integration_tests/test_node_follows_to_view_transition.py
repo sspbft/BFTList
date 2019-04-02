@@ -30,8 +30,8 @@ start_state = {
             "views": [{"current": 1, "next": 1}, {"current": 1, "next": 2}, {"current": 1, "next": 2}, {"current": 1, "next": 2}, {"current": 1, "next": 2}, {"current": 1, "next": 2}],
             "phs": [0, 1, 1, 1, 1, 1],
             "witnesses": [True for i in range (0, N)],
-            "echo": [{"views": {"current": 1, "next": 1} , "phase": 0, "witnesses": True}] +
-                    [{"views": {"current": 1, "next": 2} , "phase": 1, "witnesses": True} for i in range(0, N-1)]
+            "echo": [{"views": {"current": 1, "next": 1} , "phase": 0, "witnesses": True, "vChange": False}] +
+                    [{"views": {"current": 1, "next": 2} , "phase": 1, "witnesses": True, "vChange": False} for i in range(0, N-1)]
         }
     },
     "1": {
@@ -39,8 +39,8 @@ start_state = {
             "views": [{"current": 1, "next": 1}] + [{"current": 1, "next": 2} for i in range(0, N-1)],
             "phs": [0, 1, 1, 1, 1, 1],
             "witnesses": [True for i in range (0, N)],
-            "echo": [{"views": {"current": 1, "next": 1} , "phase": 0, "witnesses": True}] +
-                    [{"views": {"current": 1, "next": 2} , "phase": 1, "witnesses": True} for i in range(0, N-1)]
+            "echo": [{"views": {"current": 1, "next": 1} , "phase": 0, "witnesses": True, "vChange": False}] +
+                    [{"views": {"current": 1, "next": 2} , "phase": 1, "witnesses": True, "vChange": False} for i in range(0, N-1)]
         }
     }
 }

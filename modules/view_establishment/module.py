@@ -14,7 +14,7 @@ from modules.enums import ViewEstablishmentEnums
 from resolve.enums import MessageType
 from resolve.enums import Module
 import conf.config as conf
-from modules.constants import (VIEWS, PHASE, WITNESSES, CURRENT, NEXT)
+from modules.constants import (VIEWS, PHASE, WITNESSES, CURRENT, NEXT, VCHANGE)
 import modules.byzantine as byz
 from communication.zeromq.rate_limiter import throttle
 from metrics.messages import run_method_time
@@ -34,7 +34,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.pred_and_action = PredicatesAndAction(self, id, self.resolver,
                                                    n, f)
         self.echo = [
-            {VIEWS: {}, PHASE: 0, WITNESSES: {}}
+            {VIEWS: {}, PHASE: 0, WITNESSES: {}, VCHANGE: None}
             for i in range(n)
         ]
 
@@ -118,9 +118,11 @@ class ViewEstablishmentModule(AlgorithmModule):
         Checks if processor k has reported(echo) a view and phase matching
         the current view and phase.
         """
-        return (self.pred_and_action.get_info(self.id)[0] ==
+        predicate_info = self.pred_and_action.get_info(self.id)
+        return (predicate_info[0] ==
                 self.echo[processor_k].get(VIEWS) and
-                self.phs[self.id] == self.echo[processor_k].get(PHASE))
+                self.phs[self.id] == self.echo[processor_k].get(PHASE) and
+                predicate_info[1] == self.echo[processor_k].get(VCHANGE))
 
     def witnes_seen(self):
         """Method description.
@@ -204,10 +206,12 @@ class ViewEstablishmentModule(AlgorithmModule):
         for node_j, _ in nodes.items():
             # update own echo instead of sending message
             if node_j == self.id:
+                predicate_info = self.pred_and_action.get_info(self.id)
                 self.echo[self.id] = {
-                    VIEWS: self.pred_and_action.get_info(self.id)[0],
+                    VIEWS: predicate_info[0],
                     PHASE: self.phs[self.id],
-                    WITNESSES: self.witnesses[self.id]
+                    WITNESSES: self.witnesses[self.id],
+                    VCHANGE: predicate_info[1]
                 }
             else:
                 # node_i's own data
@@ -222,7 +226,9 @@ class ViewEstablishmentModule(AlgorithmModule):
                 about_data = [deepcopy(self.phs[node_j]),
                               deepcopy(self.witnesses[node_j]),
                               deepcopy(
-                                  self.pred_and_action.get_info(node_j)[0])
+                                  self.pred_and_action.get_info(node_j)[0]),
+                              deepcopy(
+                                  self.pred_and_action.get_info(node_j)[1])
                               ]
 
                 # Overwriting own_data to send different views to different
@@ -277,7 +283,8 @@ class ViewEstablishmentModule(AlgorithmModule):
             self.echo[j] = {
                 PHASE: deepcopy(j_about_data[0]),
                 WITNESSES: deepcopy(j_about_data[1]),
-                VIEWS: deepcopy(j_about_data[2])
+                VIEWS: deepcopy(j_about_data[2]),
+                VCHANGE: deepcopy(j_about_data[3])
             }
 
             self.phs[j] = deepcopy(j_own_data[0])

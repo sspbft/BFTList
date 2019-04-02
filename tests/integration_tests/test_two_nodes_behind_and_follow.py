@@ -30,14 +30,14 @@ start_state = {
             "views": [{CURRENT: 1, NEXT: 1}] + [{CURRENT: 1, NEXT: 1}] + [{CURRENT: 1, NEXT: 2} for i in range(0, N-2)],
             "phs": [0, 0, 1, 1, 1, 1],
             "witnesses": [True for i in range (0, N)],
-            "echo": [{"views": {CURRENT: 1, NEXT: 1} , "phase": 0, "witnesses": True} for i in range(0,N)]}
+            "echo": [{"views": {CURRENT: 1, NEXT: 1} , "phase": 0, "witnesses": True, "vChange": False} for i in range(0,N)]}
     },
     "1": {
         "VIEW_ESTABLISHMENT_MODULE": {
             "views": [{CURRENT: 1, NEXT: 1}] + [{CURRENT: 1, NEXT: 1}] + [{CURRENT: 1, NEXT: 2} for i in range(0, N-2)],
             "phs": [0, 0, 1, 1, 1, 1],
             "witnesses": [True for i in range (0, N)],
-            "echo": [{"views": {CURRENT: 1, NEXT: 1} , "phase": 0, "witnesses": True} for i in range(0,N)]
+            "echo": [{"views": {CURRENT: 1, NEXT: 1} , "phase": 0, "witnesses": True, "vChange": False} for i in range(0,N)]
         }
     },
     "2": {
@@ -45,7 +45,7 @@ start_state = {
             "views": [{CURRENT: 1, NEXT: 1}] + [{CURRENT: 1, NEXT: 1}] + [{CURRENT: 1, NEXT: 2} for i in range(0, N-2)],
             "phs": [0, 0, 1, 1, 1, 1],
             "witnesses": [True for i in range (0, N)],
-            "echo": [{"views": {CURRENT: 1, NEXT: 2} , "phase": 1, "witnesses": True} for i in range(0, N)]
+            "echo": [{"views": {CURRENT: 1, NEXT: 2} , "phase": 1, "witnesses": True, "vChange": False} for i in range(0, N)]
         }
     }
 }
