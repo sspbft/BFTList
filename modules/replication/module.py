@@ -400,7 +400,8 @@ class ReplicationModule(AlgorithmModule):
         # notify state metric that request has been committed
         client_req_executed(
             request.get_client_request(),
-            len(self.rep[self.id].get_rep_state())
+            len(self.rep[self.id].get_rep_state()),
+            len(self.rep[self.id].get_pend_reqs())
         )
 
     def apply(self, req: Request):
