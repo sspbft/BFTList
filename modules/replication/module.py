@@ -398,7 +398,10 @@ class ReplicationModule(AlgorithmModule):
         self.rep[self.id].remove_from_req_q(request)
 
         # notify state metric that request has been committed
-        client_req_executed(request.get_client_request())
+        client_req_executed(
+            request.get_client_request(),
+            len(self.rep[self.id].get_rep_state())
+        )
 
     def apply(self, req: Request):
         """Applies a request and returns the resulting state."""

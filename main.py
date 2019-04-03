@@ -193,7 +193,7 @@ def setup_fd_communication(resolver):
     resolver.fd_senders = senders
     resolver.fd_receiver = receiver
 
-    logger.info("All FD senders for connected")
+    logger.info("All FD senders connected")
 
 
 if __name__ == "__main__":
