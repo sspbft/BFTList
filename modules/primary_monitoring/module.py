@@ -115,13 +115,12 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     # Line 13
                     elif self.sup_change(4 * self.number_of_byzantine + 1):
                         self.vcm[self.id][V_STATUS] = enums.V_CHANGE
-                        logger.debug("Telling ViewEst to change view")
                         if self.self_stab:
+                            logger.debug("Telling ViewEst to change view")
                             self.resolver.execute(
                                 Module.VIEW_ESTABLISHMENT_MODULE,
                                 Function.VIEW_CHANGE)
-                        else:
-                            self.mock_prim += 1
+
                 # Line 14
                 elif(self.vcm[self.id][PRIM] ==
                      self.get_current_view(self.id) and
