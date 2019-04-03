@@ -16,7 +16,7 @@ state_length = Counter("state_length",
 
 client_req_exec_time = Gauge("client_req_exec_time",
                              "Execution time of client_request",
-                             ["client_id", "timestamp"])
+                             ["client_id", "timestamp", "state_length"])
 
 # dict to keep track of all client_requests and when they arrived in pending
 client_reqs = {}
@@ -36,7 +36,7 @@ def client_req_added_to_pending(client_req: ClientRequest):
     client_reqs[client_req] = time.time()
 
 
-def client_req_executed(client_req: ClientRequest):
+def client_req_executed(client_req: ClientRequest, state_length):
     """Called whenever a client request is fully executed, i.e. committed
 
     The total execution time is calculated and emitted to the gauge tracking
@@ -51,7 +51,8 @@ def client_req_executed(client_req: ClientRequest):
     # emit execution time for this client_req
     client_req_exec_time.labels(
         client_req.get_client_id(),
-        client_req.get_timestamp()
+        client_req.get_timestamp(),
+        state_length
     ).set(exec_time)
 
     # stop tracking client_req
