@@ -215,20 +215,20 @@ class ViewEstablishmentModule(AlgorithmModule):
                 }
             else:
                 # node_i's own data
-                pred_and_action_data = self.pred_and_action.get_info(self.id)
+                pred_and_action_own_data = self.pred_and_action.get_info(
+                                                self.id)
                 own_data = [deepcopy(self.phs[self.id]),
                             deepcopy(self.witnesses[self.id]),
-                            deepcopy(pred_and_action_data[0]),
-                            deepcopy(pred_and_action_data[1])
+                            deepcopy(pred_and_action_own_data[0]),
+                            deepcopy(pred_and_action_own_data[1])
                             ]
-
+                pred_and_action_about_data = self.pred_and_action.get_info(
+                                                node_j)
                 # what node_i thinks about node_j
                 about_data = [deepcopy(self.phs[node_j]),
                               deepcopy(self.witnesses[node_j]),
-                              deepcopy(
-                                  self.pred_and_action.get_info(node_j)[0]),
-                              deepcopy(
-                                  self.pred_and_action.get_info(node_j)[1])
+                              deepcopy(pred_and_action_about_data[0]),
+                              deepcopy(pred_and_action_about_data[1])
                               ]
 
                 # Overwriting own_data to send different views to different
