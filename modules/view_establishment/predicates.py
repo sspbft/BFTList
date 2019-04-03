@@ -9,6 +9,9 @@ from resolve.enums import Function, Module
 from modules.enums import ViewEstablishmentEnums as enums
 from modules.constants import CURRENT, NEXT
 
+# metrics
+from metrics.convegence_latency import view_established
+
 # globals
 logger = logging.getLogger(__name__)
 
@@ -189,6 +192,9 @@ class PredicatesAndAction():
 
     def establish(self):
         """Update the current view in the view pair to the next view."""
+        current_view = (0 if self.views[self.id][CURRENT] == enums.DF_VIEW else
+                        self.views[self.id][CURRENT])
+        view_established(current_view, self.id)
         self.views[self.id][CURRENT] = deepcopy(self.views[
                                                 self.id][NEXT])
 
