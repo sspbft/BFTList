@@ -30,3 +30,11 @@ bytes_sent = Counter("bytes_sent",
 run_method_time = Gauge("run_method_time",
                         "Time taken to run the run-forever-loop",
                         ["node_id", "module"])
+
+msgs_during_exp = Gauge("msgs_during_exp",
+                        "Number of messages sent during an experiment",
+                        ["node_id", "state_length"])
+
+bytes_during_exp = Gauge("bytes_during_exp",
+                         "Number of bytes sent during an experiment",
+                         ["node_id", "state_length"])

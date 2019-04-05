@@ -13,7 +13,8 @@ from resolve.enums import Function, Module, MessageType, SystemStatus
 from conf.config import get_nodes
 from modules.replication.models.client_request import ClientRequest
 from communication.zeromq import rate_limiter
-from metrics.messages import msg_rtt, msg_sent_size, msgs_sent, bytes_sent
+from metrics.messages import (msg_rtt, msg_sent_size, msgs_sent, bytes_sent,
+                              msgs_during_exp, bytes_during_exp)
 
 # globals
 logger = logging.getLogger(__name__)
@@ -54,6 +55,7 @@ class Resolver:
         # metrics
         self.total_msgs_sent = 0
         self.total_bytes_sent = 0
+        self.experiment_started = False
 
     def wait_for_other_nodes(self):
         """Write me."""
@@ -226,9 +228,10 @@ class Resolver:
 
         # emit message sent message
         msgs_sent.labels(id).inc()
-        self.total_msgs_sent += 1
-        if self.total_msgs_sent == 0:
-            logger.error("Total messages sent hit INTMAX")
+        if self.experiment_started:
+            self.total_msgs_sent += 1
+        # if self.total_msgs_sent == 0:
+        #     logger.error("Total messages sent hit INTMAX")
 
         # Emit roundtrip time for message
         if ("rec_id" in metric_data and "recv_hostname" in metric_data and
@@ -242,9 +245,10 @@ class Resolver:
             bytes_sent.labels(id,
                               metric_data["msg_type"]).inc(
                                   metric_data["bytes_size"])
-            self.total_bytes_sent += metric_data["bytes_size"]
-            if self.total_bytes_sent < metric_data["bytes_size"]:
-                logger.error("Total bytes sent hit INTMAX")
+            if self.experiment_started:
+                self.total_bytes_sent += metric_data["bytes_size"]
+            # if self.total_bytes_sent < metric_data["bytes_size"]:
+            #     logger.error("Total bytes sent hit INTMAX")
 
             if("type" in msg):
                 msg_sent_size.labels(
@@ -252,10 +256,6 @@ class Resolver:
                                 msg["type"],
                                 metric_data["msg_type"]).set(
                                     metric_data["bytes_size"])
-
-    def get_total_msgs_and_bytes_sent(self):
-        """Returns totalt msgs sent for this node."""
-        return (self.total_msgs_sent, self.total_bytes_sent)
 
     # Methods to extract data
     def get_view_establishment_data(self):
@@ -302,3 +302,15 @@ class Resolver:
     def inject_client_req(self, req: ClientRequest):
         """Injects a ClientRequest sent from a client through the API."""
         return self.modules[Module.REPLICATION_MODULE].inject_client_req(req)
+
+    def on_experiment_start(self):
+        """Called when the first client request is added to pend_reqs."""
+        self.experiment_started = True
+
+    def on_req_exec(self):
+        """Called whenever a request is executed by the replication module."""
+        _id = int(os.getenv("ID"))
+        state_length = len(self.modules[
+                Module.REPLICATION_MODULE].rep[_id].get_rep_state())
+        msgs_during_exp.labels(_id, state_length).set(self.total_msgs_sent)
+        bytes_during_exp.labels(_id, state_length).set(self.total_bytes_sent)
