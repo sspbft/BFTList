@@ -227,6 +227,8 @@ class Resolver:
         # emit message sent message
         msgs_sent.labels(id).inc()
         self.total_msgs_sent += 1
+        if self.total_msgs_sent == 0:
+            logger.error("Total messages sent hit INTMAX")
 
         # Emit roundtrip time for message
         if ("rec_id" in metric_data and "recv_hostname" in metric_data and
@@ -241,6 +243,9 @@ class Resolver:
                               metric_data["msg_type"]).inc(
                                   metric_data["bytes_size"])
             self.total_bytes_sent += metric_data["bytes_size"]
+            if self.total_bytes_sent < metric_data["bytes_size"]:
+                logger.error("Total bytes sent hit INTMAX")
+
             if("type" in msg):
                 msg_sent_size.labels(
                                 id,

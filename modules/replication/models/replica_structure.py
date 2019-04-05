@@ -106,13 +106,14 @@ class ReplicaStructure(object):
         """
         return self.pend_reqs
 
-    def extend_pend_reqs(self, req: [ClientRequest], msg, bytes):
+    def extend_pend_reqs(self, req: [ClientRequest], msgs_sent, bytes_sent):
         """Adds a list of ClientRequests to pend_reqs."""
         for r in req:
             if r not in self.pend_reqs:
                 self.pend_reqs.append(deepcopy(r))
                 # notify state metric that client request added to pend_reqs
-                client_req_added_to_pending(r, len(self.pend_reqs), msg, bytes)
+                client_req_added_to_pending(r, len(self.pend_reqs),
+                                            msgs_sent, bytes_sent)
 
     def remove_from_pend_reqs(self, req: ClientRequest):
         """Removes the first occurrence of req from pend_reqs."""
