@@ -176,9 +176,9 @@ class ReplicationModule(AlgorithmModule):
                 prim_id = 0
 
             # msg and bytes for metrics
-            msg, bytes = self.resolver.get_total_msgs_and_bytes_sent()
+            msgs, bytes_sent = self.resolver.get_total_msgs_and_bytes_sent()
             self.rep[self.id].extend_pend_reqs(self.known_pend_reqs(),
-                                               msg, bytes)
+                                               msgs, bytes_sent)
             # line 15 - 25
             if view_est_allow_service and self.need_flush is False:
                 if (self.resolver.execute(
@@ -401,13 +401,13 @@ class ReplicationModule(AlgorithmModule):
         self.rep[self.id].remove_from_req_q(request)
 
         # notify state metric that request has been committed
-        msg, bytes = self.resolver.get_total_msgs_and_bytes_sent()
+        msg, bytes_sent = self.resolver.get_total_msgs_and_bytes_sent()
         client_req_executed(
             request.get_client_request(),
             len(self.rep[self.id].get_rep_state()),
             len(self.rep[self.id].get_pend_reqs()),
             msg,
-            bytes
+            bytes_sent
         )
 
     def apply(self, req: Request):
@@ -1312,6 +1312,6 @@ class ReplicationModule(AlgorithmModule):
 
     def inject_client_req(self, req: ClientRequest):
         """Injects a client request to pend_reqs."""
-        msg, bytes = self.resolver.get_total_msgs_and_bytes_sent()
-        self.rep[self.id].extend_pend_reqs([req], msg, bytes)
+        msgs_sent, bytes_sent = self.resolver.get_total_msgs_and_bytes_sent()
+        self.rep[self.id].extend_pend_reqs([req], msgs_sent, bytes_sent)
         return self.rep[self.id].get_pend_reqs()
