@@ -51,6 +51,10 @@ class Resolver:
         # Support non-self-stabilizing mode
         self.self_stab = os.getenv("NON_SELF_STAB") is None
 
+        # metrics
+        self.total_msgs_sent = 0
+        self.total_bytes_sent = 0
+
     def wait_for_other_nodes(self):
         """Write me."""
         if len(self.nodes) == 1:
@@ -219,8 +223,12 @@ class Resolver:
         Used for metrics purpose.
         """
         id = int(os.getenv("ID"))
+
         # emit message sent message
         msgs_sent.labels(id).inc()
+        self.total_msgs_sent += 1
+        if self.total_msgs_sent == 0:
+            logger.error("Total messages sent hit INTMAX")
 
         # Emit roundtrip time for message
         if ("rec_id" in metric_data and "recv_hostname" in metric_data and
@@ -234,12 +242,20 @@ class Resolver:
             bytes_sent.labels(id,
                               metric_data["msg_type"]).inc(
                                   metric_data["bytes_size"])
+            self.total_bytes_sent += metric_data["bytes_size"]
+            if self.total_bytes_sent < metric_data["bytes_size"]:
+                logger.error("Total bytes sent hit INTMAX")
+
             if("type" in msg):
                 msg_sent_size.labels(
                                 id,
                                 msg["type"],
                                 metric_data["msg_type"]).set(
                                     metric_data["bytes_size"])
+
+    def get_total_msgs_and_bytes_sent(self):
+        """Returns totalt msgs sent for this node."""
+        return (self.total_msgs_sent, self.total_bytes_sent)
 
     # Methods to extract data
     def get_view_establishment_data(self):
