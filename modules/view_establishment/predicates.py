@@ -192,9 +192,14 @@ class PredicatesAndAction():
 
     def establish(self):
         """Update the current view in the view pair to the next view."""
-        current_view = (0 if self.views[self.id][CURRENT] == enums.DF_VIEW else
-                        self.views[self.id][CURRENT])
+        if self.views[self.id][CURRENT] == enums.DF_VIEW:
+            current_view = 0
+        elif self.views[self.id][CURRENT] == enums.TEE:
+            current_view = -1
+        else:
+            current_view = self.views[self.id][CURRENT]
         view_established(current_view, self.id)
+        self.resolver.on_view_established()
         self.views[self.id][CURRENT] = deepcopy(self.views[
                                                 self.id][NEXT])
 

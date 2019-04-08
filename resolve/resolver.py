@@ -314,3 +314,11 @@ class Resolver:
                 Module.REPLICATION_MODULE].rep[_id].get_rep_state())
         msgs_during_exp.labels(_id, state_length).set(self.total_msgs_sent)
         bytes_during_exp.labels(_id, state_length).set(self.total_bytes_sent)
+
+    def on_view_established(self):
+        """Called whenever a view is established by the viewEst module."""
+        _id = int(os.getenv("ID"))
+        view = self.modules[
+                Module.VIEW_ESTABLISHMENT_MODULE].get_current_view(_id)
+        msgs_during_exp.labels(_id, view).set(self.total_msgs_sent)
+        bytes_during_exp.labels(_id, view).set(self.total_bytes_sent)
