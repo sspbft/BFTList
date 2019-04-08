@@ -198,7 +198,7 @@ class PredicatesAndAction():
             current_view = -1
         else:
             current_view = self.views[self.id][CURRENT]
-        view_established(current_view, self.id)
+        view_established(self.id, current_view)
         self.resolver.on_view_established()
         self.views[self.id][CURRENT] = deepcopy(self.views[
                                                 self.id][NEXT])
@@ -440,7 +440,6 @@ class PredicatesAndAction():
 
             # Return no action
             elif(case == 2):
-                #self.reset_v_change()
                 return enums.NO_ACTION
 
             # Reset all

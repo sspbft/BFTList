@@ -10,7 +10,6 @@ import time
 # local
 import modules.byzantine as byz
 from resolve.enums import Function, Module, MessageType, SystemStatus
-from modules.enums import ViewEstablishmentEnums as enums
 from conf.config import get_nodes
 from modules.replication.models.client_request import ClientRequest
 from communication.zeromq import rate_limiter
@@ -319,11 +318,6 @@ class Resolver:
     def on_view_established(self):
         """Called whenever a view is established by the viewEst module."""
         _id = int(os.getenv("ID"))
-        view = self.modules[
-                Module.VIEW_ESTABLISHMENT_MODULE].get_current_view(_id)
-        if view == enums.DF_VIEW:
-            view = 0
-        elif view == enums.TEE:
-            view = -1
-        msgs_during_exp.labels(_id, view).set(self.total_msgs_sent)
-        bytes_during_exp.labels(_id, view).set(self.total_bytes_sent)
+        if self.total_msgs_sent != 0 or self.total_bytes_sent != 0:
+            msgs_during_exp.labels(_id, 0).set(self.total_msgs_sent)
+            bytes_during_exp.labels(_id, 0).set(self.total_bytes_sent)

@@ -30,7 +30,7 @@ def suspect_prim(cur_view):
     view_changes[cur_view] = time.time()
 
 
-def view_established(old_view, node_id):
+def view_established(node_id, old_view):
     """Called whenever a view is established
 
     The total convergence time is calculated and emitted to the gauge tracking
