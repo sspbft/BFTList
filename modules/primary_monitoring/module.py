@@ -16,9 +16,6 @@ import conf.config as conf
 from communication.zeromq.rate_limiter import throttle
 from metrics.messages import allow_service_rtt, run_method_time
 
-# metrics
-from metrics.convegence_latency import suspect_prim
-
 # global
 logger = logging.getLogger(__name__)
 
@@ -119,7 +116,6 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     elif self.sup_change(4 * self.number_of_byzantine + 1):
                         self.vcm[self.id][V_STATUS] = enums.V_CHANGE
                         if self.self_stab:
-                            suspect_prim(self.vcm[self.id][PRIM])
                             logger.debug("Telling ViewEst to change view")
                             self.resolver.execute(
                                 Module.VIEW_ESTABLISHMENT_MODULE,
