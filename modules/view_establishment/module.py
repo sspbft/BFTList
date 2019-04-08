@@ -43,6 +43,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.number_of_byzantine = f
         self.witnesses_set = set()
         self.correct_ids = []
+        self.last_correct_ids = []
 
         if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
@@ -81,6 +82,7 @@ class ViewEstablishmentModule(AlgorithmModule):
             if self.correct_ids != []:
                 self.lock.acquire()
                 start_time = time.time()
+                self.last_correct_ids = deepcopy(self.correct_ids)
 
                 if(self.pred_and_action.need_reset()):
                     self.pred_and_action.reset_all()
@@ -108,10 +110,10 @@ class ViewEstablishmentModule(AlgorithmModule):
                             self.phs[self.id],
                             case
                         )
-
+                    ts = time.time()
                 # Emit run time metric
-                ts = time.time()
-                run_time = ts - start_time
+                # ts = time.time()
+                run_time = time.time() - start_time
                 run_method_time.labels(
                     self.id,
                     Module.VIEW_ESTABLISHMENT_MODULE).set(
@@ -317,11 +319,11 @@ class ViewEstablishmentModule(AlgorithmModule):
 
     def is_correct(self, id):
         """TODO write me."""
-        return id in self.correct_ids
+        return id in self.last_correct_ids
 
     def get_correct_ids(self):
         """TODO write me."""
-        return self.correct_ids
+        return self.last_correct_ids
 
     # Function to extract data
     def get_data(self):
