@@ -449,6 +449,7 @@ class PredicatesAndAction():
 
             # Return no action
             elif(case == 2):
+                self.reset_v_change()
                 return enums.NO_ACTION
 
             # Reset all
