@@ -91,9 +91,11 @@ class EventDrivenFDModule:
                 # if invalid token, break out of token exchange loop
                 return
 
-        # send back token to sender
+        # emulate node being very far away
         if self.id == 0:
             time.sleep(1)
+
+        # send back token to sender
         self.send_token(sender_id, token, owner_id)
 
     def get_correct_processors(self):
