@@ -300,9 +300,8 @@ class PredicatesAndAction():
 
             # True if a view change was instructed by Primary Monitoring
             elif(case == 1):
-                enough_support = len([v for (v) in self.vChange if v is True])
                 return(
-                    (enough_support >= (4 * self.number_of_byzantine + 1) and
+                    (self.changeable() and
                      self.establishable(0, enums.FOLLOW)) or
                     (self.views[self.id] == self.RST_PAIR and
                      self.establishable(0, enums.FOLLOW))
@@ -340,8 +339,7 @@ class PredicatesAndAction():
             # Two subcases
             elif(case == 1):
                 # Case 1a (increment view and move to next face
-                enough_support = len([v for (v) in self.vChange if v is True])
-                if(enough_support >= (4 * self.number_of_byzantine + 1)):
+                if self.changeable():
                     self.next_view()
                     self.view_module.next_phs()
                     # self.reset_v_change()
@@ -368,6 +366,17 @@ class PredicatesAndAction():
         # Not a valid type (act or pred)
         else:
             logger.error(f"Not a valid type: {type}")
+
+    def changeable(self):
+        """Returns if there is enough support for a view change."""
+        vchange_true_set = len([v for (v) in self.vChange if v is True])
+        already_phase_1_set = 0
+        for view_pair in self.views:
+            if view_pair[NEXT] == ((
+                    self.views[self.id][CURRENT] + 1) % self.number_of_nodes):
+                already_phase_1_set += 1
+        return (vchange_true_set + already_phase_1_set) >= (
+                                    4 * self.number_of_byzantine + 1)
 
     def automation_phase_1(self, type, case):
         """Perform the action corresponding to the current case of phase 1."""
