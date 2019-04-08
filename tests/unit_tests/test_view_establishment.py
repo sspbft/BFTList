@@ -5,7 +5,7 @@ from modules.view_establishment.predicates import PredicatesAndAction
 from modules.view_establishment.module import ViewEstablishmentModule
 from modules.enums import ViewEstablishmentEnums
 from resolve.enums import Function, Module
-from modules.constants import VIEWS, PHASE, WITNESSES
+from modules.constants import VIEWS, PHASE, WITNESSES, VCHANGE
 
 N = 6
 
@@ -152,8 +152,8 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
         # Both conditions are fulfilled
         view_est_mod.phs[view_est_mod.id] = 0
-        view_est_mod.pred_and_action.get_info = MagicMock(return_value = ({"current": 0, "next": 1}, False))
-        view_est_mod.echo[1] = {VIEWS: {"current": 0, "next": 1}, PHASE: 0, WITNESSES: None}
+        view_est_mod.pred_and_action.get_info = MagicMock(return_value = ({"current": 0, "next": 1}, False, False))
+        view_est_mod.echo[1] = {VIEWS: {"current": 0, "next": 1}, PHASE: 0, WITNESSES: None, VCHANGE: False}
         self.assertTrue(view_est_mod.echo_no_witn(1))
 
         # The view in the echo is not correct

@@ -5,11 +5,18 @@
     <h1>BFTList global view</h1>
     <p>Another day, another algorithm</p>
 
+    {% if data.nss %}
+    <div id="non-ss">
+        <h3>WARNING: Running without self-stabilization</h3>
+    </div>
+    {% endif %}
+
     {% if data.test_data %}
     <div id="test-info">
         <h3 id="test-name">{{ data.test_data.test_name }}</h3>
     </div>
     {% endif %}
+
 
     <div id="byz-control">
         <h4>Byzantine behavior control</h4>

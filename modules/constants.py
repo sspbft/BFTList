@@ -7,6 +7,7 @@ NEXT = "next"
 VIEWS = "views"
 PHASE = "phase"
 WITNESSES = "witnesses"
+VCHANGE = "vChange"
 
 # Replication module
 CLIENT_REQ = "client_request"

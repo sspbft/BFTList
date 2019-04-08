@@ -89,6 +89,8 @@ def get_modules_data():
     """Returns current values of variables in the modules."""
     test_name = os.getenv("INTEGRATION_TEST")
     test_data = {"test_name": test_name} if test_name else None
+    nss_on = os.getenv("NON_SELF_STAB")
+    nss = {"nss": 1} if nss_on else None
 
     data = {"VIEW_ESTABLISHMENT_MODULE":
             app.resolver.get_view_establishment_data(),
@@ -100,6 +102,7 @@ def get_modules_data():
             app.resolver.get_event_driven_fd_data(),
             "node_id": int(os.getenv("ID")),
             "test_data": test_data,
+            "nss": nss,
             "byzantine": byz.is_byzantine(),
             "byzantine_behavior": byz.get_byz_behavior()
             }
@@ -128,10 +131,14 @@ def render_global_view(view="view-est"):
     test_name = os.getenv("INTEGRATION_TEST")
     test_data = {"test_name": test_name} if test_name is not None else {}
 
+    nss_on = os.getenv("NON_SELF_STAB")
+    nss = {"nss": 1} if nss_on is not None else {}
+
     return render_template("view/main.html", data={
         "view": view,
         "nodes_data": nodes_data,
         "test_data": test_data,
+        "nss": nss,
         "byz_behaviors": [byz.NONE] + byz.BYZ_BEHAVIORS
     })
 
