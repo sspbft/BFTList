@@ -301,7 +301,7 @@ class PredicatesAndAction():
             # True if a view change was instructed by Primary Monitoring
             elif(case == 1):
                 return(
-                    (self.changeable and
+                    (self.changeable() and
                      self.establishable(0, enums.FOLLOW)) or
                     (self.views[self.id] == self.RST_PAIR and
                      self.establishable(0, enums.FOLLOW))

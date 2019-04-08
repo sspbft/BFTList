@@ -396,7 +396,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 1))
         # View change is not required
         pred_module.vChange = [False for i in range(2)]
-        print(pred_module.views, pred_module.vChange)
+        pred_module.views[1] ={"current": 1, "next": 1}
         self.assertFalse(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 1))
         # The threshold to move to a view change is not fulfilled
         pred_module.establishable = MagicMock(return_value = False)
