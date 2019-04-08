@@ -120,6 +120,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
                         self.vcm[self.id][V_STATUS] = enums.V_CHANGE
                         if self.self_stab:
                             suspect_prim(self.vcm[self.id][PRIM])
+                            self.resolver.on_experiment_start()
                             logger.debug("Telling ViewEst to change view")
                             self.resolver.execute(
                                 Module.VIEW_ESTABLISHMENT_MODULE,

@@ -30,11 +30,11 @@ def suspect_prim(cur_view):
     view_changes[cur_view] = time.time()
 
 
-def view_established(old_view, node_id):
-    """Called whenever a client request is fully executed, i.e. committed
+def view_established(node_id, old_view):
+    """Called whenever a view is established
 
-    The total execution time is calculated and emitted to the gauge tracking
-    the client request execution time.
+    The total convergence time is calculated and emitted to the gauge tracking
+    the convergence latency time.
     """
     if old_view not in view_changes:
         logger.debug(f"View change from {old_view} not tracked")
