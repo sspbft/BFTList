@@ -742,7 +742,7 @@ class TestReplicationModule(unittest.TestCase):
             view_changed=True,
             rep_state=[]
         )
-
+        replication.resolver.on_req_exec = Mock()
         # Commit should removed dummyRequest 1 from pend_reqs and req_q and add to last_req and R_log
         replication.commit({REQUEST: self.dummyRequest1, X_SET: {0,1,2,3,4,5}})
         target = ReplicaStructure(

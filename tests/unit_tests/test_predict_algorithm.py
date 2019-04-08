@@ -257,7 +257,7 @@ class TestPredicatesAndAction(unittest.TestCase):
     def test_reset_v_change(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
-        pred_module.vChange = True
+        pred_module.vChange = [True, False]
         pred_module.reset_v_change()
         self.assertFalse(pred_module.vChange[view_est_mod.id])
 
@@ -400,12 +400,12 @@ class TestPredicatesAndAction(unittest.TestCase):
         self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 1))
         # View change is not required
         pred_module.vChange = [False for i in range(2)]
+        pred_module.views[1] ={"current": 1, "next": 1}
         self.assertFalse(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 1))
         # The threshold to move to a view change is not fulfilled
         pred_module.establishable = MagicMock(return_value = False)
         pred_module.vChange = [True for i in range(2)]
         self.assertFalse(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 1))
-
 
 
         # Case 2
@@ -458,9 +458,9 @@ class TestPredicatesAndAction(unittest.TestCase):
 
         # Case 3 should return "Reset"
         pred_module.reset_all = MagicMock(return_value = ViewEstablishmentEnums.RESET)
-        pred_module.reset_v_change = Mock()
+        #pred_module.reset_v_change = Mock()
         self.assertEqual(pred_module.automation(ViewEstablishmentEnums.ACTION, 0, 3), ViewEstablishmentEnums.RESET)
-        pred_module.reset_v_change.assert_any_call()
+        #pred_module.reset_v_change.assert_any_call()
 
         
     def test_automaton_phase_1_predicates(self):
