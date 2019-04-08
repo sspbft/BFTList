@@ -213,7 +213,7 @@ class ViewEstablishmentModule(AlgorithmModule):
     def view_change(self):
         """Calls view_change of PredicatesAndAction."""
         suspect_prim(self.get_current_view(self.id))
-        logger.info("Starting to track convergence latency time")
+        self.resolver.on_experiment_start()
         return self.pred_and_action.view_change()
 
     # Methods to communicate with other processors
