@@ -93,6 +93,8 @@ class PredicatesAndAction():
         for processor_id, view_pair in enumerate(self.views):
             # check if either have current as TEE and same next, if so they are
             # considered to be in the same view set
+            if not self.view_module.is_correct(processor_id):
+                continue
             if phase == 1:
                 if (view_pair[CURRENT] == enums.TEE or
                    self.views[node_j][CURRENT] == enums.TEE):
@@ -134,6 +136,8 @@ class PredicatesAndAction():
         """
         processor_set_transit = set()
         for processor_id, view_pair in enumerate(self.views):
+            if not self.view_module.is_correct(processor_id):
+                continue
             if(self.view_module.get_phs(processor_id) != phase and
                 self.transition_cases(node_j, view_pair, phase, mode) and not
                     self.stale_v(processor_id)):
@@ -281,6 +285,8 @@ class PredicatesAndAction():
             # processor i
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
+                    if not self.view_module.is_correct(processor_id):
+                        continue
                     if processor_id != self.id:
                         # Assert that the processor doesn't end up in
                         # phase 1 with CURRENT = NEXT
@@ -299,9 +305,16 @@ class PredicatesAndAction():
 
             # True if a view change was instructed by Primary Monitoring
             elif(case == 1):
-                enough_support = len([v for v in self.vChange if v is True])
+                supporting = 0
+                for processor_id, vc in enumerate(self.vChange):
+                    if not self.view_module.is_correct(processor_id):
+                        continue
+                    elif vc:
+                        supporting += 1
+                # enough_support = len([v for v in self.vChange if v is True])
+                # enough_support = supporting
                 return(
-                    (enough_support >= (4 * self.number_of_byzantine + 1) and
+                    (supporting >= (4 * self.number_of_byzantine + 1) and
                      self.establishable(0, enums.FOLLOW)) or
                     (self.views[self.id] == self.RST_PAIR and
                      self.establishable(0, enums.FOLLOW))
@@ -339,8 +352,14 @@ class PredicatesAndAction():
             # Two subcases
             elif(case == 1):
                 # Case 1a (increment view and move to next face
-                enough_support = len([v for v in self.vChange if v is True])
-                if(enough_support >= (4 * self.number_of_byzantine + 1)):
+                supporting = 0
+                for processor_id, vc in enumerate(self.vChange):
+                    if not self.view_module.is_correct(processor_id):
+                        continue
+                    elif vc:
+                        supporting += 1
+                # enough_support = len([v for v in self.vChange if v is True])
+                if(supporting >= (4 * self.number_of_byzantine + 1)):
                     self.next_view()
                     self.view_module.next_phs()
                     # self.reset_v_change()
@@ -377,6 +396,8 @@ class PredicatesAndAction():
             # processor i
             if(case == 0):
                 for processor_id, view_pair in enumerate(self.views):
+                    if not self.view_module.is_correct(processor_id):
+                        continue
                     if processor_id != self.id:
                         # Assert that the processor doesn't end up in
                         # phase 1 with CURRENT = NEXT

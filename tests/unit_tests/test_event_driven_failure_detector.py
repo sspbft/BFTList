@@ -77,14 +77,14 @@ class TestEventDrivenFailureDetector(unittest.TestCase):
         self.resolver.send_to_node.assert_called_once_with(0, msg, True)
 
     def test_get_correct_processors(self):
-        # should return [] for 0 correct processors
-        self.assertEqual(self.module.get_correct_processors(), [])
+        # should return [self.id] for 0 correct processors
+        self.assertEqual(self.module.get_correct_processors(), [0])
 
         # inject two correct processors and one faulty, get_correct_processors should return the correct IDs
-        self.module.counters[0] = K
+        self.module.counters[1] = K
         self.module.counters[2] = K + 1
         self.module.counters[3] = K - 1
-        self.assertCountEqual(self.module.get_correct_processors(), [0,2,3])
+        self.assertCountEqual(self.module.get_correct_processors(), [0,1,2,3])
     
     def test_correct_processors_have_replied(self):
         # should be False since no processors have yet replied

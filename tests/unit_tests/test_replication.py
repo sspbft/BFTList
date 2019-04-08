@@ -727,6 +727,7 @@ class TestReplicationModule(unittest.TestCase):
     def test_commit(self):
         replication = ReplicationModule(0, Resolver(testing=True), 6, 1, 2)
         replication.rep = [ReplicaStructure(i, rep_state=[]) for i in range(6)]
+        replication.resolver.on_req_exec = Mock()
         replication.rep[replication.id] = ReplicaStructure(
             replication.id,
             pend_reqs=[

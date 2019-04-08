@@ -50,7 +50,7 @@ class EventDrivenFDModule:
             # broadcast token to all other nodes
             self.broadcast()
             # block until at least n-2f processors have sent K tokens back
-            while not self.correct_processors_have_replied():
+            while not testing and not self.correct_processors_have_replied():
                 time.sleep(EVENT_FD_WAIT)
 
             # tokens received from n-2f processors, save their IDs
@@ -92,6 +92,8 @@ class EventDrivenFDModule:
                 return
 
         # send back token to sender
+        if self.id == 0:
+            time.sleep(1)
         self.send_token(sender_id, token, owner_id)
 
     def get_correct_processors(self):
@@ -100,11 +102,14 @@ class EventDrivenFDModule:
         A correct processor is a processor that has acked a this processor's
         current token at least K times.
         """
-        return [n_id for n_id in self.counters if self.counters[n_id] > 0]
+        return ([n_id for n_id in self.counters if self.counters[n_id] > 0] +
+                [self.id])
 
     def correct_processors_have_replied(self):
-        """Returns True if >= n-2f processors have rent, i.e. acked K tokens"""
-        correct_processors = self.get_correct_processors()
+        """Returns True if >= n-2f processors have acked K tokens"""
+        # correct_processors = self.get_correct_processors()
+        correct_processors = ([n_id for n_id in self.counters if
+                              self.counters[n_id] >= K] + [self.id])
         return len(correct_processors) >= (self.number_of_nodes - 2 *
                                            self.number_of_byzantine)
 

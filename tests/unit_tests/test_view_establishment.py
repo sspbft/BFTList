@@ -166,6 +166,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
     def test_witnes_seen(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        view_est_mod.correct_ids = [0,1]
 
         # Both condition fulfilled with f = 0
         view_est_mod.witnesses[view_est_mod.id] = True
@@ -219,6 +220,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
 
     def test_noticed_recent_value(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        view_est_mod.correct_ids = [0,1]
 
         # All have noticed
         view_est_mod.echo_no_witn = MagicMock(return_value = True)

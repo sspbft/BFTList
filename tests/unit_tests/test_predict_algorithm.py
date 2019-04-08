@@ -116,6 +116,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_same_v_set(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        view_est_mod.correct_ids = [0,1]
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
 
         # Both processors are in the same view and phase
@@ -141,6 +142,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_transit_set(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        view_est_mod.correct_ids = [0,1]
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
 
         # All is well
@@ -361,6 +363,7 @@ class TestPredicatesAndAction(unittest.TestCase):
     def test_added_logic_phase_0_case_1_b(self):
         # No mocking needed, establishable should return true
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        view_est_mod.correct_ids = [0,1]
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
         pred_module.vChange = [False for i in range(2)]
         pred_module.views = [pred_module.RST_PAIR, pred_module.RST_PAIR]
@@ -369,6 +372,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_automaton_phase_0_predicates(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        view_est_mod.correct_ids = [0,1]
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
         
         # Case 0
@@ -419,6 +423,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
     def test_automaton_phase_0_actions(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        view_est_mod.correct_ids = [0,1]
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
 
         # Case 0 should call adopt and next_view in view Establishment module
@@ -460,6 +465,7 @@ class TestPredicatesAndAction(unittest.TestCase):
         
     def test_automaton_phase_1_predicates(self):
         view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        view_est_mod.correct_ids = [0,1]
         pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
         
         # Case 0

@@ -45,4 +45,4 @@ CNT_THRESHOLD = 20  # Threshold for progress, cnt-variable
 
 # Event driven FD module
 K_ADMISSIBILITY_THRESHOLD = 5
-EVENT_FD_WAIT = 0.1
+EVENT_FD_WAIT = 0.05

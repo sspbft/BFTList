@@ -42,6 +42,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.id = id
         self.number_of_byzantine = f
         self.witnesses_set = set()
+        self.correct_ids = []
 
         if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
@@ -62,14 +63,6 @@ class ViewEstablishmentModule(AlgorithmModule):
                         self.pred_and_action.vChange = deepcopy(
                                                         data["vChange"])
 
-    def reset_incorrect_processors(self, ids):
-        """TODO write me"""
-        logger.info(f"Resetting values of processors {ids}")
-        for i in ids:
-            self.phs[i] = 0
-            self.witnesses[i] = False
-            self.pred_and_action.views[i] = self.pred_and_action.RST_PAIR
-
     def run(self, testing=False):
         """Called whenever the module is launched in a separate thread."""
         sec = os.getenv("INTEGRATION_TEST_SLEEP")
@@ -81,19 +74,13 @@ class ViewEstablishmentModule(AlgorithmModule):
 
         ts = time.time()
         while True:
-            correct_ids = self.resolver.execute(
+            self.correct_ids = self.resolver.execute(
                 Module.EVENT_DRIVEN_FD_MODULE,
                 Function.GET_CORRECT_PROCESSORS_FOR_TIMESTAMP,
                 ts)
-            if correct_ids != []:
+            if self.correct_ids != []:
                 self.lock.acquire()
                 start_time = time.time()
-
-                # reset incorrect processor values
-                incorrect_ids = [x for x in range(self.number_of_nodes)
-                                 if x not in correct_ids and x != self.id]
-                if incorrect_ids != []:
-                    self.reset_incorrect_processors(incorrect_ids)
 
                 if(self.pred_and_action.need_reset()):
                     self.pred_and_action.reset_all()
@@ -122,9 +109,9 @@ class ViewEstablishmentModule(AlgorithmModule):
                             case
                         )
 
-                ts = time.time()
                 # Emit run time metric
-                run_time = time.time() - start_time
+                ts = time.time()
+                run_time = ts - start_time
                 run_method_time.labels(
                     self.id,
                     Module.VIEW_ESTABLISHMENT_MODULE).set(
@@ -161,6 +148,8 @@ class ViewEstablishmentModule(AlgorithmModule):
         if(self.witnesses[self.id]):
             processor_set = set()
             for processor_id in self.witnesses_set:
+                if not self.is_correct(processor_id):
+                    continue
                 if(self.echo[self.id] == self.echo[processor_id]):
                     processor_set.add(processor_id)
             processor_set.union({self.id})
@@ -191,6 +180,8 @@ class ViewEstablishmentModule(AlgorithmModule):
         """
         processor_set = set()
         for processor_id in range(self.number_of_nodes):
+            if not self.is_correct(processor_id):
+                continue
             if self.echo_no_witn(processor_id):
                 processor_set.add(processor_id)
         return len(processor_set) >= (4 * self.number_of_byzantine + 1)
@@ -323,6 +314,14 @@ class ViewEstablishmentModule(AlgorithmModule):
         else:
             logger.info(f"Not a valid message from " +
                         f"node {j}: {j_own_data}")
+
+    def is_correct(self, id):
+        """TODO write me."""
+        return id in self.correct_ids
+
+    def get_correct_ids(self):
+        """TODO write me."""
+        return self.correct_ids
 
     # Function to extract data
     def get_data(self):
