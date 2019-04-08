@@ -209,7 +209,7 @@ class PredicatesAndAction():
 
     def reset_v_change(self):
         """The node is no longer in a view change."""
-        self.vChange = [False for i in range(self.number_of_nodes)]
+        self.vChange[self.id] = False
 
     # Interface functions
     def need_reset(self):
@@ -223,6 +223,7 @@ class PredicatesAndAction():
         """Reset all modules."""
         self.views = [deepcopy(self.RST_PAIR) for i in range(
                                                 self.number_of_nodes)]
+        self.vChange = [False for i in range(self.number_of_nodes)]
         self.view_module.init_module()
         self.resolver.execute(
             module=Module.REPLICATION_MODULE,
@@ -358,7 +359,6 @@ class PredicatesAndAction():
 
             # Full reset
             elif(case == 3):
-                self.reset_v_change()
                 return self.reset_all()
 
             # Not a valid case
@@ -440,7 +440,6 @@ class PredicatesAndAction():
 
             # Reset all
             elif(case == 3):
-                self.reset_v_change()
                 return self.reset_all()
 
             # Not a valid case
