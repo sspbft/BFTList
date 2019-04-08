@@ -300,7 +300,6 @@ class PredicatesAndAction():
 
             # True if a view change was instructed by Primary Monitoring
             elif(case == 1):
-                print("HERE")
                 return(
                     (self.changeable and
                      self.establishable(0, enums.FOLLOW)) or
@@ -371,13 +370,11 @@ class PredicatesAndAction():
     def changeable(self):
         """Returns if there is enough support for a view change."""
         vchange_true_set = len([v for (v) in self.vChange if v is True])
-        print(vchange_true_set)
         already_phase_1_set = 0
         for view_pair in self.views:
             if view_pair[NEXT] == ((
                     self.views[self.id][CURRENT] + 1) % self.number_of_nodes):
                 already_phase_1_set += 1
-        print(already_phase_1_set)
         return (vchange_true_set + already_phase_1_set) >= (
                                     4 * self.number_of_byzantine + 1)
 

@@ -404,7 +404,6 @@ class TestPredicatesAndAction(unittest.TestCase):
         self.assertFalse(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 1))
 
 
-
         # Case 2
         # There is a adoptable view in transit
         self.assertTrue(pred_module.automation(ViewEstablishmentEnums.PREDICATE, 0, 2))
