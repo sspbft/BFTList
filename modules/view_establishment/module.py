@@ -17,7 +17,10 @@ import conf.config as conf
 from modules.constants import (VIEWS, PHASE, WITNESSES, CURRENT, NEXT, VCHANGE)
 import modules.byzantine as byz
 from communication.zeromq.rate_limiter import throttle
+
+# metrics
 from metrics.messages import run_method_time
+from metrics.convegence_latency import suspect_prim
 
 logger = logging.getLogger(__name__)
 
@@ -188,6 +191,8 @@ class ViewEstablishmentModule(AlgorithmModule):
 
     def view_change(self):
         """Calls view_change of PredicatesAndAction."""
+        suspect_prim(self.get_current_view(self.id))
+        self.resolver.on_experiment_start()
         return self.pred_and_action.view_change()
 
     # Methods to communicate with other processors
