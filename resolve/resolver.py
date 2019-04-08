@@ -297,7 +297,9 @@ class Resolver:
 
         Event-driven failure detector module.
         """
-        return self.modules[Module.EVENT_DRIVEN_FD_MODULE].get_data()
+        if Module.EVENT_DRIVEN_FD_MODULE in self.modules:
+            return self.modules[Module.EVENT_DRIVEN_FD_MODULE].get_data()
+        return {}
 
     def inject_client_req(self, req: ClientRequest):
         """Injects a ClientRequest sent from a client through the API."""
