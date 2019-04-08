@@ -20,7 +20,6 @@ from modules.view_establishment.module import ViewEstablishmentModule
 from modules.replication.module import ReplicationModule
 from modules.primary_monitoring.module import PrimaryMonitoringModule
 from modules.primary_monitoring.failure_detector import FailureDetectorModule
-from modules.event_driven_fd.module import EventDrivenFDModule
 from resolve.enums import Module, SystemStatus
 from resolve.resolver import Resolver
 from metrics.latency_monitor import monitor_node_latencies
@@ -53,17 +52,17 @@ def start_modules(resolver):
         logger.warning("Node will load state from conf/start_state.json")
 
     modules = {
-        Module.VIEW_ESTABLISHMENT_MODULE:
-            ViewEstablishmentModule(id, resolver, n, f),
         Module.REPLICATION_MODULE:
             ReplicationModule(id, resolver, n, f, k),
         Module.PRIMARY_MONITORING_MODULE:
             PrimaryMonitoringModule(id, resolver, n, f),
         Module.FAILURE_DETECTOR_MODULE:
-            FailureDetectorModule(id, resolver, n, f),
-        Module.EVENT_DRIVEN_FD_MODULE:
-            EventDrivenFDModule(id, resolver, n, f)
+            FailureDetectorModule(id, resolver, n, f)
     }
+
+    if not os.getenv("NON_SELF_STAB"):
+        modules[Module.VIEW_ESTABLISHMENT_MODULE] = ViewEstablishmentModule(
+                id, resolver, n, f)
 
     resolver.set_modules(modules)
 
