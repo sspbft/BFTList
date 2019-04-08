@@ -25,7 +25,7 @@ start_state = {
     "0": {
         "VIEW_ESTABLISHMENT_MODULE": {
             "views": [{"current": 1, "next": 1} for i in range(N)],
-            "vChange": [True for i in range(5)] + [False],
+            "vChange": [False] + [True for i in range(5)],
             "phs": [0 for i in range(N)]
         }
     }
@@ -33,7 +33,6 @@ start_state = {
 
 for i in range(1, N):
     start_state[str(i)] = deepcopy(start_state["0"])
-#start_state["5"]["VIEW_ESTABLISHMENT_MODULE"]["vChange"] = [True for i in range(5)] + [False]
 
 class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
     """Performs health check on all nodes base endpoint (/)."""
@@ -44,11 +43,12 @@ class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
         return await helpers.launch_bftlist(__name__)
 
     async def validate(self):
-        calls_left = helpers.MAX_NODE_CALLS * 2
+        calls_left = helpers.MAX_NODE_CALLS * 3
         test_result = False
+        nodes_to_check = []
 
         while calls_left > 0:
-            aws = [helpers.GET(i, "/data") for i in helpers.get_nodes()]
+            aws = [helpers.GET(i, "/data") for i in helpers.get_nodes() if i != 0]
             checks = []
             last_check = calls_left == 1
 
@@ -59,7 +59,9 @@ class TestNodeMovesToViewOnViewChange(AbstractIntegrationTest):
                 vp_target = {"current": 2, "next": 2}
 
                 
-                for vp in views:
+                for i, vp in enumerate(views):
+                    if i == 0:
+                        continue
                     if last_check:
                         self.assertEqual(vp, vp_target)
                     else:
