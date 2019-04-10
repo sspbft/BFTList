@@ -540,7 +540,6 @@ class ReplicationModule(AlgorithmModule):
             if prefixes is not None:
                 length = len(prefixes)
             else:
-                logger.info("Prefixes is none")
                 length = -1
             if length > longest_prefix_found:
                 longest_prefix_found = length
