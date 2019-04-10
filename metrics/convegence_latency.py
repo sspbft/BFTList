@@ -26,7 +26,7 @@ def suspect_prim(cur_view):
     if cur_view in view_changes:
         logger.error(f"View change from {cur_view} already tracked")
         return
-    logger.info(f"Started tracking view change from {cur_view}")
+    #logger.info(f"Started tracking view change from {cur_view}")
     view_changes[cur_view] = time.time()
 
 
@@ -40,7 +40,7 @@ def view_established(node_id, old_view):
         logger.debug(f"View change from {old_view} not tracked")
         return
     exec_time = time.time() - view_changes[old_view]
-    logger.info(f"View change execed in {exec_time} s")
+    #logger.info(f"View change execed in {exec_time} s")
 
     # emit execution time for this client_req
     convergence_latency.labels(

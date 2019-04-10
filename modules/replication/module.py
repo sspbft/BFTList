@@ -54,6 +54,7 @@ class ReplicationModule(AlgorithmModule):
         self.number_of_nodes = n
         self.number_of_byzantine = f
         self.number_of_clients = k
+        self.own_r_log = []
 
         self.flush = False
         self.need_flush = False
@@ -308,6 +309,8 @@ class ReplicationModule(AlgorithmModule):
                         self.rep[self.id].remove_from_pend_reqs(
                             request.get_client_request())
 
+                    # Extra added for NO-OP, commit to all request that has PRE_PREP/PREP
+                    # and a seq no < their last_requ
                     # Find all request that should be executed
                     for request in self.reqs_to_apply():
                         # x_set = self.committed_set(request)
@@ -392,6 +395,7 @@ class ReplicationModule(AlgorithmModule):
         # update last executed request
         self.rep[self.id].update_last_req(client_id, request, reply)
         # append to rLog
+        self.own_r_log.append(req_pair)
         if (request.get_client_request().get_operation().get_type() ==
                 OperationEnums.NO_OP):
             if len(self.rep[self.id].r_log) == 0:
@@ -536,6 +540,7 @@ class ReplicationModule(AlgorithmModule):
             if prefixes is not None:
                 length = len(prefixes)
             else:
+                logger.info("Prefixes is none")
                 length = -1
             if length > longest_prefix_found:
                 longest_prefix_found = length
@@ -681,9 +686,12 @@ class ReplicationModule(AlgorithmModule):
                     request_count[req] += 1
                 else:
                     request_count[req] = 1
-
         known_reqs = {k: v for (k, v) in request_count.items() if v >= (
                         3 * self.number_of_byzantine + 1)}
+
+        for applied_req in self.own_r_log:
+            if applied_req[REQUEST].get_client_request() in known_reqs:
+                del known_reqs[applied_req[REQUEST].get_client_request()]
         return list(known_reqs.keys())
 
     def known_reqs(self, status):
@@ -733,12 +741,25 @@ class ReplicationModule(AlgorithmModule):
                         else:
                             known_reqs[req_pair[REQUEST]] = 1
 
-            for applied_req in replica_structure.get_r_log():
-                if applied_req[REQUEST].get_seq_num() >= self.last_exec():
-                    if applied_req[REQUEST] in known_reqs:
-                        known_reqs[applied_req[REQUEST]] += 1
-                    else:
-                        known_reqs[applied_req[REQUEST]] = 1
+            #for applied_req in replica_structure.get_r_log():
+             #   if applied_req[REQUEST].get_seq_num() >= self.last_exec():
+              #      if applied_req[REQUEST] in known_reqs:
+               #         known_reqs[applied_req[REQUEST]] += 1
+                #    else:
+                 #       known_reqs[applied_req[REQUEST]] = 1
+
+        for req_pair in self.rep[self.id].get_req_q():
+            if status <= req_pair[STATUS]:
+                # Ready to commit?
+                for rep_struct in self.rep:
+                    if len(rep_struct.get_r_log()) == 0:
+                        continue
+                    if (rep_struct.get_r_log()[0][REQUEST].get_seq_num() >=
+                            req_pair[REQUEST].get_seq_num()):
+                        if req_pair[REQUEST] in known_reqs:
+                            known_reqs[req_pair[REQUEST]] += 1
+                        else:
+                            known_reqs[req_pair[REQUEST]] = 1
 
         known_reqs = {k: v for (k, v) in known_reqs.items()
                       if v >= (3 * self.number_of_byzantine + 1)}
@@ -1151,6 +1172,7 @@ class ReplicationModule(AlgorithmModule):
         Processors_r_log is a list of r_logs corresponding to the processors
         which rep_state has prefix_state as prefix.
         """
+        return self.rep[self.id].get_r_log()
         for single_r_log in processors_r_log:
             for entries in itertools.combinations(
                     single_r_log, len(prefix_state)):
