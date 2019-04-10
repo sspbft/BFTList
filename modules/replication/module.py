@@ -733,16 +733,8 @@ class ReplicationModule(AlgorithmModule):
                         else:
                             known_reqs[req_pair[REQUEST]] = 1
 
-            #for applied_req in replica_structure.get_r_log():
-             #   if applied_req[REQUEST].get_seq_num() >= self.last_exec():
-              #      if applied_req[REQUEST] in known_reqs:
-               #         known_reqs[applied_req[REQUEST]] += 1
-                #    else:
-                 #       known_reqs[applied_req[REQUEST]] = 1
-
         for req_pair in self.rep[self.id].get_req_q():
             if status <= req_pair[STATUS]:
-                # Ready to commit?
                 for rep_struct in self.rep:
                     if len(rep_struct.get_r_log()) == 0:
                         continue
@@ -755,6 +747,7 @@ class ReplicationModule(AlgorithmModule):
 
         known_reqs = {k: v for (k, v) in known_reqs.items()
                       if v >= (3 * self.number_of_byzantine + 1)}
+
         # Filter out all request that processor_i has already applied
         for applied_req in self.rep[self.id].get_r_log():
             if applied_req[REQUEST] in known_reqs:
