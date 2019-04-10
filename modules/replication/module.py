@@ -309,16 +309,16 @@ class ReplicationModule(AlgorithmModule):
                             request.get_client_request())
 
                     # Find all request that should be executed
-                    for request in self.supported_reqs(
-                        {ReplicationEnums.PREP,
-                         ReplicationEnums.COMMIT}):
-                        x_set = self.committed_set(request)
-                        if ((len(x_set) >=
-                                (3 * self.number_of_byzantine) + 1) and
-                                (request.get_seq_num() ==
-                                    self.last_exec() + 1)):
+                    for request in self.reqs_to_apply():
+                        # x_set = self.committed_set(request)
+                        # if ((len(x_set) >=
+                        #         (3 * self.number_of_byzantine) + 1) and
+                        #         (request.get_seq_num() ==
+                        #             self.last_exec() + 1)):
+                        if request.get_seq_num() == self.last_exec() + 1:
                             self.commit({REQUEST: request,
-                                         X_SET: x_set})
+                                        X_SET: [i for i in
+                                                range(self.number_of_nodes)]})
 
             # Emit run time metric
             run_time = time.time() - start_time
@@ -392,7 +392,12 @@ class ReplicationModule(AlgorithmModule):
         # update last executed request
         self.rep[self.id].update_last_req(client_id, request, reply)
         # append to rLog
-        self.rep[self.id].add_to_r_log(req_pair)
+        if (request.get_client_request().get_operation().get_type() ==
+                OperationEnums.NO_OP):
+            if len(self.rep[self.id].r_log) == 0:
+                self.rep[self.id].r_log.append(req_pair)
+            else:
+                self.rep[self.id].r_log[0] = req_pair
 
         # remove request from pend_reqs and req_q
         self.rep[self.id].remove_from_pend_reqs(request.get_client_request())
@@ -401,8 +406,9 @@ class ReplicationModule(AlgorithmModule):
         # notify state metric that request has been committed
         client_req_executed(
             request.get_client_request(),
-            len(self.rep[self.id].get_rep_state()),
-            len(self.rep[self.id].get_pend_reqs())
+            # len(self.rep[self.id].get_rep_state()),
+            # len(self.rep[self.id].get_pend_reqs())
+            request.get_seq_num()
         )
 
         self.resolver.on_req_exec()
@@ -704,6 +710,13 @@ class ReplicationModule(AlgorithmModule):
                 request_set.append(req_pair)
         return request_set
 
+    def reqs_to_apply(self):
+        res = []
+        for req_pair in self.rep[self.id].get_req_q():
+            if len(req_pair[STATUS]) == 3:
+                res.append(req_pair[REQUEST])
+        return res
+
     def supported_reqs(self, status):
         """Returns all reqs that exist in the r_log
 
@@ -713,13 +726,15 @@ class ReplicationModule(AlgorithmModule):
 
         for replica_structure in self.rep:
             for req_pair in replica_structure.get_req_q():
-                if status <= req_pair[STATUS]:
-                    if req_pair[REQUEST] in known_reqs:
-                        known_reqs[req_pair[REQUEST]] += 1
-                    else:
-                        known_reqs[req_pair[REQUEST]] = 1
+                if req_pair[REQUEST].get_seq_num() >= self.last_exec():
+                    if status <= req_pair[STATUS]:
+                        if req_pair[REQUEST] in known_reqs:
+                            known_reqs[req_pair[REQUEST]] += 1
+                        else:
+                            known_reqs[req_pair[REQUEST]] = 1
 
             for applied_req in replica_structure.get_r_log():
+                if applied_req[REQUEST].get_seq_num() >= self.last_exec():
                     if applied_req[REQUEST] in known_reqs:
                         known_reqs[applied_req[REQUEST]] += 1
                     else:
@@ -1116,17 +1131,17 @@ class ReplicationModule(AlgorithmModule):
         is_default_prefix = processors_tuple[2]
 
         if len(processors_states) == 0:
-            logger.debug("Unable to find con_state because states =[]")
+            logger.info("Unable to find con_state because states =[]")
             return (-1, [], False)
         prefix_state = self.find_prefix(processors_states)
         if prefix_state is None:
-            logger.debug("Unable to find con_state because prefix =[]")
+            logger.info("Unable to find con_state because prefix =[]")
             return (-1, [], False)
         # Find corresponding r_log
         r_log = self.get_corresponding_r_log(processors_r_log, prefix_state)
         # Check if inconsistency between r_log and rep_state
         if r_log == [] and len(prefix_state) > 0:
-            logger.debug("Unable to find con_state because r_log =[]")
+            logger.info("Unable to find con_state because r_log =[]")
             return (-1, [], False)
         return (prefix_state, r_log, is_default_prefix)
 
