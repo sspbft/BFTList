@@ -1137,17 +1137,17 @@ class ReplicationModule(AlgorithmModule):
         is_default_prefix = processors_tuple[2]
 
         if len(processors_states) == 0:
-            logger.info("Unable to find con_state because states =[]")
+            logger.debug("Unable to find con_state because states =[]")
             return (-1, [], False)
         prefix_state = self.find_prefix(processors_states)
         if prefix_state is None:
-            logger.info("Unable to find con_state because prefix =[]")
+            logger.debug("Unable to find con_state because prefix =[]")
             return (-1, [], False)
         # Find corresponding r_log
         r_log = self.get_corresponding_r_log(processors_r_log, prefix_state)
         # Check if inconsistency between r_log and rep_state
         if r_log == [] and len(prefix_state) > 0:
-            logger.info("Unable to find con_state because r_log =[]")
+            logger.debug("Unable to find con_state because r_log =[]")
             return (-1, [], False)
         return (prefix_state, r_log, is_default_prefix)
 
