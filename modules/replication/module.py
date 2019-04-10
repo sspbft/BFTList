@@ -749,7 +749,7 @@ class ReplicationModule(AlgorithmModule):
                       if v >= (3 * self.number_of_byzantine + 1)}
 
         # Filter out all request that processor_i has already applied
-        for applied_req in self.rep[self.id].get_r_log():
+        for applied_req in self.own_r_log:
             if applied_req[REQUEST] in known_reqs:
                 del known_reqs[applied_req[REQUEST]]
         return list(known_reqs.keys())
