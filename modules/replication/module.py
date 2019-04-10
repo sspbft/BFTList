@@ -157,6 +157,7 @@ class ReplicationModule(AlgorithmModule):
                      self.rep[self.id].is_def_state() or self.delayed())):
                     # set own rep_state and r_log to consolidated values
                     self.rep[self.id].set_rep_state(deepcopy(X_rep_state))
+                    # TODO change this to copying the r_log of X
                     self.rep[self.id].set_r_log(deepcopy(X_r_log))
                 # A byzantine node does not care if it is in conflict or stale
                 if not byz.is_byzantine():
@@ -1157,7 +1158,22 @@ class ReplicationModule(AlgorithmModule):
         Processors_r_log is a list of r_logs corresponding to the processors
         which rep_state has prefix_state as prefix.
         """
-        return self.rep[self.id].get_r_log()
+        r_logs = {}
+        for r_l in processors_r_log:
+            if len(r_l) == 0:
+                continue
+            req = r_l[0][REQUEST]
+            if req in r_logs:
+                r_logs[req] += 1
+            else:
+                r_logs[req] = 1
+        if r_logs == {}:
+            return []
+        res_req = max(r_logs, key=r_logs.get)
+        return [{REQUEST: res_req, X_SET: [i for i in range(
+            self.number_of_nodes)]}]
+
+        # return self.rep[self.id].get_r_log()
         for single_r_log in processors_r_log:
             for entries in itertools.combinations(
                     single_r_log, len(prefix_state)):
