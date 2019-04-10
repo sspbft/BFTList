@@ -416,7 +416,7 @@ class ReplicationModule(AlgorithmModule):
             request.get_seq_num()
         )
 
-        self.resolver.on_req_exec()
+        self.resolver.on_req_exec(request.get_seq_num())
 
     def apply(self, req: Request):
         """Applies a request and returns the resulting state."""
