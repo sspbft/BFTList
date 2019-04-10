@@ -309,10 +309,10 @@ class ReplicationModule(AlgorithmModule):
                         self.rep[self.id].remove_from_pend_reqs(
                             request.get_client_request())
 
-                    # Extra added for NO-OP, commit to all request that has PRE_PREP/PREP
-                    # and a seq no < their last_requ
                     # Find all request that should be executed
-                    for request in self.reqs_to_apply():
+                    for request in self.supported_reqs(
+                                        {ReplicationEnums.PREP,
+                                         ReplicationEnums.COMMIT}):
                         # x_set = self.committed_set(request)
                         # if ((len(x_set) >=
                         #         (3 * self.number_of_byzantine) + 1) and
@@ -717,13 +717,6 @@ class ReplicationModule(AlgorithmModule):
             if processor_set >= (3 * self.number_of_byzantine + 1):
                 request_set.append(req_pair)
         return request_set
-
-    def reqs_to_apply(self):
-        res = []
-        for req_pair in self.rep[self.id].get_req_q():
-            if len(req_pair[STATUS]) == 3:
-                res.append(req_pair[REQUEST])
-        return res
 
     def supported_reqs(self, status):
         """Returns all reqs that exist in the r_log

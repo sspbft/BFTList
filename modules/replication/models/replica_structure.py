@@ -109,7 +109,7 @@ class ReplicaStructure(object):
     def extend_pend_reqs(self, req: [ClientRequest]):
         """Adds a list of ClientRequests to pend_reqs."""
         for r in req:
-            if r not in self.pend_reqs and not self.req_already_exist(req):
+            if r not in self.pend_reqs:
                 self.pend_reqs.append(deepcopy(r))
                 # notify state metric that client request added to pend_reqs
                 client_req_added_to_pending(r)
