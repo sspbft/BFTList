@@ -177,6 +177,21 @@ class ReplicationModule(AlgorithmModule):
                 view_est_allow_service = True
                 prim_id = 0
 
+                # In order to catch up
+                X = self.find_cons_state(self.com_pref_states(
+                    (3 * self.number_of_byzantine) + 1
+                ))
+                X_rep_state = X[0]
+                X_r_log = X[1]
+                is_default_prefix = X[2]
+                if (not (self.check_new_X_prefix(self.id,
+                                                 X_rep_state,
+                                                 is_default_prefix)) or
+                   self.delayed()):
+                    # set own rep_state and r_log to consolidated values
+                    self.rep[self.id].set_rep_state(deepcopy(X_rep_state))
+                    self.rep[self.id].set_r_log(deepcopy(X_r_log))
+
             # msg and bytes for metrics
             self.rep[self.id].extend_pend_reqs(self.known_pend_reqs())
             # line 15 - 25
