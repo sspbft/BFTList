@@ -13,7 +13,7 @@ from copy import deepcopy
 import logging
 
 # local
-from modules.constants import (REQUEST, REPLY, STATUS, X_SET)
+from modules.constants import (REQUEST, REPLY, STATUS, X_SET, SIGMA)
 from .request import Request, ClientRequest
 from metrics.state import client_req_added_to_pending
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class ReplicaStructure(object):
     """Models a replica structure as used in the Replication module."""
 
-    def __init__(self, id, number_of_clients=1, rep_state=[], r_log=[],
+    def __init__(self, id, number_of_clients=6, rep_state=[], r_log=[],
                  pend_reqs=[], req_q=[], last_req=[],
                  seq_num=-1, con_flag=False, view_changed=False, prim=0):
         """Initializes a replica structure with its default state."""
@@ -40,6 +40,7 @@ class ReplicaStructure(object):
         self.con_flag = con_flag
         self.view_changed = view_changed
         self.prim = prim
+        self.number_of_clients = 6
 
     def set_replica_structure(self, rs):
         """Setting some of the replica structure to the input rs."""
@@ -113,6 +114,9 @@ class ReplicaStructure(object):
                 self.pend_reqs.append(deepcopy(r))
                 # notify state metric that client request added to pend_reqs
                 client_req_added_to_pending(r)
+        while len(self.pend_reqs) > SIGMA * self.number_of_clients:
+            # We have reached or max length, remove the olderst req
+            self.pend_reqs.pop(0)
 
     def remove_from_pend_reqs(self, req: ClientRequest):
         """Removes the first occurrence of req from pend_reqs."""
@@ -140,6 +144,9 @@ class ReplicaStructure(object):
         self.validate_req_pair(req_pair)
         if not self.req_already_exist(req_pair[REQUEST]):
             self.req_q.append(deepcopy(req_pair))
+        while len(self.req_q) > SIGMA * self.number_of_clients:
+            # We have reached or max length, remove the olderst req
+            self.req_q.pop(0)
 
     def req_already_exist(self, req: Request):
         """Checks if the request exist in req_q."""
