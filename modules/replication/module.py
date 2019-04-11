@@ -54,6 +54,7 @@ class ReplicationModule(AlgorithmModule):
         self.number_of_nodes = n
         self.number_of_byzantine = f
         self.number_of_clients = k
+        self.own_r_log = []
 
         self.flush = False
         self.need_flush = False
@@ -156,6 +157,7 @@ class ReplicationModule(AlgorithmModule):
                      self.rep[self.id].is_def_state() or self.delayed())):
                     # set own rep_state and r_log to consolidated values
                     self.rep[self.id].set_rep_state(deepcopy(X_rep_state))
+                    # TODO change this to copying the r_log of X
                     self.rep[self.id].set_r_log(deepcopy(X_r_log))
                 # A byzantine node does not care if it is in conflict or stale
                 if not byz.is_byzantine():
@@ -174,6 +176,21 @@ class ReplicationModule(AlgorithmModule):
                 # These variables are used later
                 view_est_allow_service = True
                 prim_id = 0
+
+                # In order to catch up
+                X = self.find_cons_state(self.com_pref_states(
+                    (3 * self.number_of_byzantine) + 1
+                ))
+                X_rep_state = X[0]
+                X_r_log = X[1]
+                is_default_prefix = X[2]
+                if (not (self.check_new_X_prefix(self.id,
+                                                 X_rep_state,
+                                                 is_default_prefix)) or
+                   self.delayed()):
+                    # set own rep_state and r_log to consolidated values
+                    self.rep[self.id].set_rep_state(deepcopy(X_rep_state))
+                    self.rep[self.id].set_r_log(deepcopy(X_r_log))
 
             # msg and bytes for metrics
             self.rep[self.id].extend_pend_reqs(self.known_pend_reqs())
@@ -310,15 +327,17 @@ class ReplicationModule(AlgorithmModule):
 
                     # Find all request that should be executed
                     for request in self.supported_reqs(
-                        {ReplicationEnums.PREP,
-                         ReplicationEnums.COMMIT}):
-                        x_set = self.committed_set(request)
-                        if ((len(x_set) >=
-                                (3 * self.number_of_byzantine) + 1) and
-                                (request.get_seq_num() ==
-                                    self.last_exec() + 1)):
+                                        {ReplicationEnums.PREP,
+                                         ReplicationEnums.COMMIT}):
+                        # x_set = self.committed_set(request)
+                        # if ((len(x_set) >=
+                        #         (3 * self.number_of_byzantine) + 1) and
+                        #         (request.get_seq_num() ==
+                        #             self.last_exec() + 1)):
+                        if request.get_seq_num() == self.last_exec() + 1:
                             self.commit({REQUEST: request,
-                                         X_SET: x_set})
+                                        X_SET: [i for i in
+                                                range(self.number_of_nodes)]})
 
             # Emit run time metric
             run_time = time.time() - start_time
@@ -392,7 +411,13 @@ class ReplicationModule(AlgorithmModule):
         # update last executed request
         self.rep[self.id].update_last_req(client_id, request, reply)
         # append to rLog
-        self.rep[self.id].add_to_r_log(req_pair)
+        self.own_r_log.append(req_pair)
+        if (request.get_client_request().get_operation().get_type() ==
+                OperationEnums.NO_OP):
+            if len(self.rep[self.id].r_log) == 0:
+                self.rep[self.id].r_log.append(req_pair)
+            else:
+                self.rep[self.id].r_log[0] = req_pair
 
         # remove request from pend_reqs and req_q
         self.rep[self.id].remove_from_pend_reqs(request.get_client_request())
@@ -401,11 +426,12 @@ class ReplicationModule(AlgorithmModule):
         # notify state metric that request has been committed
         client_req_executed(
             request.get_client_request(),
-            len(self.rep[self.id].get_rep_state()),
-            len(self.rep[self.id].get_pend_reqs())
+            # len(self.rep[self.id].get_rep_state()),
+            # len(self.rep[self.id].get_pend_reqs())
+            request.get_seq_num()
         )
 
-        self.resolver.on_req_exec()
+        self.resolver.on_req_exec(request.get_seq_num())
 
     def apply(self, req: Request):
         """Applies a request and returns the resulting state."""
@@ -675,9 +701,12 @@ class ReplicationModule(AlgorithmModule):
                     request_count[req] += 1
                 else:
                     request_count[req] = 1
-
         known_reqs = {k: v for (k, v) in request_count.items() if v >= (
                         3 * self.number_of_byzantine + 1)}
+
+        for applied_req in self.own_r_log:
+            if applied_req[REQUEST].get_client_request() in known_reqs:
+                del known_reqs[applied_req[REQUEST].get_client_request()]
         return list(known_reqs.keys())
 
     def known_reqs(self, status):
@@ -713,22 +742,30 @@ class ReplicationModule(AlgorithmModule):
 
         for replica_structure in self.rep:
             for req_pair in replica_structure.get_req_q():
-                if status <= req_pair[STATUS]:
-                    if req_pair[REQUEST] in known_reqs:
-                        known_reqs[req_pair[REQUEST]] += 1
-                    else:
-                        known_reqs[req_pair[REQUEST]] = 1
+                if req_pair[REQUEST].get_seq_num() >= self.last_exec():
+                    if status <= req_pair[STATUS]:
+                        if req_pair[REQUEST] in known_reqs:
+                            known_reqs[req_pair[REQUEST]] += 1
+                        else:
+                            known_reqs[req_pair[REQUEST]] = 1
 
-            for applied_req in replica_structure.get_r_log():
-                    if applied_req[REQUEST] in known_reqs:
-                        known_reqs[applied_req[REQUEST]] += 1
-                    else:
-                        known_reqs[applied_req[REQUEST]] = 1
+        for req_pair in self.rep[self.id].get_req_q():
+            if status <= req_pair[STATUS]:
+                for rep_struct in self.rep:
+                    if len(rep_struct.get_r_log()) == 0:
+                        continue
+                    if (rep_struct.get_r_log()[0][REQUEST].get_seq_num() >=
+                            req_pair[REQUEST].get_seq_num()):
+                        if req_pair[REQUEST] in known_reqs:
+                            known_reqs[req_pair[REQUEST]] += 1
+                        else:
+                            known_reqs[req_pair[REQUEST]] = 1
 
         known_reqs = {k: v for (k, v) in known_reqs.items()
                       if v >= (3 * self.number_of_byzantine + 1)}
+
         # Filter out all request that processor_i has already applied
-        for applied_req in self.rep[self.id].get_r_log():
+        for applied_req in self.own_r_log:
             if applied_req[REQUEST] in known_reqs:
                 del known_reqs[applied_req[REQUEST]]
         return list(known_reqs.keys())
@@ -1136,6 +1173,22 @@ class ReplicationModule(AlgorithmModule):
         Processors_r_log is a list of r_logs corresponding to the processors
         which rep_state has prefix_state as prefix.
         """
+        r_logs = {}
+        for r_l in processors_r_log:
+            if len(r_l) == 0:
+                continue
+            req = r_l[0][REQUEST]
+            if req in r_logs:
+                r_logs[req] += 1
+            else:
+                r_logs[req] = 1
+        if r_logs == {}:
+            return []
+        res_req = max(r_logs, key=r_logs.get)
+        return [{REQUEST: res_req, X_SET: [i for i in range(
+            self.number_of_nodes)]}]
+
+        # return self.rep[self.id].get_r_log()
         for single_r_log in processors_r_log:
             for entries in itertools.combinations(
                     single_r_log, len(prefix_state)):

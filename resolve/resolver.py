@@ -319,13 +319,11 @@ class Resolver:
         """Called when the first client request is added to pend_reqs."""
         self.experiment_started = True
 
-    def on_req_exec(self):
+    def on_req_exec(self, seq_num):
         """Called whenever a request is executed by the replication module."""
         _id = int(os.getenv("ID"))
-        state_length = len(self.modules[
-                Module.REPLICATION_MODULE].rep[_id].get_rep_state())
-        msgs_during_exp.labels(_id, state_length).set(self.total_msgs_sent)
-        bytes_during_exp.labels(_id, state_length).set(self.total_bytes_sent)
+        msgs_during_exp.labels(_id, seq_num).set(self.total_msgs_sent)
+        bytes_during_exp.labels(_id, seq_num).set(self.total_bytes_sent)
 
     def on_view_established(self):
         """Called whenever a view is established by the viewEst module."""

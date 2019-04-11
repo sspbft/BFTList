@@ -19,6 +19,8 @@ class Operation(object):
         if type(op_type) == str:
             if op_type == "APPEND":
                 op_type = OperationEnums.APPEND
+            elif op_type == "NO_OP":
+                op_type = OperationEnums.NO_OP
             else:
                 raise ValueError(f"op_type {op_type} is not valid")
         if type(op_type) != OperationEnums:
@@ -39,7 +41,7 @@ class Operation(object):
         if self.op_type == OperationEnums.APPEND:
             lst.append(self.args[0])
         elif self.op_type == OperationEnums.NO_OP:
-            pass
+            return lst
         else:
             raise ValueError(f"Bad operation {self.type}")
         return lst
