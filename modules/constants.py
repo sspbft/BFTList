@@ -1,5 +1,8 @@
 """Constant string values for the modules"""
 import sys
+import os
+
+N = int(os.getenv("NUMBER_OF_NODES", 0))
 
 # View Establishment module
 CURRENT = "current"
@@ -40,8 +43,8 @@ MAX_QUEUE_SIZE = 10  # Max allowed amount of messages in send queue
 V_STATUS = "v_status"
 NEED_CHANGE = "need_change"
 NEED_CHG_SET = "need_chg_set"
-BEAT_THRESHOLD = 30  # Threshold for liveness, beat-variable
-CNT_THRESHOLD = 20  # Threshold for progress, cnt-variable
+BEAT_THRESHOLD = 30 if N <= 6 else 200  # Threshold for liveness, beat-variable
+CNT_THRESHOLD = 20 if N <= 6 else 100  # Threshold for progress, cnt-variable
 
 # Event driven FD module
 K_ADMISSIBILITY_THRESHOLD = 5
