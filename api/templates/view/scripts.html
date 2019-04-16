@@ -133,7 +133,7 @@
 
     // fetches data for a node and updates its view
     const refreshNode = n => {
-        fetch(`http://${n.ip}:${4000+n.id}/data`)
+        fetch(`http://${n.hostname}:${4000+n.id}/data`)
             .then(res => res.json())
             .then(res => {
                 failedReqs[n.id] = 0
