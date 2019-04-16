@@ -415,6 +415,10 @@ class ReplicationModule(AlgorithmModule):
         self.rep[self.id].set_rep_state(new_state)
         logger.info(f"Applying request {req}.")
 
+        # if self.id == 3 and len(new_state) == 30:
+        #     logger.info(f"Sleeping for 10 s")
+        #     time.sleep(10)
+
         # state length can only increment by 1 for each APPEND request
         state_length.inc()
         return new_state
@@ -1137,20 +1141,23 @@ class ReplicationModule(AlgorithmModule):
         which rep_state has prefix_state as prefix.
         """
         for single_r_log in processors_r_log:
-            for entries in itertools.combinations(
-                    single_r_log, len(prefix_state)):
+            #for entries in itertools.combinations(
+             #       single_r_log, len(prefix_state)):
                 # execute all reqs in this combination
-                state = []
-                for e in entries:
-                    op = e[REQUEST].get_client_request().get_operation()
-                    if type(op) is not Operation:
-                        raise ValueError(f"Operation {op} in r_log entry is \
-                                            not of type Operation")
-                    state = op.execute(state)
-                if state == prefix_state:
+            state = []
+            #for e in entries:
+            for index, req in enumerate(single_r_log):
+                op = req[REQUEST].get_client_request().get_operation()
+                if type(op) is not Operation:
+                    raise ValueError(f"Operation {op} in r_log entry is \
+                                        not of type Operation")
+                state = op.execute(state)
+            # TODO document this
+                if state == prefix_state[len(prefix_state) - len(state):]:
                     # found correct r_log entries
                     # entries is tuple -> convert to list
-                    return list(entries)
+                    #return list(entries)
+                    return single_r_log[:index+1]
         return []
 
     def find_prefix(self, rep_states: List):
