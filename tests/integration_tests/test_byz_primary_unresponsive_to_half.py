@@ -38,7 +38,8 @@ for i in range(N):
             "rep": [
                 ReplicaStructure(
                     j,
-                    pend_reqs=[ClientRequest(0, i, Operation("APPEND", i)) for i in range(15)],
+                    number_of_clients=2,
+                    pend_reqs=[ClientRequest(0, i, Operation("APPEND", i)) for i in range(10)],
                 ) for j in range(N)
             ]
         }
@@ -51,7 +52,7 @@ args = {
     }
 }
 
-target_rep=[i for i in range(15)]
+target_rep=[i for i in range(10)]
 
 class TestByzNodeSendingDifferentViews(AbstractIntegrationTest):
     """Checks that a Byzantine primary being unresponsive to some is detected."""

@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class ReplicaStructure(object):
     """Models a replica structure as used in the Replication module."""
 
-    def __init__(self, id, number_of_clients=6, rep_state=[], r_log=[],
+    def __init__(self, id, number_of_clients=1, rep_state=[], r_log=[],
                  pend_reqs=[], req_q=[], last_req=[],
                  seq_num=-1, con_flag=False, view_changed=False, prim=0):
         """Initializes a replica structure with its default state."""
