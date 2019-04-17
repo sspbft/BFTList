@@ -768,14 +768,14 @@ class ReplicationModule(AlgorithmModule):
         request_set = []
         for req in self.rep[self.id].get_pend_reqs():
             if (not self.exists_preprep_msg(
-                    req, self.rep[self.id].get_prim())):
-                    if (req not in list(map(lambda x:
+                    req, self.rep[self.id].get_prim()) and
+                    req not in list(map(lambda x:
                                         x[REQUEST].get_client_request(),
                                         self.known_reqs(
-                                            {ReplicationEnums.PREP,
-                                             ReplicationEnums.COMMIT}))
-                                        )):
-                        request_set.append(req)
+                                                {ReplicationEnums.PREP,
+                                                 ReplicationEnums.COMMIT}))
+                                    )):
+                    request_set.append(req)
         return request_set
 
     def accept_req_preprep(self, request: ClientRequest, prim: int):
