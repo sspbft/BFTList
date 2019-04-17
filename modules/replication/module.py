@@ -772,8 +772,8 @@ class ReplicationModule(AlgorithmModule):
                     req not in list(map(lambda x:
                                         x[REQUEST].get_client_request(),
                                         self.known_reqs(
-                                                {ReplicationEnums.PREP,
-                                                 ReplicationEnums.COMMIT}))
+                                            {ReplicationEnums.PREP,
+                                             ReplicationEnums.COMMIT}))
                                     )):
                     request_set.append(req)
         return request_set
