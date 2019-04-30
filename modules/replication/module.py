@@ -414,11 +414,6 @@ class ReplicationModule(AlgorithmModule):
         new_state = operation.execute(current_state)
         self.rep[self.id].set_rep_state(new_state)
         logger.info(f"Applying request {req}.")
-
-        # if self.id == 3 and len(new_state) == 30:
-        #     logger.info(f"Sleeping for 10 s")
-        #     time.sleep(10)
-
         # state length can only increment by 1 for each APPEND request
         state_length.inc()
         return new_state

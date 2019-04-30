@@ -47,6 +47,10 @@ class Request(object):
                     self.seq_num == other.get_seq_num())
         return False
 
+    def __ne__(self, other):
+        """TODO write me"""
+        return not self.__eq__(other)
+
     def __str__(self):
         """Overrides the default implementation."""
         return (f"Request - client_request: {str(self.client_request)}, " +

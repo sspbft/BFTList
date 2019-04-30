@@ -35,9 +35,9 @@ def client_req_added_to_pending(client_req: ClientRequest,
     the tracking of client request execution time.
     """
     if client_req in client_reqs:
-        logger.error(f"ClientRequest {client_req} already tracked")
+        logger.debug(f"ClientRequest {client_req} already tracked")
         return
-    logger.info(f"Started tracking {client_req}")
+    logger.debug(f"Started tracking {client_req}")
     client_reqs[client_req] = {START_TIME: time.time(),
                                PEND: start_pend_length}
 
@@ -54,7 +54,7 @@ def client_req_executed(client_req: ClientRequest,
         logger.debug(f"ClientRequest {client_req} not tracked")
         return
     exec_time = time.time() - client_reqs[client_req][START_TIME]
-    logger.info(f"req execed in {exec_time} s")
+    logger.debug(f"req execed in {exec_time} s")
     avg_pend_length = (pend_length + client_reqs[client_req][PEND]) / 2
 
     # emit execution time for this client_req

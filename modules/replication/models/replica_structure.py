@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class ReplicaStructure(object):
     """Models a replica structure as used in the Replication module."""
 
-    def __init__(self, id, number_of_clients=1, rep_state=[], r_log=[],
+    def __init__(self, id, number_of_clients=6, rep_state=[], r_log=[],
                  pend_reqs=[], req_q=[], last_req=[],
                  seq_num=-1, con_flag=False, view_changed=False, prim=0):
         """Initializes a replica structure with its default state."""
@@ -86,7 +86,14 @@ class ReplicaStructure(object):
 
         while len(self.r_log) > 3 * SIGMA * self.number_of_clients:
             # We have reached or max length, remove the olderst req
-            self.r_log.pop(0)
+            # self.r_log.pop(0)
+            lowest_req = None
+            for req_pair in self.r_log:
+                if (lowest_req is None or
+                   req_pair[REQUEST].get_seq_num() <
+                        lowest_req[REQUEST].get_seq_num()):
+                    lowest_req = req_pair
+            self.r_log = [x for x in self.r_log if x != lowest_req]
 
     def set_r_log(self, r_log: List):
         """Sets the r_log for this processor.
@@ -152,7 +159,13 @@ class ReplicaStructure(object):
 
         while len(self.req_q) > SIGMA * self.number_of_clients:
             # We have reached or max length, remove the olderst req
-            self.req_q.pop(0)
+            lowest_req = None
+            for req_pair in self.req_q:
+                if (lowest_req is None or
+                   req_pair[REQUEST].get_seq_num() <
+                        lowest_req[REQUEST].get_seq_num()):
+                    lowest_req = req_pair
+            self.remove_from_req_q(lowest_req[REQUEST])
 
     def req_already_exist(self, req: Request):
         """Checks if the request exist in req_q."""

@@ -50,6 +50,10 @@ class ClientRequest(object):
                     self.operation == other.get_operation())
         return False
 
+    def __ne__(self, other):
+        """TODO write me."""
+        return not self.__eq__(other)
+
     def __hash__(self):
         """Overrides the default implementation"""
         return hash((self.client_id, self.timestamp))
