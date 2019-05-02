@@ -1147,7 +1147,9 @@ class ReplicationModule(AlgorithmModule):
                     raise ValueError(f"Operation {op} in r_log entry is \
                                         not of type Operation")
                 state = op.execute(state)
-            # TODO document this
+            # Since r_log is bounded, the execution of all operation in the
+            # current r_log will give the "end" of the rep_state (the last
+            # elements in the list)
                 if state == prefix_state[len(prefix_state) - len(state):]:
                     # found correct r_log entries
                     # entries is tuple -> convert to list

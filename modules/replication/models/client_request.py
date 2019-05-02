@@ -51,7 +51,7 @@ class ClientRequest(object):
         return False
 
     def __ne__(self, other):
-        """TODO write me."""
+        """Overrides the default implementation."""
         return not self.__eq__(other)
 
     def __hash__(self):

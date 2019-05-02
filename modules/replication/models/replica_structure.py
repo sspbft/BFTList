@@ -86,14 +86,14 @@ class ReplicaStructure(object):
 
         while len(self.r_log) > 3 * SIGMA * self.number_of_clients:
             # We have reached or max length, remove the olderst req
-            # self.r_log.pop(0)
-            lowest_req = None
+            req_with_lowest_seq_num = None
             for req_pair in self.r_log:
-                if (lowest_req is None or
+                if (req_with_lowest_seq_num is None or
                    req_pair[REQUEST].get_seq_num() <
-                        lowest_req[REQUEST].get_seq_num()):
-                    lowest_req = req_pair
-            self.r_log = [x for x in self.r_log if x != lowest_req]
+                        req_with_lowest_seq_num[REQUEST].get_seq_num()):
+                    req_with_lowest_seq_num = req_pair
+            self.r_log = [x for x in self.r_log if x !=
+                          req_with_lowest_seq_num]
 
     def set_r_log(self, r_log: List):
         """Sets the r_log for this processor.
@@ -159,13 +159,13 @@ class ReplicaStructure(object):
 
         while len(self.req_q) > SIGMA * self.number_of_clients:
             # We have reached or max length, remove the olderst req
-            lowest_req = None
+            req_with_lowest_seq_num = None
             for req_pair in self.req_q:
-                if (lowest_req is None or
+                if (req_with_lowest_seq_num is None or
                    req_pair[REQUEST].get_seq_num() <
-                        lowest_req[REQUEST].get_seq_num()):
-                    lowest_req = req_pair
-            self.remove_from_req_q(lowest_req[REQUEST])
+                        req_with_lowest_seq_num[REQUEST].get_seq_num()):
+                    req_with_lowest_seq_num = req_pair
+            self.remove_from_req_q(req_with_lowest_seq_num[REQUEST])
 
     def req_already_exist(self, req: Request):
         """Checks if the request exist in req_q."""
