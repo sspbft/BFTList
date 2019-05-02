@@ -6,6 +6,7 @@ from modules.view_establishment.module import ViewEstablishmentModule
 from resolve.enums import Function, Module
 from modules.enums import ViewEstablishmentEnums
 from modules.constants import CURRENT, NEXT
+from metrics.convegence_latency import view_established
 
 
 class TestPredicatesAndAction(unittest.TestCase):
@@ -234,6 +235,7 @@ class TestPredicatesAndAction(unittest.TestCase):
 
         # Should update to view 1 in current
         pred_module.views = [{CURRENT: 0, NEXT: 1}]
+        self.resolver.on_view_established = Mock()
         pred_module.establish()
         self.assertEqual(pred_module.views, [{CURRENT: 1, NEXT: 1}])
 
