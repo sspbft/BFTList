@@ -51,10 +51,10 @@ def client_req_executed(client_req: ClientRequest,
     the client request execution time.
     """
     if client_req not in client_reqs:
-        logger.info(f"ClientRequest {client_req} not tracked")
+        logger.debug(f"ClientRequest {client_req} not tracked")
         return
     exec_time = time.time() - client_reqs[client_req][START_TIME]
-    logger.debug(f"req execed in {exec_time} s")
+    logger.info(f"req execed in {exec_time} s")
     avg_pend_length = (pend_length + client_reqs[client_req][PEND]) / 2
 
     # emit execution time for this client_req
