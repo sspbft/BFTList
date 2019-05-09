@@ -231,12 +231,13 @@ class Resolver:
         id = int(os.getenv("ID"))
 
         # emit message sent message
-        if self.experiment_started:
-            if msg != {} and "type" not in msg:
-                raise ValueError(f"Msg {msg} has no type")
-            if msg != {}:
-                msgs_sent.labels(id, msg["type"]).inc()
+        if msg != {} and "type" not in msg:
+            raise ValueError(f"Msg {msg} has no type")
+        if msg != {}:
+            msgs_sent.labels(id, msg["type"]).inc()
 
+        # experiment metrics
+        if self.experiment_started:
             t = msg["type"]
             self.total_msgs_sent += 1
             if t == Module.VIEW_ESTABLISHMENT_MODULE:
