@@ -54,6 +54,10 @@ class Resolver:
 
         # metrics
         self.total_msgs_sent = 0
+        self.view_est_msgs = 0
+        self.rep_msgs = 0
+        self.prim_mon_msgs = 0
+        self.fd_msgs = 0
         self.total_bytes_sent = 0
         self.experiment_started = False
 
@@ -227,14 +231,22 @@ class Resolver:
         id = int(os.getenv("ID"))
 
         # emit message sent message
-        if msg != {} and "type" not in msg:
-            raise ValueError(f"Msg {msg} has no type")
-        if msg != {}:
-            msgs_sent.labels(id, msg["type"]).inc()
         if self.experiment_started:
+            if msg != {} and "type" not in msg:
+                raise ValueError(f"Msg {msg} has no type")
+            if msg != {}:
+                msgs_sent.labels(id, msg["type"]).inc()
+
+            t = msg["type"]
             self.total_msgs_sent += 1
-        # if self.total_msgs_sent == 0:
-        #     logger.error("Total messages sent hit INTMAX")
+            if t == Module.VIEW_ESTABLISHMENT_MODULE:
+                self.view_est_msgs += 1
+            elif t == Module.REPLICATION_MODULE:
+                self.rep_msgs += 1
+            elif t == Module.PRIMARY_MONITORING_MODULE:
+                self.prim_mon_msgs += 1
+            elif t == Module.FAILURE_DETECTOR_MODULE:
+                self.fd_msgs += 1
 
         # Emit roundtrip time for message
         if ("rec_id" in metric_data and "recv_hostname" in metric_data and
@@ -315,7 +327,14 @@ class Resolver:
     def on_req_exec(self, seq_num):
         """Called whenever a request is executed by the replication module."""
         _id = int(os.getenv("ID"))
-        msgs_during_exp.labels(_id, seq_num).set(self.total_msgs_sent)
+        msgs_during_exp.labels(
+            _id,
+            seq_num,
+            self.view_est_msgs,
+            self.rep_msgs,
+            self.prim_mon_msgs,
+            self.fd_msgs
+        ).set(self.total_msgs_sent)
         bytes_during_exp.labels(_id, seq_num).set(self.total_bytes_sent)
 
     def on_view_established(self):

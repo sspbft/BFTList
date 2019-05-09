@@ -33,7 +33,8 @@ run_method_time = Gauge("run_method_time",
 
 msgs_during_exp = Gauge("msgs_during_exp",
                         "Number of messages sent during an experiment",
-                        ["node_id", "exp_param"])
+                        ["node_id", "exp_param", "view_est_msgs",
+                         "rep_msgs", "prim_mon_msgs", "fd_msgs"])
 
 bytes_during_exp = Gauge("bytes_during_exp",
                          "Number of bytes sent during an experiment",
