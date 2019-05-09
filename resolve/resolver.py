@@ -227,7 +227,10 @@ class Resolver:
         id = int(os.getenv("ID"))
 
         # emit message sent message
-        msgs_sent.labels(id).inc()
+        if msg != {} and "type" not in msg:
+            raise ValueError(f"Msg {msg} has no type")
+        if msg != {}:
+            msgs_sent.labels(id, msg["type"]).inc()
         if self.experiment_started:
             self.total_msgs_sent += 1
         # if self.total_msgs_sent == 0:
