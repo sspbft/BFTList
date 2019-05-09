@@ -238,16 +238,17 @@ class Resolver:
 
         # experiment metrics
         if self.experiment_started:
-            t = msg["type"]
             self.total_msgs_sent += 1
-            if t == Module.VIEW_ESTABLISHMENT_MODULE:
-                self.view_est_msgs += 1
-            elif t == Module.REPLICATION_MODULE:
-                self.rep_msgs += 1
-            elif t == Module.PRIMARY_MONITORING_MODULE:
-                self.prim_mon_msgs += 1
-            elif t == Module.FAILURE_DETECTOR_MODULE:
-                self.fd_msgs += 1
+            if "type" in msg:
+                t = msg["type"]
+                if t == MessageType.VIEW_ESTABLISHMENT_MESSAGE:
+                    self.view_est_msgs += 1
+                elif t == MessageType.REPLICATION_MESSAGE:
+                    self.rep_msgs += 1
+                elif t == MessageType.PRIMARY_MONITORING_MESSAGE:
+                    self.prim_mon_msgs += 1
+                elif t == MessageType.FAILURE_DETECTOR_MESSAGE:
+                    self.fd_msgs += 1
 
         # Emit roundtrip time for message
         if ("rec_id" in metric_data and "recv_hostname" in metric_data and
