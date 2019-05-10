@@ -1,5 +1,6 @@
 """Constant string values for the modules"""
 import sys
+import os
 
 N = int(os.getenv("NUMBER_OF_NODES", 0))
 
