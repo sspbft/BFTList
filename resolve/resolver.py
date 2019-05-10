@@ -359,5 +359,19 @@ class Resolver:
         """Called whenever a view is established by the viewEst module."""
         _id = int(os.getenv("ID"))
         if self.total_msgs_sent != 0 or self.total_bytes_sent != 0:
-            msgs_during_exp.labels(_id, 0).set(self.total_msgs_sent)
-            bytes_during_exp.labels(_id, 0).set(self.total_bytes_sent)
+            msgs_during_exp.labels(
+                _id,
+                0,
+                self.view_est_msgs,
+                self.rep_msgs,
+                self.prim_mon_msgs,
+                self.fd_msgs
+            ).set(self.total_msgs_sent)
+            bytes_during_exp.labels(
+                _id,
+                0,
+                self.view_est_bytes,
+                self.rep_bytes,
+                self.prim_mon_bytes,
+                self.fd_bytes
+            ).set(self.total_bytes_sent)
