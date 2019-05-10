@@ -54,6 +54,10 @@ class Resolver:
 
         # metrics
         self.total_msgs_sent = 0
+        self.view_est_msgs = 0
+        self.rep_msgs = 0
+        self.prim_mon_msgs = 0
+        self.fd_msgs = 0
         self.total_bytes_sent = 0
         self.experiment_started = False
 
@@ -227,11 +231,24 @@ class Resolver:
         id = int(os.getenv("ID"))
 
         # emit message sent message
-        msgs_sent.labels(id).inc()
+        if msg != {} and "type" not in msg:
+            raise ValueError(f"Msg {msg} has no type")
+        if msg != {}:
+            msgs_sent.labels(id, msg["type"]).inc()
+
+        # experiment metrics
         if self.experiment_started:
             self.total_msgs_sent += 1
-        # if self.total_msgs_sent == 0:
-        #     logger.error("Total messages sent hit INTMAX")
+            if "type" in msg:
+                t = msg["type"]
+                if t == MessageType.VIEW_ESTABLISHMENT_MESSAGE:
+                    self.view_est_msgs += 1
+                elif t == MessageType.REPLICATION_MESSAGE:
+                    self.rep_msgs += 1
+                elif t == MessageType.PRIMARY_MONITORING_MESSAGE:
+                    self.prim_mon_msgs += 1
+                elif t == MessageType.FAILURE_DETECTOR_MESSAGE:
+                    self.fd_msgs += 1
 
         # Emit roundtrip time for message
         if ("rec_id" in metric_data and "recv_hostname" in metric_data and
@@ -309,13 +326,18 @@ class Resolver:
         """Called when the first client request is added to pend_reqs."""
         self.experiment_started = True
 
-    def on_req_exec(self):
+    def on_req_exec(self, seq_num):
         """Called whenever a request is executed by the replication module."""
         _id = int(os.getenv("ID"))
-        state_length = len(self.modules[
-                Module.REPLICATION_MODULE].rep[_id].get_rep_state())
-        msgs_during_exp.labels(_id, state_length).set(self.total_msgs_sent)
-        bytes_during_exp.labels(_id, state_length).set(self.total_bytes_sent)
+        msgs_during_exp.labels(
+            _id,
+            seq_num,
+            self.view_est_msgs,
+            self.rep_msgs,
+            self.prim_mon_msgs,
+            self.fd_msgs
+        ).set(self.total_msgs_sent)
+        bytes_during_exp.labels(_id, seq_num).set(self.total_bytes_sent)
 
     def on_view_established(self):
         """Called whenever a view is established by the viewEst module."""
