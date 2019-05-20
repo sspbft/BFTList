@@ -40,7 +40,7 @@ class ReplicaStructure(object):
         self.con_flag = con_flag
         self.view_changed = view_changed
         self.prim = prim
-        self.number_of_clients = 6
+        self.number_of_clients = number_of_clients
 
     def set_replica_structure(self, rs):
         """Setting some of the replica structure to the input rs."""
@@ -84,6 +84,17 @@ class ReplicaStructure(object):
         self.validate_log_entry(req_pair)
         self.r_log.append(req_pair)
 
+        while len(self.r_log) > 3 * SIGMA * self.number_of_clients:
+            # We have reached or max length, remove the olderst req
+            req_with_lowest_seq_num = None
+            for req_pair in self.r_log:
+                if (req_with_lowest_seq_num is None or
+                   req_pair[REQUEST].get_seq_num() <
+                        req_with_lowest_seq_num[REQUEST].get_seq_num()):
+                    req_with_lowest_seq_num = req_pair
+            self.r_log = [x for x in self.r_log if x !=
+                          req_with_lowest_seq_num]
+
     def set_r_log(self, r_log: List):
         """Sets the r_log for this processor.
 
@@ -113,7 +124,8 @@ class ReplicaStructure(object):
             if r not in self.pend_reqs:
                 self.pend_reqs.append(deepcopy(r))
                 # notify state metric that client request added to pend_reqs
-                client_req_added_to_pending(r)
+                client_req_added_to_pending(r, len(self.pend_reqs))
+
         while len(self.pend_reqs) > SIGMA * self.number_of_clients:
             # We have reached or max length, remove the olderst req
             self.pend_reqs.pop(0)
@@ -144,9 +156,16 @@ class ReplicaStructure(object):
         self.validate_req_pair(req_pair)
         if not self.req_already_exist(req_pair[REQUEST]):
             self.req_q.append(deepcopy(req_pair))
+
         while len(self.req_q) > SIGMA * self.number_of_clients:
             # We have reached or max length, remove the olderst req
-            self.req_q.pop(0)
+            req_with_lowest_seq_num = None
+            for req_pair in self.req_q:
+                if (req_with_lowest_seq_num is None or
+                   req_pair[REQUEST].get_seq_num() <
+                        req_with_lowest_seq_num[REQUEST].get_seq_num()):
+                    req_with_lowest_seq_num = req_pair
+            self.remove_from_req_q(req_with_lowest_seq_num[REQUEST])
 
     def req_already_exist(self, req: Request):
         """Checks if the request exist in req_q."""
