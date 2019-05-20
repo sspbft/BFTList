@@ -124,7 +124,7 @@ class ReplicaStructure(object):
             if r not in self.pend_reqs:
                 self.pend_reqs.append(deepcopy(r))
                 # notify state metric that client request added to pend_reqs
-                client_req_added_to_pending(r, len(self.pend_reqs))
+                client_req_added_to_pending(r)
 
         while len(self.pend_reqs) > SIGMA * self.number_of_clients:
             # We have reached or max length, remove the olderst req
