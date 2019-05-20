@@ -23,7 +23,7 @@ from modules.constants import REQUEST, X_SET
 
 # globals
 F = 2
-N = 12 
+N = 11 
 logger = logging.getLogger(__name__)
 start_state = {}
 
@@ -83,8 +83,6 @@ for i in range(N):
                 ReplicaStructure(8, rep_state=[5], pend_reqs=[client_req2, client_req3], r_log=[{REQUEST: req5, X_SET:{0,2,3,5,6,7,8}}], prim=0),
                 ReplicaStructure(9, rep_state=[], r_log=[], prim=0),
                 ReplicaStructure(10, rep_state=[], r_log=[], prim=0),
-                ReplicaStructure(11, rep_state=[], r_log=[], prim=0),
-
             ]
         }
     }

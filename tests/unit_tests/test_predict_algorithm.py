@@ -165,11 +165,10 @@ class TestPredicatesAndAction(unittest.TestCase):
         self.assertEqual(pred_module.transit_set(0, 1, ViewEstablishmentEnums.FOLLOW), set())
 
     def test_transit_adopble(self):
-        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
-        pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 6, 1)
+        pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 6, 1)
 
         view_est_mod.get_phs = MagicMock(return_value = 0)
-        pred_module.number_of_byzantine = 1
         # Mocks sets which union does not add up to 4, should return false
         pred_module.transit_set = MagicMock(return_value = {1})
         pred_module.same_v_set = MagicMock(return_value = {1,2,3})
@@ -313,12 +312,12 @@ class TestPredicatesAndAction(unittest.TestCase):
         self.assertEqual(pred_module.get_current_view(0), ViewEstablishmentEnums.TEE)
 
     def test_interface_allow_service(self):
-        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
-        pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 2, 0)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 6, 1)
+        pred_module = PredicatesAndAction(view_est_mod, 0, self.resolver, 6, 1)
         # Allow service settings
         view_est_mod.get_phs = MagicMock(return_value = 0)
         pred_module.views = [{CURRENT: 0, NEXT : 0}]
-        pred_module.same_v_set = MagicMock(return_value = {0,0,0,0})
+        pred_module.same_v_set = MagicMock(return_value = {0,1,2,3,4,5})
         self.assertTrue(pred_module.allow_service())
 
         #Deny service settings, creating a false statement for each condition

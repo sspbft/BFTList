@@ -250,7 +250,7 @@ class TestReplicationModule(unittest.TestCase):
         # self.assertEqual(replication.unsup_req.call_count, 2)
 
     def test_known_pend_reqs(self):
-        replication = ReplicationModule(0, Resolver(testing=True), 4, 1, 1)
+        replication = ReplicationModule(0, Resolver(testing=True), 6, 1, 1)
         # Node 1-3 has both dummyRequests in pend queue
         # Node 4-5 have dummyRequest1 in pend queue
         # This means that known pending request are dummyRequest 1

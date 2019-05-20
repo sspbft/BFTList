@@ -51,7 +51,7 @@ start_state[1] = {
         },
         "FAILURE_DETECTOR_MODULE": {
             "prim": 0,
-            "beat": [35, 0, 0, 0, 0, 0]
+            "beat": [55, 0, 0, 0, 0, 0]
         }
     }
 start_state[2] = {

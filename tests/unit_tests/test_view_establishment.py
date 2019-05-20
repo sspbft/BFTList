@@ -161,12 +161,16 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         self.assertFalse(view_est_mod.echo_no_witn(1))
 
     def test_witnes_seen(self):
-        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 6, 1)
 
         # Both condition fulfilled with f = 0
         view_est_mod.witnesses[view_est_mod.id] = True
-        view_est_mod.witnesses_set = {1}
+        view_est_mod.witnesses_set = {1, 2, 3, 4, 5}
         view_est_mod.echo[0] = {VIEWS: {"current": 0, "next": 1}, PHASE: 1, WITNESSES: None}
+        view_est_mod.echo[2] = {VIEWS: {"current": 0, "next": 1}, PHASE: 1, WITNESSES: None}
+        view_est_mod.echo[3] = {VIEWS: {"current": 0, "next": 1}, PHASE: 1, WITNESSES: None}
+        view_est_mod.echo[4] = {VIEWS: {"current": 0, "next": 1}, PHASE: 1, WITNESSES: None}
+        view_est_mod.echo[5] = {VIEWS: {"current": 0, "next": 1}, PHASE: 1, WITNESSES: None}
         view_est_mod.echo[1] = {VIEWS: {"current": 0, "next": 1}, PHASE: 1, WITNESSES: None}
         self.assertTrue(view_est_mod.witnes_seen())
 
@@ -174,9 +178,9 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
         view_est_mod.witnesses[view_est_mod.id] = False
         self.assertFalse(view_est_mod.witnes_seen())
 
-        # f = 1, meaning the set is not big enough, set = 2 and 5 is needed
-        view_est_mod.number_of_byzantine = 1
+        # f = 1, meaning the set is not big enough
         view_est_mod.witnesses[view_est_mod.id] = True
+        view_est_mod.witnesses_set = {1, 2, 3}
         self.assertFalse(view_est_mod.witnes_seen())
 
 
@@ -214,7 +218,7 @@ class ViewEstablishmentModuleTest(unittest.TestCase):
     # Function added for while true loop
 
     def test_noticed_recent_value(self):
-        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 0)
+        view_est_mod = ViewEstablishmentModule(0, self.resolver, 2, 1)
 
         # All have noticed
         view_est_mod.echo_no_witn = MagicMock(return_value = True)
