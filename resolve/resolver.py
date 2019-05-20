@@ -55,9 +55,13 @@ class Resolver:
         # metrics
         self.total_msgs_sent = 0
         self.view_est_msgs = 0
+        self.view_est_bytes = 0
         self.rep_msgs = 0
+        self.rep_bytes = 0
         self.prim_mon_msgs = 0
+        self.prim_mon_bytes = 0
         self.fd_msgs = 0
+        self.fd_bytes = 0
         self.total_bytes_sent = 0
         self.experiment_started = False
 
@@ -241,14 +245,19 @@ class Resolver:
             self.total_msgs_sent += 1
             if "type" in msg:
                 t = msg["type"]
+                _bytes = metric_data["bytes_size"]
                 if t == MessageType.VIEW_ESTABLISHMENT_MESSAGE:
                     self.view_est_msgs += 1
+                    self.view_est_bytes += _bytes
                 elif t == MessageType.REPLICATION_MESSAGE:
                     self.rep_msgs += 1
+                    self.rep_bytes += _bytes
                 elif t == MessageType.PRIMARY_MONITORING_MESSAGE:
                     self.prim_mon_msgs += 1
+                    self.prim_mon_bytes += _bytes
                 elif t == MessageType.FAILURE_DETECTOR_MESSAGE:
                     self.fd_msgs += 1
+                    self.fd_bytes += _bytes
 
         # Emit roundtrip time for message
         if ("rec_id" in metric_data and "recv_hostname" in metric_data and
@@ -337,11 +346,32 @@ class Resolver:
             self.prim_mon_msgs,
             self.fd_msgs
         ).set(self.total_msgs_sent)
-        bytes_during_exp.labels(_id, seq_num).set(self.total_bytes_sent)
+        bytes_during_exp.labels(
+            _id,
+            seq_num,
+            self.view_est_bytes,
+            self.rep_bytes,
+            self.prim_mon_bytes,
+            self.fd_bytes
+        ).set(self.total_bytes_sent)
 
     def on_view_established(self):
         """Called whenever a view is established by the viewEst module."""
         _id = int(os.getenv("ID"))
         if self.total_msgs_sent != 0 or self.total_bytes_sent != 0:
-            msgs_during_exp.labels(_id, 0).set(self.total_msgs_sent)
-            bytes_during_exp.labels(_id, 0).set(self.total_bytes_sent)
+            msgs_during_exp.labels(
+                _id,
+                0,
+                self.view_est_msgs,
+                self.rep_msgs,
+                self.prim_mon_msgs,
+                self.fd_msgs
+            ).set(self.total_msgs_sent)
+            bytes_during_exp.labels(
+                _id,
+                0,
+                self.view_est_bytes,
+                self.rep_bytes,
+                self.prim_mon_bytes,
+                self.fd_bytes
+            ).set(self.total_bytes_sent)

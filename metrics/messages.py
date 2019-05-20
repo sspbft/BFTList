@@ -38,4 +38,5 @@ msgs_during_exp = Gauge("msgs_during_exp",
 
 bytes_during_exp = Gauge("bytes_during_exp",
                          "Number of bytes sent during an experiment",
-                         ["node_id", "exp_param"])
+                         ["node_id", "exp_param", "view_est_bytes",
+                          "rep_bytes", "prim_mon_bytes", "fd_bytes"])
