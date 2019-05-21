@@ -142,7 +142,9 @@ class FailureDetectorModule:
                self.get_current_view(processor_id) ==
                     self.get_current_view(self.id)):
                 num_of_processor += 1
-        if num_of_processor >= (3 * self.number_of_byzantine + 1):
+        # if num_of_processor >= (3 * self.number_of_byzantine + 1):
+        if num_of_processor >= (self.number_of_nodes - 2 *
+                                self.number_of_byzantine):
             return True
         return False
 

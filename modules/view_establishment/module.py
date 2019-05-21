@@ -158,7 +158,10 @@ class ViewEstablishmentModule(AlgorithmModule):
                 if(self.echo[self.id] == self.echo[processor_id]):
                     processor_set.add(processor_id)
             processor_set.union({self.id})
-            return (len(processor_set) >= (4 * self.number_of_byzantine + 1))
+            # return (len(processor_set) >= (4 * self.number_of_byzantine + 1))
+            return (len(processor_set) >= (self.number_of_nodes -
+                                           self.number_of_byzantine))
+
         return False
 
     def next_phs(self):
@@ -189,7 +192,9 @@ class ViewEstablishmentModule(AlgorithmModule):
                 continue
             if self.echo_no_witn(processor_id):
                 processor_set.add(processor_id)
-        return len(processor_set) >= (4 * self.number_of_byzantine + 1)
+        # return len(processor_set) >= (4 * self.number_of_byzantine + 1)
+        return len(processor_set) >= (self.number_of_nodes -
+                                      self.number_of_byzantine)
 
     def get_witnesses(self):
         """Method description.

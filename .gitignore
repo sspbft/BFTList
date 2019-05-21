@@ -11,3 +11,4 @@ conf/hosts.txt
 conf/start_state.json
 client/start
 tests/fixtures/hosts.txt
+profiling

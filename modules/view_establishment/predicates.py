@@ -121,7 +121,8 @@ class PredicatesAndAction():
         return(len(
             self.same_v_set(node_j, self.view_module.get_phs(node_j))
             .union(self.transit_set(node_j, phase, mode))) >=
-            (3 * self.number_of_byzantine + 1)
+            # (3 * self.number_of_byzantine + 1)
+            (self.number_of_nodes - 2 * self.number_of_byzantine)
         )
 
     def transit_set(self, node_j, phase, mode):
@@ -192,7 +193,8 @@ class PredicatesAndAction():
         return (len(self.same_v_set(
                 self.id, self.view_module.get_phs(self.id))) +
                 len(self.transit_set(self.id, phase, mode)) >=
-                (4 * self.number_of_byzantine + 1))
+                # (4 * self.number_of_byzantine + 1))
+                (self.number_of_nodes - self.number_of_byzantine))
 
     def establish(self):
         """Update the current view in the view pair to the next view."""
@@ -263,8 +265,9 @@ class PredicatesAndAction():
         current node and current node is not in a view change
         """
         return (len(self.same_v_set(self.id,
-                    self.view_module.get_phs(self.id))) >
-                3 * self.number_of_byzantine and
+                    self.view_module.get_phs(self.id))) >=
+                # 3 * self.number_of_byzantine and
+                (self.number_of_nodes - 2 * self.number_of_byzantine) and
                 self.view_module.get_phs(self.id) == 0 and
                 self.views[self.id].get(CURRENT) ==
                 self.views[self.id].get(NEXT))
@@ -387,7 +390,9 @@ class PredicatesAndAction():
                     self.views[self.id][CURRENT] + 1) % self.number_of_nodes):
                 already_phase_1_set += 1
         return (vchange_true_set + already_phase_1_set) >= (
-                                    4 * self.number_of_byzantine + 1)
+                                    # 4 * self.number_of_byzantine + 1)
+                                    self.number_of_nodes -
+                                    self.number_of_byzantine)
 
     def automation_phase_1(self, type, case):
         """Perform the action corresponding to the current case of phase 1."""
