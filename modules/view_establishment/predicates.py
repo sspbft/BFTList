@@ -121,7 +121,6 @@ class PredicatesAndAction():
         return(len(
             self.same_v_set(node_j, self.view_module.get_phs(node_j))
             .union(self.transit_set(node_j, phase, mode))) >=
-            # (3 * self.number_of_byzantine + 1)
             (self.number_of_nodes - 2 * self.number_of_byzantine)
         )
 
@@ -193,7 +192,6 @@ class PredicatesAndAction():
         return (len(self.same_v_set(
                 self.id, self.view_module.get_phs(self.id))) +
                 len(self.transit_set(self.id, phase, mode)) >=
-                # (4 * self.number_of_byzantine + 1))
                 (self.number_of_nodes - self.number_of_byzantine))
 
     def establish(self):
@@ -266,7 +264,6 @@ class PredicatesAndAction():
         """
         return (len(self.same_v_set(self.id,
                     self.view_module.get_phs(self.id))) >=
-                # 3 * self.number_of_byzantine and
                 (self.number_of_nodes - 2 * self.number_of_byzantine) and
                 self.view_module.get_phs(self.id) == 0 and
                 self.views[self.id].get(CURRENT) ==
@@ -344,7 +341,6 @@ class PredicatesAndAction():
                     self.adopt(self.view_pair_to_adopt)
                     self.view_pair_to_adopt = -1
                     self.view_module.next_phs()
-                    # self.reset_v_change()
                     return enums.NO_RETURN_VALUE
                 else:
                     logger.error(f"Not a valid view pair to adopt: \
@@ -356,7 +352,6 @@ class PredicatesAndAction():
                 if self.changeable():
                     self.next_view()
                     self.view_module.next_phs()
-                    # self.reset_v_change()
                     return enums.NO_RETURN_VALUE
                 # Case 1b (do NOT increment view, stay in RST_PAIR but move to
                 #  next phase)
@@ -364,9 +359,8 @@ class PredicatesAndAction():
                     self.view_module.next_phs()
                     return enums.NO_RETURN_VALUE
 
-            # No action and reset the v_change-variable
+            # No action
             elif(case == 2):
-                # self.reset_v_change()
                 return enums.NO_ACTION
 
             # Full reset
@@ -390,7 +384,6 @@ class PredicatesAndAction():
                     self.views[self.id][CURRENT] + 1) % self.number_of_nodes):
                 already_phase_1_set += 1
         return (vchange_true_set + already_phase_1_set) >= (
-                                    # 4 * self.number_of_byzantine + 1)
                                     self.number_of_nodes -
                                     self.number_of_byzantine)
 
@@ -450,11 +443,6 @@ class PredicatesAndAction():
 
             # Apply changes to view: establish the new view
             elif(case == 1):
-                # if(self.views[self.id] == self.RST_PAIR):
-                #     self.resolver.execute(
-                #         module=Module.REPLICATION_MODULE,
-                #         func=Function.REPLICA_FLUSH
-                #     )
                 self.establish()
                 self.reset_v_change()
                 self.view_module.next_phs()

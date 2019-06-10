@@ -34,6 +34,8 @@ The code base is linted using [flake8](https://pypi.org/project/flake8/) with [p
 ./scripts/test <pattern>    # runs all test files with a filename matching pattern
 ```
 
+Note that not all unit tests passes on the branch failure_detector due to extra logic added.
+
 ### Travis integration
 Both linting and testing is setup to be run for all Pull Requests and on each push to master by Travis.
 

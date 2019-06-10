@@ -48,6 +48,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.correct_ids = []
         self.last_correct_ids = []
 
+        # Injection of starting state for integration tests
         if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
             if (start_state is not {} and str(self.id) in start_state and
@@ -78,6 +79,7 @@ class ViewEstablishmentModule(AlgorithmModule):
 
         ts = time.time()
         while True:
+            # Get all correct ids from the failure detector
             self.correct_ids = self.resolver.execute(
                 Module.EVENT_DRIVEN_FD_MODULE,
                 Function.GET_CORRECT_PROCESSORS_FOR_TIMESTAMP,
@@ -115,7 +117,6 @@ class ViewEstablishmentModule(AlgorithmModule):
                         )
                     ts = time.time()
                 # Emit run time metric
-                # ts = time.time()
                 run_time = time.time() - start_time
                 run_method_time.labels(
                     self.id,
@@ -158,7 +159,6 @@ class ViewEstablishmentModule(AlgorithmModule):
                 if(self.echo[self.id] == self.echo[processor_id]):
                     processor_set.add(processor_id)
             processor_set.union({self.id})
-            # return (len(processor_set) >= (4 * self.number_of_byzantine + 1))
             return (len(processor_set) >= (self.number_of_nodes -
                                            self.number_of_byzantine))
 
@@ -192,7 +192,6 @@ class ViewEstablishmentModule(AlgorithmModule):
                 continue
             if self.echo_no_witn(processor_id):
                 processor_set.add(processor_id)
-        # return len(processor_set) >= (4 * self.number_of_byzantine + 1)
         return len(processor_set) >= (self.number_of_nodes -
                                       self.number_of_byzantine)
 
@@ -328,11 +327,11 @@ class ViewEstablishmentModule(AlgorithmModule):
                         f"node {j}: {j_own_data}")
 
     def is_correct(self, id):
-        """TODO write me."""
+        """Returns true if id is in the correct ids."""
         return id in self.last_correct_ids
 
     def get_correct_ids(self):
-        """TODO write me."""
+        """Returns all correct ids."""
         return self.last_correct_ids
 
     # Function to extract data
