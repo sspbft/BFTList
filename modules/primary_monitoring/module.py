@@ -45,6 +45,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
         self.allow_service_denied = -1
         self.mock_prim = 0
 
+        # Injection of starting state for integration tests
         if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
             if (start_state is not {} and str(self.id) in start_state and
@@ -75,6 +76,7 @@ class PrimaryMonitoringModule(AlgorithmModule):
 
         while True:
             self.lock.acquire()
+            # Metric time
             start_time = time.time()
             if self.vcm[self.id][PRIM] != self.get_current_view(self.id):
                 self.clean_state()
@@ -106,19 +108,16 @@ class PrimaryMonitoringModule(AlgorithmModule):
                     self.update_need_chg_set()
                     # Line 11
                     if(self.get_number_of_processors_in_no_service() <
-                       # (2 * self.number_of_byzantine + 1)):
                        (self.number_of_nodes - 3 * self.number_of_byzantine)):
 
                         self.vcm[self.id][V_STATUS] = enums.OK
                     # Line 12
                     if(self.vcm[self.id][V_STATUS] == enums.OK and
-                       # self.sup_change(3 * self.number_of_byzantine + 1)):
                        self.sup_change(self.number_of_nodes - 2 *
                                        self.number_of_byzantine)):
 
                         self.vcm[self.id][V_STATUS] = enums.NO_SERVICE
                     # Line 13
-                    # elif self.sup_change(4 * self.number_of_byzantine + 1):
                     elif self.sup_change(self.number_of_nodes -
                                          self.number_of_byzantine):
 
@@ -224,7 +223,6 @@ class PrimaryMonitoringModule(AlgorithmModule):
 
             # Check if the intersection is large enough
             if (len(need_chg_set_intersection) >=
-                    # (3 * self.number_of_byzantine + 1)):
                     (self.number_of_nodes - 2 * self.number_of_byzantine)):
 
                     return True

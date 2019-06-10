@@ -39,6 +39,7 @@ class FailureDetectorModule:
         self.msg_queue = Queue()
         self.was_unresponsive = False
 
+        # Injection of starting state for integration tests
         if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
             if (start_state is not {} and str(self.id) in start_state and
@@ -80,6 +81,9 @@ class FailureDetectorModule:
             if testing:
                 break
 
+            # When first run, send a message to everyone
+            # After the first run, send message to nodes as they send a
+            # message to you
             if (self.first_run or
                (not byz.is_byzantine() and self.was_unresponsive)):
                 self.was_unresponsive = False
@@ -142,7 +146,6 @@ class FailureDetectorModule:
                self.get_current_view(processor_id) ==
                     self.get_current_view(self.id)):
                 num_of_processor += 1
-        # if num_of_processor >= (3 * self.number_of_byzantine + 1):
         if num_of_processor >= (self.number_of_nodes - 2 *
                                 self.number_of_byzantine):
             return True

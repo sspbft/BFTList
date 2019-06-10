@@ -32,6 +32,8 @@ The code base is linted using [flake8](https://pypi.org/project/flake8/) with [p
 ./scripts/test <pattern>    # runs all test files with a filename matching pattern
 ```
 
+Note that unit tests for the no_op_automaton does not all pass due to the change of state machine.
+
 ### Travis integration
 Both linting and testing is setup to be run for all Pull Requests and on each push to master by Travis.
 

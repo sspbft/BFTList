@@ -46,6 +46,7 @@ class ViewEstablishmentModule(AlgorithmModule):
         self.number_of_byzantine = f
         self.witnesses_set = set()
 
+        # Injection of starting state for integration tests
         if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
             if (start_state is not {} and str(self.id) in start_state and
@@ -76,6 +77,7 @@ class ViewEstablishmentModule(AlgorithmModule):
 
         while True:
             self.lock.acquire()
+            # Metric time
             start_time = time.time()
             if(self.pred_and_action.need_reset()):
                 self.pred_and_action.reset_all()
@@ -96,7 +98,6 @@ class ViewEstablishmentModule(AlgorithmModule):
                 # Onces a predicates is fulfilled, perfom action if valid case
                 if(self.pred_and_action.auto_max_case(self.phs[self.id]) >=
                         case):
-                    # logger.debug(f"Phase: {self.phs[self.id]} Case: {case}")
                     self.pred_and_action.automation(
                         ViewEstablishmentEnums.ACTION, self.phs[self.id], case)
 
@@ -139,7 +140,6 @@ class ViewEstablishmentModule(AlgorithmModule):
                 if(self.echo[self.id] == self.echo[processor_id]):
                     processor_set.add(processor_id)
             processor_set.union({self.id})
-            # return (len(processor_set) >= (4 * self.number_of_byzantine + 1))
             return (len(processor_set) >= (
                             self.number_of_nodes - self.number_of_byzantine))
 
@@ -171,7 +171,6 @@ class ViewEstablishmentModule(AlgorithmModule):
         for processor_id in range(self.number_of_nodes):
             if self.echo_no_witn(processor_id):
                 processor_set.add(processor_id)
-        # return len(processor_set) >= (4 * self.number_of_byzantine + 1)
         return len(processor_set) >= (
             self.number_of_nodes - self.number_of_byzantine)
 
