@@ -62,6 +62,7 @@ class ReplicationModule(AlgorithmModule):
         # Support for non-self-stab
         self.self_stab = os.getenv("NON_SELF_STAB") is None
 
+        # Injection of starting state for integration tests
         if os.getenv("INTEGRATION_TEST") or os.getenv("INJECT_START_STATE"):
             start_state = conf.get_start_state()
             if (start_state is not {} and str(self.id) in start_state and
@@ -95,20 +96,19 @@ class ReplicationModule(AlgorithmModule):
             time.sleep(0.1)
 
         while True:
-            # lines 1-3
             self.lock.acquire()
+            # Metric time
             start_time = time.time()
 
             # Only execute of self-stablizing
             if self.self_stab:
+                # lines 1-3
                 view_est_allow_service = self.resolver.execute(
                                             Module.VIEW_ESTABLISHMENT_MODULE,
                                             Function.ALLOW_SERVICE)
 
                 if (not self.rep[self.id].get_view_changed() and
                         view_est_allow_service):
-                        # self.resolver.execute(Module.VIEW_ESTABLISHMENT_MODULE,
-                                            # Function.ALLOW_SERVICE)):
                     view_changed = (not self.rep[self.id].is_tee() and
                                     (self.resolver.execute(
                                         Module.VIEW_ESTABLISHMENT_MODULE,
@@ -136,16 +136,15 @@ class ReplicationModule(AlgorithmModule):
                 # lines 9 - 10
                 # X and Y are tuples (rep_state, r_log, is_default_prefix)
                 # -1 in X[0] and Y[0] is used to indicate failure
+                # is_default_prefix is used to indicate if default prefix or
+                # empty list
                 X = self.find_cons_state(self.com_pref_states(
-                    # (3 * self.number_of_byzantine) + 1
                     (self.number_of_nodes - 2 * self.number_of_byzantine)
                 ))
                 Y = self.get_ds_state()
                 if X[0] == -1 and Y[0] != -1:
                     X = Y
                 # lines 11 - 14
-                # TODO check if X[1] should be a prefix of r_log?
-                # https://bit.ly/2Iu6I0E
                 X_rep_state = X[0]
                 X_r_log = X[1]
                 is_default_prefix = X[2]
@@ -172,7 +171,7 @@ class ReplicationModule(AlgorithmModule):
                     self.flush_local()
                     self.flush = False
             else:
-                # These variables are used later
+                # These variables are used later for the non-self-stabilizing
                 view_est_allow_service = True
                 prim_id = 0
 
@@ -315,7 +314,6 @@ class ReplicationModule(AlgorithmModule):
                          ReplicationEnums.COMMIT}):
                         x_set = self.committed_set(request)
                         if ((len(x_set) >=
-                                # (3 * self.number_of_byzantine) + 1) and
                                 (self.number_of_nodes - 2 *
                                  self.number_of_byzantine)) and
                                 (request.get_seq_num() ==
@@ -377,16 +375,6 @@ class ReplicationModule(AlgorithmModule):
             else:
                 self.rep[j].set_rep_state(rep.get_rep_state())
 
-    def receive_msg_from_client(self, msg):
-        """Logic for receiving a message from a client."""
-        # TODO implement
-        pass
-
-    def send_last_exec_req_to_client(self):
-        """Replying with last exec req to client."""
-        # TODO implement
-        pass
-
     def commit(self, req_pair):
         """Commits a request."""
         request: Request = req_pair[REQUEST]
@@ -414,6 +402,7 @@ class ReplicationModule(AlgorithmModule):
         """Applies a request and returns the resulting state."""
         current_state = self.rep[self.id].get_rep_state()
         operation = req.get_client_request().get_operation()
+        # Metod execute in operation is state machine specific
         new_state = operation.execute(current_state)
         self.rep[self.id].set_rep_state(new_state)
         logger.info(f"Applying request {req}.")
@@ -471,7 +460,6 @@ class ReplicationModule(AlgorithmModule):
                     raise ValueError(f"entry in r_log does not have " +
                                      f"x_set key: {x}")
                 if (len(x[X_SET]) >=
-                   # (3 * self.number_of_byzantine + 1)):
                         (self.number_of_nodes - 2 * self.number_of_byzantine)):
                         if (last_common_exec_request == -1 or
                                 x[REQUEST].get_seq_num() >
@@ -486,7 +474,6 @@ class ReplicationModule(AlgorithmModule):
             if replica_structure.get_con_flag():
                 processors_with_conflicts += 1
 
-        # if processors_with_conflicts >= (4 * self.number_of_byzantine + 1):
         if processors_with_conflicts >= (self.number_of_nodes -
                                          self.number_of_byzantine):
 
@@ -498,7 +485,7 @@ class ReplicationModule(AlgorithmModule):
 
         Returns a set of replica states, and corresponding r_logs
         which has the longest prefix at at least required_processors.
-        Returns empty if non-existing.
+        Returns empty if non-existing. State machine specific method.
         """
         dct = {}
         # Get all replica states
@@ -556,7 +543,7 @@ class ReplicationModule(AlgorithmModule):
         """Checks prefix of whole rep, including default values check.
 
         A processor with default prefix values is only a prefix of another
-        processor with default prefix values.
+        processor with default prefix values. State machine specific method.
         """
         if self.rep[processor_A].is_def_prefix():
             # processor_B must also have the default prefix values
@@ -570,7 +557,10 @@ class ReplicationModule(AlgorithmModule):
                                  self.rep[processor_B].get_rep_state())
 
     def check_new_X_prefix(self, id, X_rep, is_default_prefix):
-        """Checks the new prefix rep_state (X_rep) proposed."""
+        """Checks the new prefix rep_state (X_rep) proposed.
+
+        State machine specific method.
+        """
         if self.rep[id].is_def_prefix():
             return is_default_prefix
         elif is_default_prefix:
@@ -585,11 +575,11 @@ class ReplicationModule(AlgorithmModule):
         Returns a prefix if suggested by at least 2f+1 and at most 3f+1
         processors, and if there exists another set with the default
         replica state and these two sets adds up to at least 4f+1 processors.
+        State machine specific method.
         """
         processors_prefix_X = 0
         processors_in_def_state = 0
         X = self.find_cons_state(self.com_pref_states(
-                                # 2 * self.number_of_byzantine + 1))
                                 self.number_of_nodes - 3 *
                                  self.number_of_byzantine))
 
@@ -607,10 +597,6 @@ class ReplicationModule(AlgorithmModule):
                 processors_prefix_X += 1
 
         # Checks if the sets are in the correct size span
-        # if ((2 * self.number_of_byzantine + 1) <= processors_prefix_X <
-        #         (3 * self.number_of_byzantine + 1) and
-        #     ((processors_prefix_X + processors_in_def_state) >=
-        #         (4 * self.number_of_byzantine + 1))):
         if ((self.number_of_nodes - 3 *
              self.number_of_byzantine) <= processors_prefix_X <
                 (self.number_of_nodes - 2 * self.number_of_byzantine) and
@@ -657,7 +643,6 @@ class ReplicationModule(AlgorithmModule):
                     if(client_request ==
                             req_pair[REQUEST].get_client_request()):
                         processors_supporting += 1
-            # if(processors_supporting < (2 * self.number_of_byzantine + 1)):
             if(processors_supporting < (self.number_of_nodes - 3 *
                                         self.number_of_byzantine)):
                 return True
@@ -671,12 +656,9 @@ class ReplicationModule(AlgorithmModule):
         """
         x_set_less = False
         for request_pair in self.rep[self.id].get_r_log():
-            # if(len(request_pair[X_SET]) < (3 * self.number_of_byzantine + 1))
             if(len(request_pair[X_SET]) < (self.number_of_nodes - 2 *
                                            self.number_of_byzantine)):
                 x_set_less = True
-        # NOTE that self.unsup_req was originally called as well. Removed
-        # during integration testing of rep mod and discussion at meeting 26/2
         return (self.stale_req_seqn() or self.double() or x_set_less)
 
     def known_pend_reqs(self):
@@ -695,7 +677,6 @@ class ReplicationModule(AlgorithmModule):
                     request_count[req] = 1
 
         known_reqs = {k: v for (k, v) in request_count.items() if v >= (
-                        # 3 * self.number_of_byzantine + 1)}
                         self.number_of_nodes - 2 * self.number_of_byzantine)}
         return list(known_reqs.keys())
 
@@ -719,7 +700,6 @@ class ReplicationModule(AlgorithmModule):
                         if(req_pair[REQUEST] == request_pair[REQUEST] and
                            status <= request_pair[STATUS]):
                             processor_set += 1
-            # if processor_set >= (3 * self.number_of_byzantine + 1):
             if processor_set >= (self.number_of_nodes - 2 *
                                  self.number_of_byzantine):
                 request_set.append(req_pair)
@@ -747,7 +727,6 @@ class ReplicationModule(AlgorithmModule):
                         known_reqs[applied_req[REQUEST]] = 1
 
         known_reqs = {k: v for (k, v) in known_reqs.items()
-                      # if v >= (3 * self.number_of_byzantine + 1)}
                       if v >= (self.number_of_nodes - 2 *
                                self.number_of_byzantine)}
         # Filter out all request that processor_i has already applied
@@ -900,7 +879,10 @@ class ReplicationModule(AlgorithmModule):
         return False
 
     def prefixes(self, sq_log_A, sq_log_B):
-        """Returns true if sequence log A and sequence log B are prefixes."""
+        """Returns true if sequence log A and sequence log B are prefixes.
+
+        State machine specific method.
+        """
         # Go throug sequence log A to see if A is a prefix or B
         for index, item in enumerate(sq_log_A):
             # We have reached the end of sq_log_B and therefore B is a prefix
@@ -918,7 +900,10 @@ class ReplicationModule(AlgorithmModule):
         return True
 
     def is_prefix_of(self, sq_log_A, sq_log_B):
-        """Returns True if sq_log_A is a prefix of sq_log_B."""
+        """Returns True if sq_log_A is a prefix of sq_log_B.
+
+        State machine specific method.
+        """
         if len(sq_log_A) > len(sq_log_B):
             return False
 
@@ -948,7 +933,6 @@ class ReplicationModule(AlgorithmModule):
                     j_prim == self.id):
                 processor_ids.add(j)
 
-        # if len(processor_ids) >= (4 * self.number_of_byzantine) + 1:
         if len(processor_ids) >= (self.number_of_nodes -
                                   self.number_of_byzantine):
             # Update our sequence number to the most recent one.
@@ -981,7 +965,6 @@ class ReplicationModule(AlgorithmModule):
             self.renew_reqs(processor_ids)
             # X is a tuple (rep_state, r_log)
             X = self.find_cons_state(self.com_pref_states(
-                # (3 * self.number_of_byzantine) + 1
                 (self.number_of_nodes - 2 * self.number_of_byzantine)
             ))
 
@@ -1002,7 +985,10 @@ class ReplicationModule(AlgorithmModule):
         return False
 
     def produce_dummy_req(self, seq_num):
-        """Produces a NO-OP request with the given seq num."""
+        """Produces a NO-OP request with the given seq num.
+
+        State machine specific method.
+        """
         dummy_request = Request(
             ClientRequest(-1, None, Operation(
                 OperationEnums.NO_OP
@@ -1026,9 +1012,7 @@ class ReplicationModule(AlgorithmModule):
                 processor_ids.append(i)
 
         if (len(processor_ids) >=
-                # (4 * self.number_of_byzantine + 1) and
                 (self.number_of_nodes - self.number_of_byzantine) and
-
                 self.check_new_v_state(prim_id)):
             self.rep[self.id].set_replica_structure(self.rep[prim_id])
             self.rep[self.id].set_view_changed(False)
@@ -1049,7 +1033,6 @@ class ReplicationModule(AlgorithmModule):
             intersection_set = set(self.known_pend_reqs()).intersection(
                                             set(self.unassigned_reqs()))
             return(list(intersection_set))
-            # return(self.known_pend_reqs().intersection(self.unassigned_reqs()))
         else:
             return(VIEW_CHANGE)
 
@@ -1138,6 +1121,7 @@ class ReplicationModule(AlgorithmModule):
         NOTE that this assumes that elements in rep_state have a corresponding
         r_log entry at this processor.
         NOTE that returning (-1, *) means that something went wrong.
+        State machine specific method.
         """
         processors_states = processors_tuple[0]
         processors_r_log = processors_tuple[1]
@@ -1163,6 +1147,7 @@ class ReplicationModule(AlgorithmModule):
 
         Processors_r_log is a list of r_logs corresponding to the processors
         which rep_state has prefix_state as prefix.
+        State machine specific method.
         """
         for single_r_log in processors_r_log:
             # for entries in itertools.combinations(
@@ -1187,7 +1172,10 @@ class ReplicationModule(AlgorithmModule):
         return []
 
     def find_prefix(self, rep_states: List):
-        """Finds the prefix of a list of replica states."""
+        """Finds the prefix of a list of replica states.
+
+        State machine specific method.
+        """
         prefix = None
 
         # find shortest rep state
@@ -1248,7 +1236,6 @@ class ReplicationModule(AlgorithmModule):
                     continue
                 elif (key not in req_exists_count or
                       req_exists_count[key] <
-                      # (3 * self.number_of_byzantine + 1)):  # and
                       (self.number_of_nodes - 2 * self.number_of_byzantine)):
 
                     if self.accept_req_preprep(key, prim):
@@ -1270,7 +1257,6 @@ class ReplicationModule(AlgorithmModule):
         for req in self.rep[prim].get_pend_reqs():
             # check that req exists in >= 3f+1 pendReqs
             if (req not in seen_reqs or
-                    # seen_reqs[req] < (3 * self.number_of_byzantine + 1)):
                     seen_reqs[req] < (self.number_of_nodes - 2 *
                                       self.number_of_byzantine)):
                 return False
@@ -1278,7 +1264,10 @@ class ReplicationModule(AlgorithmModule):
         return self.check_new_state_and_r_log(prim)
 
     def check_new_state_and_r_log(self, prim) -> bool:
-        """Checks the state and r_log proposed by the new primary."""
+        """Checks the state and r_log proposed by the new primary.
+
+        State machine specific method.
+        """
         # check that new state is prefix to 3f+1 processors
         count = 0
         prim_state = self.rep[prim].get_rep_state()
@@ -1286,7 +1275,6 @@ class ReplicationModule(AlgorithmModule):
             rep_state = rs.get_rep_state()
             if self.is_prefix_of(prim_state, rep_state):
                 count += 1
-        # if count < (3 * self.number_of_byzantine + 1):
         if count < (self.number_of_nodes - 2 * self.number_of_byzantine):
             return False
 
@@ -1321,7 +1309,6 @@ class ReplicationModule(AlgorithmModule):
                                 reqs_count[req_pairs[REQUEST]] = 1
         # Get all supported requests
         supported_reqs = {k: v for (k, v) in reqs_count.items() if v >= (
-                                    # 3 * self.number_of_byzantine + 1)}
                                     self.number_of_nodes - 2 *
                                     self.number_of_byzantine)}
         return list(supported_reqs.keys())
