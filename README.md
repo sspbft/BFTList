@@ -1,5 +1,5 @@
 # BFTList
-[![Build status](https://travis-ci.org/practicalbft/BFTList.svg?branch=master)](https://travis-ci.org/travis-ci/travis-web)
+[![Build status](https://travis-ci.org/sspbft/BFTList.svg?branch=master)](https://travis-ci.org/travis-ci/travis-web)
 
 This repository contains code for a list modeled as a BFT replicated state machine based on failure detectors, hence the clever name BFTList. This application is part of our Master's thesis at Chalmers University of Technology, with the task of validating the algorithm proposed in [Self-Stabilizing Byzantine Tolerant Replicated State Machine Based on Failure Detectors]() written by [Shlomi Dolev](mailto:dolev@cs.bgu.ac.il), [Chryssis Georgiou](chryssis@cs.ucy.ac.cy), [Ioannis Marcoullis](imarcoullis@cs.ucy.ac.cy) and [Elad M. Schiller](mailto:elad@chalmers.se).
 
