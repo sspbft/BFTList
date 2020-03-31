@@ -1,7 +1,7 @@
 astroid==2.1.0
 atomicwrites==1.2.1
 attrs==18.2.0
-bleach==3.1.0
+bleach==3.1.4
 certifi==2018.11.29
 chardet==3.0.4
 Click==7.0
